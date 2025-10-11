@@ -536,21 +536,27 @@ elif page == "📅 Match History":
 elif page == "🔍 Opponent Intel":
     st.title("🔍 Opponent Intelligence")
     
-    # Load DSX's actual opponents
-    try:
-        actual_opponents = pd.read_csv("DSX_Actual_Opponents.csv")
-        dsx_matches = pd.read_csv("DSX_Matches_Fall2025.csv")
+    # Tabs for played vs upcoming opponents
+    tab1, tab2 = st.tabs(["📊 Played Opponents", "🔮 Upcoming Opponents"])
+    
+    with tab1:
+        st.subheader("Teams DSX Has Played")
         
-        st.success(f"Loaded {len(actual_opponents)} opponents that DSX has played")
-        st.info("💡 These are the actual teams DSX has faced this season. Select one to see detailed analysis.")
-        
-        # Opponent selector - show teams DSX actually played
-        opponent_names = actual_opponents['Opponent'].tolist()
-        selected_opp = st.selectbox(
-            "Select Opponent", 
-            opponent_names,
-            help="Choose an opponent to see head-to-head analysis"
-        )
+        # Load DSX's actual opponents
+        try:
+            actual_opponents = pd.read_csv("DSX_Actual_Opponents.csv")
+            dsx_matches = pd.read_csv("DSX_Matches_Fall2025.csv")
+            
+            st.success(f"Loaded {len(actual_opponents)} opponents that DSX has played")
+            st.info("💡 Select a team to see detailed head-to-head analysis and performance trends.")
+            
+            # Opponent selector - show teams DSX actually played
+            opponent_names = actual_opponents['Opponent'].tolist()
+            selected_opp = st.selectbox(
+                "Select Opponent", 
+                opponent_names,
+                help="Choose an opponent to see head-to-head analysis"
+            )
         
         # Get opponent data
         opp_row = actual_opponents[actual_opponents['Opponent'] == selected_opp].iloc[0]
@@ -679,9 +685,201 @@ elif page == "🔍 Opponent Intel":
             st.write("- Focus on finishing chances")
             st.write("- Minimize defensive errors")
             
-    except FileNotFoundError:
-        st.error("Opponent data not found. Run `python fix_opponent_tracking.py` to generate.")
-        st.write("Or update `DSX_Matches_Fall2025.csv` with your match data.")
+        except FileNotFoundError:
+            st.error("Opponent data not found. Run `python fix_opponent_tracking.py` to generate.")
+            st.write("Or update `DSX_Matches_Fall2025.csv` with your match data.")
+    
+    with tab2:
+        st.subheader("Scouting Upcoming Opponents")
+        
+        try:
+            upcoming = pd.read_csv("DSX_Upcoming_Opponents.csv")
+            
+            st.success(f"Loaded {len(upcoming)} upcoming matches")
+            st.info("💡 Scout these teams before your next games!")
+            
+            # Show upcoming schedule
+            st.markdown("### 📅 Upcoming Schedule")
+            
+            for _, game in upcoming.iterrows():
+                with st.expander(f"**{game['GameDate']}**: {game['Opponent']} ({game['League']})", expanded=False):
+                    st.write(f"📍 **Location:** {game['Location']}")
+                    st.write(f"🏆 **League:** {game['League']}")
+                    st.write(f"📝 **Notes:** {game['Notes']}")
+            
+            st.markdown("---")
+            
+            # Opponent selector for upcoming
+            upcoming_names = upcoming['Opponent'].tolist()
+            selected_upcoming = st.selectbox(
+                "Select Upcoming Opponent to Scout", 
+                upcoming_names,
+                help="Choose an opponent to see scouting report"
+            )
+            
+            st.subheader(f"🔍 Scouting Report: {selected_upcoming}")
+            
+            # Check if it's a BSA Celtic team
+            if "BSA Celtic" in selected_upcoming:
+                try:
+                    bsa_schedules = pd.read_csv("BSA_Celtic_Schedules.csv")
+                    team_matches = bsa_schedules[bsa_schedules['OpponentTeam'] == selected_upcoming]
+                    
+                    # Filter completed matches
+                    completed = team_matches[team_matches['GF'] != ''].copy()
+                    
+                    if len(completed) > 0:
+                        completed['GF'] = pd.to_numeric(completed['GF'])
+                        completed['GA'] = pd.to_numeric(completed['GA'])
+                        completed['GD'] = completed['GF'] - completed['GA']
+                        
+                        # Calculate stats
+                        wins = (completed['GD'] > 0).sum()
+                        draws = (completed['GD'] == 0).sum()
+                        losses = (completed['GD'] < 0).sum()
+                        
+                        col1, col2, col3, col4, col5 = st.columns(5)
+                        
+                        with col1:
+                            st.metric("Games", len(completed))
+                        with col2:
+                            st.metric("Record", f"{wins}-{draws}-{losses}")
+                        with col3:
+                            st.metric("GF/Game", f"{completed['GF'].mean():.2f}")
+                        with col4:
+                            st.metric("GA/Game", f"{completed['GA'].mean():.2f}")
+                        with col5:
+                            ppg = (wins * 3 + draws) / len(completed)
+                            st.metric("PPG", f"{ppg:.2f}")
+                        
+                        st.markdown("---")
+                        
+                        # Calculate Strength Index
+                        gd_per_game = completed['GD'].mean()
+                        ppg_norm = max(0.0, min(3.0, ppg)) / 3.0 * 100.0
+                        gd_norm = (max(-5.0, min(5.0, gd_per_game)) + 5.0) / 10.0 * 100.0
+                        strength_index = 0.7 * ppg_norm + 0.3 * gd_norm
+                        
+                        st.subheader("📊 Strength Assessment")
+                        
+                        col1, col2 = st.columns(2)
+                        
+                        with col1:
+                            st.metric("Opponent SI", f"{strength_index:.1f}")
+                            st.metric("DSX SI", "35.6")
+                        
+                        with col2:
+                            si_diff = 35.6 - strength_index
+                            if si_diff > 10:
+                                st.success("✅ DSX is stronger")
+                                st.write("**Target:** Win (3 points)")
+                            elif si_diff < -10:
+                                st.error("⚠️ Opponent is stronger")
+                                st.write("**Target:** Stay competitive")
+                            else:
+                                st.info("⚖️ Evenly matched")
+                                st.write("**Target:** Fight for all points")
+                        
+                        st.markdown("---")
+                        
+                        # Recent form
+                        st.subheader("📈 Recent Form")
+                        
+                        recent_5 = completed.tail(5)
+                        
+                        for _, match in recent_5.iterrows():
+                            if pd.notna(match['GF']) and pd.notna(match['GA']):
+                                result = "W" if match['GD'] > 0 else "D" if match['GD'] == 0 else "L"
+                                if result == "W":
+                                    st.success(f"**{result}** {int(match['GF'])}-{int(match['GA'])} vs {match['TheirOpponent']}")
+                                elif result == "D":
+                                    st.info(f"**{result}** {int(match['GF'])}-{int(match['GA'])} vs {match['TheirOpponent']}")
+                                else:
+                                    st.error(f"**{result}** {int(match['GF'])}-{int(match['GA'])} vs {match['TheirOpponent']}")
+                        
+                        st.markdown("---")
+                        
+                        # Game plan
+                        st.subheader("📋 Recommended Game Plan")
+                        
+                        if si_diff > 10:
+                            st.write("**Offensive Approach:**")
+                            st.write("- Press high and control possession")
+                            st.write("- Create multiple scoring chances")
+                            st.write("- Build team confidence")
+                        elif si_diff < -10:
+                            st.write("**Defensive Approach:**")
+                            st.write("- Stay compact and organized")
+                            st.write("- Counter-attack when possible")
+                            st.write("- Limit their scoring chances")
+                        else:
+                            st.write("**Balanced Approach:**")
+                            st.write("- Match their intensity")
+                            st.write("- Be clinical with chances")
+                            st.write("- Strong defensive shape")
+                        
+                    else:
+                        st.warning(f"No completed matches found for {selected_upcoming}")
+                        st.write("Check back closer to game day for updated results")
+                        
+                except FileNotFoundError:
+                    st.warning("BSA Celtic schedule data not available")
+                    st.write("Run `python fetch_bsa_celtic.py` to get their latest results")
+            
+            # Check if it's Club Ohio West (division team)
+            elif "Club Ohio" in selected_upcoming:
+                try:
+                    division = pd.read_csv("OCL_BU08_Stripes_Division_with_DSX.csv")
+                    club_ohio = division[division['Team'].str.contains("Club Ohio", na=False, case=False)]
+                    
+                    if not club_ohio.empty:
+                        team = club_ohio.iloc[0]
+                        
+                        col1, col2, col3, col4, col5 = st.columns(5)
+                        
+                        with col1:
+                            st.metric("Division Rank", f"#{int(team['Rank'])} / 7")
+                        with col2:
+                            st.metric("Record", f"{int(team['W'])}-{int(team['D'])}-{int(team['L'])}")
+                        with col3:
+                            st.metric("GF/Game", f"{team['GF']:.2f}")
+                        with col4:
+                            st.metric("GA/Game", f"{team['GA']:.2f}")
+                        with col5:
+                            st.metric("PPG", f"{team['PPG']:.2f}")
+                        
+                        st.markdown("---")
+                        
+                        st.subheader("📊 Strength Assessment")
+                        
+                        col1, col2 = st.columns(2)
+                        
+                        with col1:
+                            st.metric("Opponent SI", f"{team['StrengthIndex']:.1f}")
+                            st.metric("DSX SI", "35.6")
+                        
+                        with col2:
+                            si_diff = 35.6 - team['StrengthIndex']
+                            if si_diff > 10:
+                                st.success("✅ DSX is stronger")
+                            elif si_diff < -10:
+                                st.error("⚠️ Opponent is stronger")
+                            else:
+                                st.info("⚖️ Evenly matched")
+                    else:
+                        st.warning("Division data not found for this team")
+                        
+                except FileNotFoundError:
+                    st.warning("Division data not available")
+                    st.write("Run `python fetch_gotsport_division.py` to get latest standings")
+            
+            else:
+                st.info("Scouting data not yet available for this opponent")
+                st.write("Check back as game approaches or add data manually")
+                
+        except FileNotFoundError:
+            st.error("Upcoming schedule not found")
+            st.write("Create `DSX_Upcoming_Opponents.csv` with your schedule")
         
         with col1:
             st.metric("Rank", f"#{int(opp_row['Rank'])}")
