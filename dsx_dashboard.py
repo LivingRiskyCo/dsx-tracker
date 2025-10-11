@@ -540,10 +540,11 @@ elif page == "🔍 Opponent Intel":
     division_data = load_division_data()
     
     if division_data is not None:
-        # Get all division opponents (exclude DSX)
+        # Get all teams DSX plays against
         division_opponents = division_data[~division_data['Team'].str.contains('DSX', na=False)].copy()
         
-        st.success(f"Loaded {len(division_opponents)} division opponents")
+        st.success(f"Loaded {len(division_opponents)} teams that DSX plays against")
+        st.info("💡 These teams compete in the OCL BU08 Stripes division. Use their division performance to understand their strength when DSX plays them.")
         
         # Opponent selector - show all division teams
         opponent_names = division_opponents['Team'].tolist()
