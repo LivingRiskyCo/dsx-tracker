@@ -124,23 +124,26 @@ except FileNotFoundError:
     print("[WARN] BSA Celtic schedules not found. Run: python fetch_bsa_celtic.py")
     print()
 
-# Analyze Club Ohio West (from division data)
-print("2. CLUB OHIO WEST 18B ACADEMY (OCL BU08)")
+# Analyze Club Ohio West (from White division data)
+print("2. CLUB OHIO WEST 18B ACADEMY (OCL BU08 WHITE)")
 print("-" * 70)
 print()
 
 try:
-    division = pd.read_csv("OCL_BU08_Stripes_Division_with_DSX.csv")
+    # Club Ohio West is in the WHITE division, not Stripes
+    division = pd.read_csv("OCL_BU08_White_Division_Rankings.csv")
     
     # Try to find Club Ohio West
     club_ohio = division[division['Team'].str.contains("Club Ohio", na=False, case=False)]
     
     if not club_ohio.empty:
         team = club_ohio.iloc[0]
-        print(f"[TEAM] Division Standing:")
-        print(f"   Rank: #{int(team['Rank'])} of 7")
+        print(f"[TEAM] {team['Team']}")
+        print(f"   Division: OCL BU08 7v7 White (NOT Stripes)")
+        print(f"   Rank: #{int(team['Rank'])} of {len(division)}")
         print(f"   Record: {int(team['W'])}-{int(team['D'])}-{int(team['L'])}")
-        print(f"   Goals/Game: {team['GF']:.2f} - {team['GA']:.2f}")
+        print(f"   Games Played: {int(team['GP'])}")
+        print(f"   Goals/Game: {team['GF']:.2f} for, {team['GA']:.2f} against")
         print(f"   Goal Diff/Game: {team['GD']:+.2f}")
         print(f"   PPG: {team['PPG']:.2f}")
         print(f"   Strength Index: {team['StrengthIndex']:.1f}")
@@ -155,18 +158,18 @@ try:
             print(f"   -> Target: Win (3 points)")
         elif si_diff < -10:
             print(f"   [WARN] Opponent is STRONGER (SI: {team['StrengthIndex']:.1f} vs {dsx_si:.1f})")
-            print(f"   -> Target: Competitive, earn points")
+            print(f"   -> Target: Defensive focus, earn a point")
         else:
             print(f"   [EVEN] EVENLY MATCHED (SI: {team['StrengthIndex']:.1f} vs {dsx_si:.1f})")
             print(f"   -> Target: Fight for all 3 points")
         print()
     else:
-        print("   [WARN] Not found in division data")
-        print("   May be in different division or not in OCL")
+        print("   [WARN] Not found in White division data")
+        print("   Run: python fetch_gotsport_white_division.py")
         print()
         
 except FileNotFoundError:
-    print("[WARN] Division data not found. Run: python fetch_gotsport_division.py")
+    print("[WARN] White division data not found. Run: python fetch_gotsport_white_division.py")
     print()
 
 print("=" * 70)
