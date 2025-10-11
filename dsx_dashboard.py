@@ -536,25 +536,54 @@ elif page == "📅 Match History":
 elif page == "🔍 Opponent Intel":
     st.title("🔍 Opponent Intelligence")
     
-    opp_schedules = load_opponent_schedules()
+    # Load division opponents
+    division_data = load_division_data()
     
-    if opp_schedules.empty:
-        st.warning("No opponent schedules loaded. Run `python fetch_bsa_celtic.py` to fetch BSA Celtic data.")
-    else:
-        st.success(f"Loaded {len(opp_schedules)} opponent matches")
+    if division_data is not None:
+        # Get all division opponents (exclude DSX)
+        division_opponents = division_data[~division_data['Team'].str.contains('DSX', na=False)].copy()
         
-        # Opponent selector
-        opponents = opp_schedules['OpponentTeam'].unique()
-        selected_opp = st.selectbox("Select Opponent", opponents)
+        st.success(f"Loaded {len(division_opponents)} division opponents")
         
-        # Filter data
-        opp_data = opp_schedules[opp_schedules['OpponentTeam'] == selected_opp]
+        # Opponent selector - show all division teams
+        opponent_names = division_opponents['Team'].tolist()
+        selected_opp = st.selectbox(
+            "Select Opponent", 
+            opponent_names,
+            help="Choose a division opponent to analyze"
+        )
         
-        st.subheader(f"📋 {selected_opp} Schedule")
+        # Get opponent data
+        opp_row = division_opponents[division_opponents['Team'] == selected_opp].iloc[0]
         
-        # Calculate stats
-        completed = opp_data[opp_data['GF'] != ''].copy()
-        if not completed.empty:
+        # Get DSX data for comparison
+        dsx_row = division_data[division_data['Team'].str.contains('DSX', na=False)].iloc[0]
+        
+        st.subheader(f"📊 {selected_opp}")
+        
+        # Display opponent stats
+        col1, col2, col3, col4, col5 = st.columns(5)
+        
+        with col1:
+            st.metric("Rank", f"#{int(opp_row['Rank'])}")
+        with col2:
+            st.metric("Record", f"{int(opp_row['W'])}-{int(opp_row['D'])}-{int(opp_row['L'])}")
+        with col3:
+            st.metric("Strength Index", f"{opp_row['StrengthIndex']:.1f}")
+        with col4:
+            st.metric("PPG", f"{opp_row['PPG']:.2f}")
+        with col5:
+            st.metric("GD/Game", f"{opp_row['GD']:+.2f}")
+        
+        st.markdown("---")
+        
+        # Head-to-head if available
+        h2h_file = "DSX_Head_to_Head_Analysis.csv"
+        try:
+            h2h_data = pd.read_csv(h2h_file)
+            h2h_match = h2h_data[h2h_data['Full_Name'] == selected_opp]
+            
+            if not h2h_match.empty:
             completed['GF'] = pd.to_numeric(completed['GF'])
             completed['GA'] = pd.to_numeric(completed['GA'])
             completed['GD'] = completed['GF'] - completed['GA']
