@@ -579,6 +579,7 @@ elif page == "🔍 Opponent Intel":
         st.markdown("---")
         
         # Head-to-head if available
+        st.markdown("---")
         h2h_file = "DSX_Head_to_Head_Analysis.csv"
         try:
             h2h_data = pd.read_csv(h2h_file)
@@ -587,37 +588,46 @@ elif page == "🔍 Opponent Intel":
             if not h2h_match.empty:
                 h2h_row = h2h_match.iloc[0]
                 
-                st.subheader("🤼 Head-to-Head Record")
-                
-                col1, col2, col3, col4 = st.columns(4)
-                
-                with col1:
-                    st.metric("DSX Record", h2h_row['W-D-L'])
-                with col2:
-                    st.metric("DSX Goals", f"{h2h_row['GF']}-{h2h_row['GA']}")
-                with col3:
-                    st.metric("Goal Diff", f"{h2h_row['GD']:+.0f}")
-                with col4:
-                    st.metric("PPG vs Them", f"{h2h_row['PPG']:.2f}")
-                
-                # Analysis
-                st.markdown("---")
-                st.subheader("📈 Matchup Analysis")
-                
-                if h2h_row['PPG'] >= 2.0:
-                    st.success(f"✅ **Dominated** - DSX has strong record against {selected_opp}")
-                elif h2h_row['PPG'] >= 1.5:
-                    st.success(f"✅ **Strong** - DSX performs well against {selected_opp}")
-                elif h2h_row['PPG'] >= 1.0:
-                    st.info(f"⚖️ **Competitive** - Even matchup with {selected_opp}")
-                elif h2h_row['PPG'] > 0:
-                    st.warning(f"⚠️ **Struggled** - Difficult matchup against {selected_opp}")
+                # Check if actually played (Games > 0)
+                if h2h_row['Games'] > 0:
+                    st.subheader("🤼 Head-to-Head Record")
+                    
+                    col1, col2, col3, col4, col5 = st.columns(5)
+                    
+                    with col1:
+                        st.metric("Games Played", int(h2h_row['Games']))
+                    with col2:
+                        st.metric("DSX Record", h2h_row['W-D-L'])
+                    with col3:
+                        st.metric("DSX Goals", f"{int(h2h_row['GF'])}-{int(h2h_row['GA'])}")
+                    with col4:
+                        st.metric("Goal Diff", f"{h2h_row['GD']:+.0f}")
+                    with col5:
+                        st.metric("PPG vs Them", f"{h2h_row['PPG']:.2f}")
+                    
+                    # Analysis
+                    st.markdown("---")
+                    st.subheader("📈 Matchup Analysis")
+                    
+                    if h2h_row['PPG'] >= 2.0:
+                        st.success(f"✅ **Dominated** - DSX has strong record against {selected_opp}")
+                    elif h2h_row['PPG'] >= 1.5:
+                        st.success(f"✅ **Strong** - DSX performs well against {selected_opp}")
+                    elif h2h_row['PPG'] >= 1.0:
+                        st.info(f"⚖️ **Competitive** - Even matchup with {selected_opp}")
+                    elif h2h_row['PPG'] > 0:
+                        st.warning(f"⚠️ **Struggled** - Difficult matchup against {selected_opp}")
+                    else:
+                        st.error(f"❌ **Overmatched** - {selected_opp} has dominated DSX so far")
                 else:
-                    st.error(f"❌ **Overmatched** - {selected_opp} has dominated DSX")
+                    st.info(f"📅 **Haven't Played Yet** - DSX has not faced {selected_opp} this season")
+                    st.write("Use the comparison below to prepare for this upcoming matchup!")
             else:
-                st.info("No head-to-head data available yet")
-        except:
-            st.info("Head-to-head data not available")
+                st.info(f"📅 **Haven't Played Yet** - DSX has not faced {selected_opp} this season")
+                st.write("Use the comparison below to prepare for this upcoming matchup!")
+        except Exception as e:
+            st.info(f"📅 **Haven't Played Yet** - No head-to-head data available")
+            st.write("Use the comparison below to prepare for this upcoming matchup!")
         
         st.markdown("---")
         
