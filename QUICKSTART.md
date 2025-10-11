@@ -29,7 +29,30 @@ I've built an automated opponent tracker system for Dublin DSX Orange 2018 Boys 
 
 ## How to Use
 
-### Option 1: Quick Import (Start Here!)
+### 🚀 ONE-CLICK UPDATE (Recommended!)
+
+**Update ALL data sources at once:**
+
+```bash
+# Windows - Double-click this file:
+update_all_data.bat
+
+# Or run directly:
+python update_all_data.py
+```
+
+**This updates:**
+- ✅ OCL BU08 Stripes Division Rankings (GotSport)
+- ✅ BSA Celtic Schedules (MVYSA)
+- ✅ All Division Team Schedules
+- ✅ Upcoming Opponent Analysis
+- ✅ Common Opponent Matrix
+
+**Then refresh your dashboard to see the new data!**
+
+---
+
+### Option 1: Quick Import (Manual)
 
 ```bash
 # Already done! Just import the CSV:
@@ -42,10 +65,10 @@ The file contains:
 - **BSA Celtic 18B United** - 8 matches (your Oct 18 opponent)
 - **BSA Celtic 18B City** - 8 matches (your Oct 19 opponent)
 
-### Option 2: Fetch Fresh Data
+### Option 2: Fetch Fresh Data (Individual Sources)
 
 ```bash
-# Refresh BSA Celtic schedules anytime
+# Refresh BSA Celtic schedules only
 python fetch_bsa_celtic.py
 
 # Then import the updated BSA_Celtic_Schedules.csv

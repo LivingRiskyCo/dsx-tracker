@@ -4,7 +4,29 @@ Automated tools to fetch opponent schedules from MVYSA and GotSport for the Dubl
 
 ## Quick Start
 
-**TL;DR:** The scraper already ran! Just import `BSA_Celtic_Schedules.csv` into your Excel workbook's "OppSchedules (Paste)" sheet.
+### 🎯 NEW: One-Click Data Update
+
+**Update ALL opponent data sources at once:**
+
+```bash
+# Windows - Double-click:
+update_all_data.bat
+
+# Or run directly:
+python update_all_data.py
+```
+
+This automatically updates:
+- ✅ OCL BU08 Stripes Division Rankings
+- ✅ BSA Celtic Schedules (all upcoming opponents)
+- ✅ All Division Team Schedules
+- ✅ Upcoming Opponent Analysis
+- ✅ Common Opponent Matrix
+
+**Then view in the dashboard:**
+```bash
+python -m streamlit run dsx_dashboard.py
+```
 
 ### 1. Install Dependencies
 
@@ -12,23 +34,25 @@ Automated tools to fetch opponent schedules from MVYSA and GotSport for the Dubl
 pip install -r requirements.txt
 ```
 
-### 2. Import Ready-Made Schedule Data
-
-The file `BSA_Celtic_Schedules.csv` already contains 16 matches from both BSA Celtic teams (your Oct 18-19 opponents).
-
-1. Open `BSA_Celtic_Schedules.csv`
-2. Copy all data (including headers)
-3. Paste into the **"OppSchedules (Paste)"** sheet in your Excel workbook
-4. The Common Opponent Matrix will automatically calculate
-
-### 3. Refresh Data Anytime
+### 2. View Your Dashboard
 
 ```bash
-# Fetch latest BSA Celtic schedules
-python fetch_bsa_celtic.py
+# Launch interactive dashboard
+python -m streamlit run dsx_dashboard.py
 
-# Auto-update your Excel workbook (no manual import!)
-python update_workbook_auto.py
+# Or double-click:
+launch_dashboard.bat
+```
+
+### 3. Update Data Before Games
+
+```bash
+# Update everything (recommended)
+python update_all_data.py
+
+# Or update individual sources:
+python fetch_bsa_celtic.py          # BSA Celtic only
+python fetch_gotsport_division.py   # OCL division only
 ```
 
 **📖 See [QUICKSTART.md](QUICKSTART.md) for detailed guide, opponent insights, and automation tips.**
