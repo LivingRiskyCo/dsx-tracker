@@ -536,23 +536,152 @@ elif page == "📅 Match History":
 elif page == "🔍 Opponent Intel":
     st.title("🔍 Opponent Intelligence")
     
-    # Load division opponents
-    division_data = load_division_data()
-    
-    if division_data is not None:
-        # Get all teams DSX plays against
-        division_opponents = division_data[~division_data['Team'].str.contains('DSX', na=False)].copy()
+    # Load DSX's actual opponents
+    try:
+        actual_opponents = pd.read_csv("DSX_Actual_Opponents.csv")
+        dsx_matches = pd.read_csv("DSX_Matches_Fall2025.csv")
         
-        st.success(f"Loaded {len(division_opponents)} teams that DSX plays against")
-        st.info("💡 These teams compete in the OCL BU08 Stripes division. Use their division performance to understand their strength when DSX plays them.")
+        st.success(f"Loaded {len(actual_opponents)} opponents that DSX has played")
+        st.info("💡 These are the actual teams DSX has faced this season. Select one to see detailed analysis.")
         
-        # Opponent selector - show all division teams
-        opponent_names = division_opponents['Team'].tolist()
+        # Opponent selector - show teams DSX actually played
+        opponent_names = actual_opponents['Opponent'].tolist()
         selected_opp = st.selectbox(
             "Select Opponent", 
             opponent_names,
-            help="Choose a division opponent to analyze"
+            help="Choose an opponent to see head-to-head analysis"
         )
+        
+        # Get opponent data
+        opp_row = actual_opponents[actual_opponents['Opponent'] == selected_opp].iloc[0]
+        opp_matches = dsx_matches[dsx_matches['Opponent'] == selected_opp]
+        
+        st.subheader(f"📊 {selected_opp}")
+        
+        # Display opponent stats from DSX's perspective
+        col1, col2, col3, col4, col5 = st.columns(5)
+        
+        with col1:
+            st.metric("Games Played", int(opp_row['GP']))
+        with col2:
+            st.metric("DSX Record", opp_row['Record'])
+        with col3:
+            st.metric("DSX Goals", f"{int(opp_row['GF'])}-{int(opp_row['GA'])}")
+        with col4:
+            st.metric("Goal Diff", f"{opp_row['GD']:+.0f}")
+        with col5:
+            st.metric("DSX PPG", f"{opp_row['PPG']:.2f}")
+        
+        st.markdown("---")
+        
+        # Head-to-head analysis
+        st.subheader("📈 Matchup Analysis")
+        
+        if opp_row['PPG'] >= 2.5:
+            st.success(f"✅ **Dominated** - DSX has strong record against {selected_opp}")
+        elif opp_row['PPG'] >= 1.5:
+            st.success(f"✅ **Strong** - DSX performs well against {selected_opp}")
+        elif opp_row['PPG'] >= 1.0:
+            st.info(f"⚖️ **Competitive** - Even matchup with {selected_opp}")
+        elif opp_row['PPG'] > 0:
+            st.warning(f"⚠️ **Struggled** - Difficult matchup against {selected_opp}")
+        else:
+            st.error(f"❌ **Overmatched** - {selected_opp} has dominated DSX")
+        
+        st.markdown("---")
+        
+        # Match history
+        st.subheader("📅 Match History")
+        
+        match_display = opp_matches[['Date', 'Tournament', 'Location', 'GF', 'GA', 'Outcome', 'Points', 'GoalDiff']].copy()
+        match_display.columns = ['Date', 'Tournament', 'Location', 'GF', 'GA', 'Result', 'Pts', 'GD']
+        
+        st.dataframe(match_display, use_container_width=True, hide_index=True)
+        
+        st.markdown("---")
+        
+        # Performance trends
+        if len(opp_matches) > 1:
+            st.subheader("📊 Performance Trend")
+            
+            import plotly.graph_objects as go
+            
+            fig = go.Figure()
+            
+            fig.add_trace(go.Scatter(
+                x=list(range(1, len(opp_matches) + 1)),
+                y=opp_matches['GF'].values,
+                name='Goals For',
+                mode='lines+markers',
+                line=dict(color='green')
+            ))
+            
+            fig.add_trace(go.Scatter(
+                x=list(range(1, len(opp_matches) + 1)),
+                y=opp_matches['GA'].values,
+                name='Goals Against',
+                mode='lines+markers',
+                line=dict(color='red')
+            ))
+            
+            fig.update_layout(
+                title=f"DSX Performance vs {selected_opp}",
+                xaxis_title="Game Number",
+                yaxis_title="Goals",
+                height=400
+            )
+            
+            st.plotly_chart(fig, use_container_width=True)
+        
+        st.markdown("---")
+        
+        # Tactical insights
+        st.subheader("🎯 Key Insights")
+        
+        avg_gf = opp_row['GF'] / opp_row['GP']
+        avg_ga = opp_row['GA'] / opp_row['GP']
+        
+        st.write(f"**Offensive Performance:** {avg_gf:.2f} goals/game vs this opponent")
+        st.write(f"**Defensive Performance:** {avg_ga:.2f} goals against/game vs this opponent")
+        
+        # Compare to season average
+        season_avg_gf = 4.17  # From season stats
+        season_avg_ga = 5.08
+        
+        if avg_gf > season_avg_gf:
+            st.write(f"⚽ DSX scores {avg_gf - season_avg_gf:.2f} MORE goals/game vs this opponent than season average")
+        elif avg_gf < season_avg_gf:
+            st.write(f"⚽ DSX scores {season_avg_gf - avg_gf:.2f} FEWER goals/game vs this opponent than season average")
+        
+        if avg_ga < season_avg_ga:
+            st.write(f"🛡️ DSX allows {season_avg_ga - avg_ga:.2f} FEWER goals/game vs this opponent than season average")
+        elif avg_ga > season_avg_ga:
+            st.write(f"🛡️ DSX allows {avg_ga - season_avg_ga:.2f} MORE goals/game vs this opponent than season average")
+        
+        st.markdown("---")
+        
+        # Game plan for rematch
+        st.subheader("📋 Game Plan for Next Time")
+        
+        if opp_row['PPG'] >= 2.0:
+            st.write("**Continue What's Working:**")
+            st.write("- Same tactical approach")
+            st.write("- Build on previous success")
+            st.write("- Maintain confidence")
+        elif opp_row['PPG'] <= 0.5:
+            st.write("**Need Different Approach:**")
+            st.write("- Analyze what didn't work")
+            st.write("- Consider tactical adjustments")
+            st.write("- Focus on defensive organization")
+        else:
+            st.write("**Close Matchup:**")
+            st.write("- Small adjustments can make difference")
+            st.write("- Focus on finishing chances")
+            st.write("- Minimize defensive errors")
+            
+    except FileNotFoundError:
+        st.error("Opponent data not found. Run `python fix_opponent_tracking.py` to generate.")
+        st.write("Or update `DSX_Matches_Fall2025.csv` with your match data.")
         
         # Get opponent data
         opp_row = division_opponents[division_opponents['Team'] == selected_opp].iloc[0]
