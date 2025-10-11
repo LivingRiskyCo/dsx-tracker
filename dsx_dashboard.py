@@ -56,9 +56,14 @@ st.markdown("""
         border-radius: 5px;
     }
     
-    /* Better text contrast */
+    /* Better text contrast - brighter text */
     .stMarkdown p, .stMarkdown li {
-        color: #262730 !important;
+        color: #FAFAFA !important;
+    }
+    
+    /* Bright text for all content */
+    .stMarkdown, .stMarkdown * {
+        color: #FAFAFA !important;
     }
     
     /* Fix expander visibility */
@@ -81,10 +86,34 @@ st.markdown("""
         background: transparent !important;
     }
     
-    /* Make sure VS text is visible */
-    .stMarkdown h1, .stMarkdown h2, .stMarkdown h3, .stMarkdown h4 {
+    /* Make sure headings are bright and visible */
+    .stMarkdown h1, .stMarkdown h2, .stMarkdown h3, .stMarkdown h4, .stMarkdown h5, .stMarkdown h6 {
         background: transparent !important;
-        color: #262730 !important;
+        color: #FFFFFF !important;
+        font-weight: bold !important;
+    }
+    
+    /* Bright text in expanders */
+    .streamlit-expanderContent p, 
+    .streamlit-expanderContent li,
+    .streamlit-expanderContent div {
+        color: #333333 !important;
+    }
+    
+    /* Info boxes with good contrast */
+    div[data-testid="stMarkdownContainer"] {
+        color: #FAFAFA !important;
+    }
+    
+    /* Strong/bold text should be even brighter */
+    strong, b {
+        color: #FFFFFF !important;
+        font-weight: bold !important;
+    }
+    
+    /* Links should be bright blue */
+    a {
+        color: #4DA6FF !important;
     }
 </style>
 """, unsafe_allow_html=True)
