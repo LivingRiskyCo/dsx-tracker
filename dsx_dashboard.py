@@ -683,17 +683,6 @@ elif page == "🔍 Opponent Intel":
         st.error("Opponent data not found. Run `python fix_opponent_tracking.py` to generate.")
         st.write("Or update `DSX_Matches_Fall2025.csv` with your match data.")
         
-        # Get opponent data
-        opp_row = division_opponents[division_opponents['Team'] == selected_opp].iloc[0]
-        
-        # Get DSX data for comparison
-        dsx_row = division_data[division_data['Team'].str.contains('DSX', na=False)].iloc[0]
-        
-        st.subheader(f"📊 {selected_opp}")
-        
-        # Display opponent stats
-        col1, col2, col3, col4, col5 = st.columns(5)
-        
         with col1:
             st.metric("Rank", f"#{int(opp_row['Rank'])}")
         with col2:
