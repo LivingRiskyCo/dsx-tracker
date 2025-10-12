@@ -829,6 +829,12 @@ elif page == "📅 Match History":
     
     matches = load_dsx_matches()
     
+    # Load game player stats
+    try:
+        game_stats = pd.read_csv("game_player_stats.csv")
+    except:
+        game_stats = pd.DataFrame()
+    
     # Summary stats
     col1, col2, col3, col4, col5 = st.columns(5)
     
@@ -845,8 +851,75 @@ elif page == "📅 Match History":
     
     st.markdown("---")
     
+    # Match details with scorers
+    st.subheader("Match Details")
+    
+    for idx, match in matches.iterrows():
+        result_emoji = {'W': '✅', 'D': '➖', 'L': '❌'}
+        emoji = result_emoji.get(match['Result'], '⚽')
+        
+        with st.expander(f"{emoji} {match['Date'].strftime('%b %d')} - {match['Opponent']} ({match['GF']}-{match['GA']})", expanded=False):
+            col1, col2 = st.columns([2, 3])
+            
+            with col1:
+                st.write(f"**Tournament:** {match['Tournament']}")
+                st.write(f"**Location:** {match['Location']}")
+                st.write(f"**Result:** {match['Result']} - {match['Outcome']}")
+                st.write(f"**Score:** DSX {match['GF']} - {match['GA']} {match['Opponent']}")
+                st.write(f"**Goal Diff:** {match['GD']:+d}")
+            
+            with col2:
+                st.write("**⚽ Goal Scorers:**")
+                
+                if not game_stats.empty:
+                    # Get scorers for this game
+                    game_scorers = game_stats[
+                        (game_stats['Date'] == match['Date'].strftime('%Y-%m-%d')) &
+                        (game_stats['Opponent'] == match['Opponent']) &
+                        (game_stats['Goals'] > 0)
+                    ]
+                    
+                    if not game_scorers.empty:
+                        for _, scorer in game_scorers.iterrows():
+                            goals = int(scorer['Goals'])
+                            player = scorer['PlayerName']
+                            if goals > 1:
+                                st.write(f"  • {player} ({goals} goals)")
+                            else:
+                                st.write(f"  • {player}")
+                    else:
+                        st.write(f"  • {int(match['GF'])} goals scored")
+                else:
+                    st.write(f"  • {int(match['GF'])} goals scored")
+                
+                st.write("")
+                st.write("**🎯 Assists:**")
+                
+                if not game_stats.empty:
+                    game_assists = game_stats[
+                        (game_stats['Date'] == match['Date'].strftime('%Y-%m-%d')) &
+                        (game_stats['Opponent'] == match['Opponent']) &
+                        (game_stats['Assists'] > 0)
+                    ]
+                    
+                    if not game_assists.empty:
+                        for _, assister in game_assists.iterrows():
+                            assists = int(assister['Assists'])
+                            player = assister['PlayerName']
+                            notes = assister.get('Notes', '')
+                            if notes:
+                                st.write(f"  • {player} ({notes})")
+                            else:
+                                st.write(f"  • {player}")
+                    else:
+                        st.write("  • Not tracked")
+                else:
+                    st.write("  • Not tracked")
+    
+    st.markdown("---")
+    
     # Match table
-    st.subheader("All Matches")
+    st.subheader("Quick View - All Matches")
     
     display_matches = matches.copy()
     display_matches['Date'] = display_matches['Date'].dt.strftime('%Y-%m-%d')
@@ -1311,6 +1384,133 @@ elif page == "📊 Benchmarking":
     except Exception as e:
         st.error(f"Error loading benchmarking data: {e}")
         st.write("Make sure division ranking files are available.")
+
+
+elif page == "📝 Game Log":
+    st.title("📝 Game-by-Game Player Performance")
+    
+    st.info("⚽ Detailed breakdown of who scored and assisted in each game")
+    
+    # Load data
+    matches = load_dsx_matches()
+    
+    try:
+        game_stats = pd.read_csv("game_player_stats.csv")
+        player_stats = pd.read_csv("player_stats.csv")
+    except:
+        game_stats = pd.DataFrame()
+        player_stats = pd.DataFrame()
+    
+    # Filter options
+    st.header("🔍 Filter Games")
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        result_filter = st.selectbox("Filter by Result", ["All Games", "Wins Only", "Draws Only", "Losses Only"])
+    
+    with col2:
+        if not player_stats.empty:
+            player_filter = st.selectbox("Filter by Player", ["All Players"] + player_stats['PlayerName'].tolist())
+        else:
+            player_filter = "All Players"
+    
+    st.markdown("---")
+    
+    # Apply filters
+    filtered_matches = matches.copy()
+    
+    if result_filter == "Wins Only":
+        filtered_matches = filtered_matches[filtered_matches['Result'] == 'W']
+    elif result_filter == "Draws Only":
+        filtered_matches = filtered_matches[filtered_matches['Result'] == 'D']
+    elif result_filter == "Losses Only":
+        filtered_matches = filtered_matches[filtered_matches['Result'] == 'L']
+    
+    st.header(f"📋 Game Log ({len(filtered_matches)} games)")
+    
+    # Display games
+    for idx, match in filtered_matches.iterrows():
+        result_emoji = {'W': '✅ WIN', 'D': '➖ DRAW', 'L': '❌ LOSS'}
+        result_text = result_emoji.get(match['Result'], match['Result'])
+        
+        st.subheader(f"{match['Date'].strftime('%b %d, %Y')} - {match['Opponent']}")
+        
+        col1, col2, col3 = st.columns([2, 2, 3])
+        
+        with col1:
+            st.metric("Score", f"{int(match['GF'])} - {int(match['GA'])}")
+            st.write(f"**Result:** {result_text}")
+        
+        with col2:
+            st.write(f"**Tournament:** {match['Tournament']}")
+            st.write(f"**Location:** {match['Location']}")
+            st.write(f"**Goal Diff:** {match['GD']:+d}")
+        
+        with col3:
+            # Player contributions
+            if not game_stats.empty:
+                game_players = game_stats[
+                    (game_stats['Date'] == match['Date'].strftime('%Y-%m-%d')) &
+                    (game_stats['Opponent'] == match['Opponent'])
+                ]
+                
+                if player_filter != "All Players":
+                    game_players = game_players[game_players['PlayerName'] == player_filter]
+                
+                if not game_players.empty:
+                    st.write("**⚽ Goals:**")
+                    scorers = game_players[game_players['Goals'] > 0]
+                    if not scorers.empty:
+                        for _, player in scorers.iterrows():
+                            st.write(f"  • {player['PlayerName']} ({int(player['Goals'])})")
+                    else:
+                        st.write("  • None (filtered out)")
+                    
+                    st.write("**🎯 Assists:**")
+                    assisters = game_players[game_players['Assists'] > 0]
+                    if not assisters.empty:
+                        for _, player in assisters.iterrows():
+                            notes = player.get('Notes', '')
+                            if notes:
+                                st.write(f"  • {player['PlayerName']} - {notes}")
+                            else:
+                                st.write(f"  • {player['PlayerName']}")
+                    else:
+                        st.write("  • None tracked")
+                else:
+                    st.write(f"⚽ {int(match['GF'])} goals scored")
+                    st.write("🎯 Assists not tracked")
+            else:
+                st.write(f"⚽ {int(match['GF'])} goals scored")
+        
+        st.markdown("---")
+    
+    # Summary statistics
+    if player_filter != "All Players" and not game_stats.empty:
+        st.markdown("---")
+        st.header(f"📊 {player_filter} - Filtered Summary")
+        
+        player_games = game_stats[game_stats['PlayerName'] == player_filter]
+        
+        total_goals = player_games['Goals'].sum()
+        total_assists = player_games['Assists'].sum()
+        games_with_goal = (player_games['Goals'] > 0).sum()
+        games_with_assist = (player_games['Assists'] > 0).sum()
+        
+        col1, col2, col3, col4 = st.columns(4)
+        
+        with col1:
+            st.metric("Total Goals", int(total_goals))
+        with col2:
+            st.metric("Total Assists", int(total_assists))
+        with col3:
+            st.metric("Games with Goal", int(games_with_goal))
+        with col4:
+            st.metric("Games with Assist", int(games_with_assist))
+        
+        if total_goals > 0:
+            st.success(f"⚽ {player_filter} has scored in {games_with_goal} of {len(filtered_matches)} games ({games_with_goal/len(filtered_matches)*100:.1f}%)")
 
 
 elif page == "🔍 Opponent Intel":
