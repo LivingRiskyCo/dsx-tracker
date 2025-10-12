@@ -2356,33 +2356,190 @@ elif page == "📖 Quick Start Guide":
 elif page == "⚙️ Data Manager":
     st.title("⚙️ Data Manager")
     
-    st.subheader("📥 Data Sources")
+    st.info("✏️ Edit your data directly! Changes are saved when you click the save button.")
     
-    # Check what data is available
-    files = {
-        "Division Rankings": "OCL_BU08_Stripes_Division_with_DSX.csv",
-        "BSA Celtic Schedules": "BSA_Celtic_Schedules.csv",
-        "Common Opponent Matrix": "Common_Opponent_Matrix_Template.csv"
-    }
+    # Tabs for different editable data
+    tab1, tab2, tab3, tab4, tab5 = st.tabs(["👥 Roster", "📊 Player Stats", "⚽ Matches", "🎮 Game Stats", "📥 Downloads"])
     
-    for name, filename in files.items():
-        exists = os.path.exists(filename)
-        status = "✅ Loaded" if exists else "❌ Not found"
+    with tab1:
+        st.subheader("👥 Edit Roster")
+        st.write("Update player names, positions, and parent info")
         
-        col1, col2, col3 = st.columns([3, 1, 2])
-        with col1:
-            st.write(f"**{name}**")
-        with col2:
-            st.write(status)
-        with col3:
-            if exists:
-                with open(filename, 'rb') as f:
-                    st.download_button(
-                        "📥 Download",
-                        f,
-                        file_name=filename,
-                        key=filename
-                    )
+        try:
+            roster = pd.read_csv("roster.csv")
+            
+            # Editable dataframe
+            edited_roster = st.data_editor(
+                roster,
+                num_rows="dynamic",  # Allow adding/deleting rows
+                use_container_width=True,
+                hide_index=True,
+                column_config={
+                    "PlayerNumber": st.column_config.NumberColumn("Jersey #", required=True),
+                    "PlayerName": st.column_config.TextColumn("Player Name", required=True),
+                    "Position": st.column_config.SelectboxColumn("Position", options=["Forward", "Midfielder", "Defender", "Goalkeeper"]),
+                }
+            )
+            
+            col1, col2 = st.columns(2)
+            with col1:
+                if st.button("💾 Save Roster", type="primary"):
+                    edited_roster.to_csv("roster.csv", index=False)
+                    st.success("✅ Roster saved successfully!")
+                    st.balloons()
+            
+            with col2:
+                if st.button("↩️ Reset Changes"):
+                    st.rerun()
+        
+        except FileNotFoundError:
+            st.error("roster.csv not found")
+    
+    with tab2:
+        st.subheader("📊 Edit Player Stats")
+        st.write("Update goals, assists, and playing time")
+        
+        try:
+            player_stats = pd.read_csv("player_stats.csv")
+            
+            # Editable dataframe
+            edited_stats = st.data_editor(
+                player_stats,
+                num_rows="dynamic",
+                use_container_width=True,
+                hide_index=True,
+                column_config={
+                    "PlayerNumber": st.column_config.NumberColumn("Jersey #", required=True),
+                    "PlayerName": st.column_config.TextColumn("Player Name", required=True),
+                    "GamesPlayed": st.column_config.NumberColumn("Games", min_value=0),
+                    "Goals": st.column_config.NumberColumn("Goals", min_value=0),
+                    "Assists": st.column_config.NumberColumn("Assists", min_value=0),
+                    "MinutesPlayed": st.column_config.NumberColumn("Minutes", min_value=0),
+                    "Notes": st.column_config.TextColumn("Notes"),
+                }
+            )
+            
+            col1, col2 = st.columns(2)
+            with col1:
+                if st.button("💾 Save Player Stats", type="primary"):
+                    edited_stats.to_csv("player_stats.csv", index=False)
+                    st.success("✅ Player stats saved successfully!")
+                    st.balloons()
+            
+            with col2:
+                if st.button("↩️ Reset Changes ", key="reset_stats"):
+                    st.rerun()
+        
+        except FileNotFoundError:
+            st.error("player_stats.csv not found")
+    
+    with tab3:
+        st.subheader("⚽ Edit Match History")
+        st.write("Update match results and scores")
+        
+        try:
+            matches = pd.read_csv("DSX_Matches_Fall2025.csv")
+            
+            # Editable dataframe
+            edited_matches = st.data_editor(
+                matches,
+                num_rows="dynamic",
+                use_container_width=True,
+                hide_index=True,
+                column_config={
+                    "Date": st.column_config.DateColumn("Date", required=True),
+                    "Tournament": st.column_config.TextColumn("Tournament"),
+                    "Opponent": st.column_config.TextColumn("Opponent", required=True),
+                    "GF": st.column_config.NumberColumn("Goals For", min_value=0),
+                    "GA": st.column_config.NumberColumn("Goals Against", min_value=0),
+                    "Result": st.column_config.SelectboxColumn("Result", options=["W", "D", "L"]),
+                }
+            )
+            
+            col1, col2 = st.columns(2)
+            with col1:
+                if st.button("💾 Save Matches", type="primary"):
+                    edited_matches.to_csv("DSX_Matches_Fall2025.csv", index=False)
+                    st.success("✅ Match data saved successfully!")
+                    st.balloons()
+            
+            with col2:
+                if st.button("↩️ Reset Changes  ", key="reset_matches"):
+                    st.rerun()
+        
+        except FileNotFoundError:
+            st.error("DSX_Matches_Fall2025.csv not found")
+    
+    with tab4:
+        st.subheader("🎮 Edit Game-by-Game Player Stats")
+        st.write("Track who scored and assisted in each game")
+        
+        try:
+            game_stats = pd.read_csv("game_player_stats.csv")
+            
+            # Editable dataframe
+            edited_game_stats = st.data_editor(
+                game_stats,
+                num_rows="dynamic",
+                use_container_width=True,
+                hide_index=True,
+                column_config={
+                    "Date": st.column_config.DateColumn("Date", required=True),
+                    "Opponent": st.column_config.TextColumn("Opponent", required=True),
+                    "PlayerName": st.column_config.TextColumn("Player", required=True),
+                    "Goals": st.column_config.NumberColumn("Goals", min_value=0),
+                    "Assists": st.column_config.NumberColumn("Assists", min_value=0),
+                    "Notes": st.column_config.TextColumn("Notes (e.g. PK, Hat-trick)"),
+                }
+            )
+            
+            col1, col2 = st.columns(2)
+            with col1:
+                if st.button("💾 Save Game Stats", type="primary"):
+                    edited_game_stats.to_csv("game_player_stats.csv", index=False)
+                    st.success("✅ Game stats saved successfully!")
+                    st.balloons()
+            
+            with col2:
+                if st.button("↩️ Reset Changes   ", key="reset_game_stats"):
+                    st.rerun()
+        
+        except FileNotFoundError:
+            st.error("game_player_stats.csv not found")
+            st.info("This file tracks individual player contributions per game")
+    
+    with tab5:
+        st.subheader("📥 Download Data Files")
+        
+        # Check what data is available
+        files = {
+            "Roster": "roster.csv",
+            "Player Stats": "player_stats.csv",
+            "Match History": "DSX_Matches_Fall2025.csv",
+            "Game Stats": "game_player_stats.csv",
+            "Division Rankings": "OCL_BU08_Stripes_Division_with_DSX.csv",
+            "BSA Celtic Schedules": "BSA_Celtic_Schedules.csv",
+            "Common Opponent Matrix": "Common_Opponent_Matrix_Template.csv"
+        }
+        
+        for name, filename in files.items():
+            exists = os.path.exists(filename)
+            status = "✅ Available" if exists else "❌ Not found"
+            
+            col1, col2, col3 = st.columns([3, 1, 2])
+            with col1:
+                st.write(f"**{name}**")
+            with col2:
+                st.write(status)
+            with col3:
+                if exists:
+                    with open(filename, 'rb') as f:
+                        st.download_button(
+                            "📥 Download",
+                            f,
+                            file_name=filename,
+                            key=f"download_{filename}"
+                        )
     
     st.markdown("---")
     
