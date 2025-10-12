@@ -1,0 +1,12 @@
+PlayerNumber,PlayerName,Position,ParentName,ParentPhone,ParentEmail,EmergencyContact,EmergencyPhone,BirthDate,JerseySize,Notes
+1,Player 1,Forward,,,,,,,,,
+2,Player 2,Midfielder,,,,,,,,,
+3,Player 3,Defender,,,,,,,,,
+4,Player 4,Forward,,,,,,,,,
+5,Player 5,Midfielder,,,,,,,,,
+6,Player 6,Defender,,,,,,,,,
+7,Player 7,Forward,,,,,,,,,
+8,Player 8,Midfielder,,,,,,,,,
+9,Player 9,Defender,,,,,,,,,
+10,Player 10,Goalkeeper,,,,,,,,,
+

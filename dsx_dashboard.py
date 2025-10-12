@@ -176,7 +176,7 @@ with st.sidebar:
     
     page = st.radio(
         "Navigation",
-        ["🏆 Division Rankings", "📊 Team Analysis", "📅 Match History", "🔍 Opponent Intel", "📋 Full Analysis", "📖 Quick Start Guide", "⚙️ Data Manager"]
+        ["🎯 What's Next", "🏆 Division Rankings", "📊 Team Analysis", "👥 Player Stats", "📅 Match History", "🔍 Opponent Intel", "🎮 Game Predictions", "📊 Benchmarking", "📋 Full Analysis", "📖 Quick Start Guide", "⚙️ Data Manager"]
     )
     
     st.markdown("---")
@@ -187,7 +187,221 @@ with st.sidebar:
 
 
 # Main content
-if page == "🏆 Division Rankings":
+if page == "🎯 What's Next":
+    st.title("🎯 What's Next - Smart Game Prep")
+    
+    st.info("⚡ Your command center for upcoming matches with AI-powered insights and predictions")
+    
+    # Load upcoming matches
+    try:
+        upcoming = pd.read_csv("DSX_Upcoming_Opponents.csv")
+        dsx_matches = pd.read_csv("DSX_Matches_Fall2025.csv")
+        
+        # Load division data for predictions
+        try:
+            white_div = pd.read_csv("OCL_BU08_White_Division_Rankings.csv")
+        except:
+            white_div = pd.DataFrame()
+        
+        try:
+            bsa_schedules = pd.read_csv("BSA_Celtic_Schedules.csv")
+        except:
+            bsa_schedules = pd.DataFrame()
+        
+        # DSX season stats
+        dsx_si = 35.6
+        dsx_gf_avg = 4.17
+        dsx_ga_avg = 5.08
+        dsx_gd_avg = -0.92
+        
+        st.header("📅 Next 3 Games")
+        st.markdown("---")
+        
+        for idx, game in upcoming.head(3).iterrows():
+            opponent = game['Opponent']
+            game_date = game['GameDate']
+            location = game['Location']
+            league = game['League']
+            
+            with st.expander(f"**{game_date}**: {opponent} ({league})", expanded=(idx==0)):
+                col1, col2 = st.columns([2, 3])
+                
+                with col1:
+                    st.subheader("📍 Game Info")
+                    st.write(f"**Date:** {game_date}")
+                    st.write(f"**Location:** {location}")
+                    st.write(f"**League:** {league}")
+                    st.write(f"**Notes:** {game['Notes']}")
+                
+                with col2:
+                    st.subheader("🎯 Match Prediction")
+                    
+                    # Get opponent stats
+                    opp_si = None
+                    opp_gf = None
+                    opp_ga = None
+                    
+                    if "BSA Celtic" in opponent and not bsa_schedules.empty:
+                        team_matches = bsa_schedules[bsa_schedules['OpponentTeam'] == opponent]
+                        completed = team_matches[team_matches['GF'] != ''].copy()
+                        
+                        if len(completed) > 0:
+                            completed['GF'] = pd.to_numeric(completed['GF'])
+                            completed['GA'] = pd.to_numeric(completed['GA'])
+                            
+                            gp = len(completed)
+                            wins = (completed['GF'] > completed['GA']).sum()
+                            draws = (completed['GF'] == completed['GA']).sum()
+                            ppg = (wins * 3 + draws) / gp if gp > 0 else 0
+                            gd_per_game = (completed['GF'].sum() - completed['GA'].sum()) / gp if gp > 0 else 0
+                            
+                            ppg_norm = max(0.0, min(3.0, ppg)) / 3.0 * 100.0
+                            gd_norm = (max(-5.0, min(5.0, gd_per_game)) + 5.0) / 10.0 * 100.0
+                            opp_si = 0.7 * ppg_norm + 0.3 * gd_norm
+                            opp_gf = completed['GF'].mean()
+                            opp_ga = completed['GA'].mean()
+                    
+                    elif "Club Ohio West" in opponent and not white_div.empty:
+                        club_ohio = white_div[white_div['Team'].str.contains("Club Ohio West", case=False)]
+                        if not club_ohio.empty:
+                            team = club_ohio.iloc[0]
+                            opp_si = team['StrengthIndex']
+                            opp_gf = team['GF']
+                            opp_ga = team['GA']
+                    
+                    if opp_si is not None:
+                        # Display opponent strength
+                        col_a, col_b, col_c = st.columns(3)
+                        with col_a:
+                            st.metric("Opponent SI", f"{opp_si:.1f}")
+                        with col_b:
+                            st.metric("DSX SI", f"{dsx_si:.1f}")
+                        with col_c:
+                            si_diff = dsx_si - opp_si
+                            st.metric("Advantage", f"{si_diff:+.1f}", delta_color="normal")
+                        
+                        # Predicted score
+                        st.markdown("---")
+                        st.subheader("🔮 Score Prediction")
+                        
+                        # Simple prediction based on average goals
+                        pred_dsx_goals = max(0, dsx_gf_avg + (si_diff * 0.05))
+                        pred_opp_goals = max(0, opp_gf if opp_gf else dsx_ga_avg - (si_diff * 0.05))
+                        
+                        pred_dsx_low = max(0, pred_dsx_goals - 1.5)
+                        pred_dsx_high = pred_dsx_goals + 1.5
+                        pred_opp_low = max(0, pred_opp_goals - 1.5)
+                        pred_opp_high = pred_opp_goals + 1.5
+                        
+                        st.write(f"**DSX:** {pred_dsx_low:.1f} - {pred_dsx_high:.1f} goals")
+                        st.write(f"**{opponent}:** {pred_opp_low:.1f} - {pred_opp_high:.1f} goals")
+                        
+                        # Win probability
+                        st.markdown("---")
+                        if si_diff > 10:
+                            win_prob = 65
+                            draw_prob = 25
+                            loss_prob = 10
+                            st.success(f"✅ **Win Probability: {win_prob}%**")
+                        elif si_diff < -10:
+                            win_prob = 25
+                            draw_prob = 30
+                            loss_prob = 45
+                            st.error(f"⚠️ **Win Probability: {win_prob}%**")
+                        else:
+                            win_prob = 40
+                            draw_prob = 30
+                            loss_prob = 30
+                            st.info(f"⚖️ **Win Probability: {win_prob}%**")
+                        
+                        st.write(f"Draw: {draw_prob}% | Loss: {loss_prob}%")
+                    else:
+                        st.warning("Opponent data not available. Run data update to get predictions.")
+                
+                st.markdown("---")
+                
+                # Keys to Victory
+                st.subheader("🔑 Keys to Victory")
+                
+                if opp_si and opp_si > dsx_si + 10:
+                    st.write("**Defensive Focus:**")
+                    st.write("- ✅ Stay compact defensively")
+                    st.write("- ✅ Quick counter-attacks")
+                    st.write("- ✅ Set piece opportunities")
+                    st.write("- ✅ High energy for 60 minutes")
+                elif opp_si and opp_si < dsx_si - 10:
+                    st.write("**Offensive Pressure:**")
+                    st.write("- ✅ High press from kickoff")
+                    st.write("- ✅ Dominate possession")
+                    st.write("- ✅ Create multiple chances")
+                    st.write("- ✅ Early goal to set tone")
+                else:
+                    st.write("**Balanced Approach:**")
+                    st.write("- ✅ Stay organized defensively")
+                    st.write("- ✅ Be clinical with chances")
+                    st.write("- ✅ Match their intensity")
+                    st.write("- ✅ Capitalize on mistakes")
+        
+        st.markdown("---")
+        
+        # Quick Stats Summary
+        st.header("📊 DSX Season Performance")
+        
+        col1, col2, col3, col4, col5 = st.columns(5)
+        with col1:
+            st.metric("Strength Index", f"{dsx_si:.1f}")
+        with col2:
+            st.metric("Goals/Game", f"{dsx_gf_avg:.2f}")
+        with col3:
+            st.metric("Against/Game", f"{dsx_ga_avg:.2f}")
+        with col4:
+            st.metric("GD/Game", f"{dsx_gd_avg:+.2f}")
+        with col5:
+            games_played = len(dsx_matches)
+            st.metric("Games Played", games_played)
+        
+        st.markdown("---")
+        
+        # Smart Insights
+        st.header("💡 Smart Insights")
+        
+        insights = []
+        
+        # Analyze recent form
+        recent_matches = dsx_matches.tail(5)
+        recent_points = recent_matches['Points'].sum()
+        recent_ppg = recent_points / 5 if len(recent_matches) >= 5 else 0
+        
+        if recent_ppg > 1.5:
+            insights.append("🔥 **Hot Streak:** DSX averaging " + f"{recent_ppg:.2f} PPG in last 5 games (above season average)")
+        elif recent_ppg < 0.8:
+            insights.append("⚠️ **Slump Alert:** Only " + f"{recent_ppg:.2f} PPG in last 5 games - time to regroup")
+        
+        # Goal scoring
+        if dsx_gf_avg > 4.0:
+            insights.append("⚽ **Offensive Strength:** DSX averages " + f"{dsx_gf_avg:.2f} goals/game - one of the best attacks")
+        
+        # Defensive issues
+        if dsx_ga_avg > 4.5:
+            insights.append("🛡️ **Defensive Focus Needed:** Allowing " + f"{dsx_ga_avg:.2f} goals/game - work on organization")
+        
+        # Consistency
+        gd_variance = dsx_matches['GoalDiff'].std() if len(dsx_matches) > 0 else 0
+        if gd_variance > 5:
+            insights.append("📊 **Inconsistent Results:** Wide range of scores - focus on consistency")
+        
+        for insight in insights:
+            st.write(insight)
+        
+        if not insights:
+            st.write("✅ **Solid Performance:** DSX showing steady, consistent play")
+            
+    except FileNotFoundError:
+        st.error("Upcoming schedule not found. Create `DSX_Upcoming_Opponents.csv` with your schedule.")
+        st.write("Or run `python update_all_data.py` to fetch latest data.")
+
+
+elif page == "🏆 Division Rankings":
     st.title("🏆 OCL BU08 Stripes Division Rankings")
     
     df = load_division_data()
@@ -429,6 +643,174 @@ elif page == "📊 Team Analysis":
         )
         
         st.plotly_chart(fig, use_container_width=True)
+
+
+elif page == "👥 Player Stats":
+    st.title("👥 Player Statistics & Performance")
+    
+    st.info("📊 Track individual player contributions and development")
+    
+    # Load player stats and roster
+    try:
+        player_stats = pd.read_csv("player_stats.csv")
+        roster = pd.read_csv("roster.csv")
+        
+        # Merge stats with roster for full player info
+        players = roster.merge(player_stats, on=['PlayerNumber', 'PlayerName'], how='left')
+        players = players.fillna(0)
+        
+        # Calculate derived stats
+        players['Goals+Assists'] = players['Goals'] + players['Assists']
+        players['Minutes'] = players['MinutesPlayed']
+        players['Goals/Game'] = players.apply(lambda x: x['Goals'] / x['GamesPlayed'] if x['GamesPlayed'] > 0 else 0, axis=1)
+        players['Assists/Game'] = players.apply(lambda x: x['Assists'] / x['GamesPlayed'] if x['GamesPlayed'] > 0 else 0, axis=1)
+        
+        # Top Stats
+        st.header("⭐ Top Performers")
+        
+        col1, col2, col3 = st.columns(3)
+        
+        with col1:
+            st.subheader("⚽ Goals")
+            top_scorers = players.nlargest(5, 'Goals')[['PlayerName', 'Goals', 'Goals/Game']]
+            if not top_scorers.empty and top_scorers['Goals'].sum() > 0:
+                for idx, player in top_scorers.iterrows():
+                    st.write(f"**{player['PlayerName']}**: {int(player['Goals'])} goals ({player['Goals/Game']:.2f}/game)")
+            else:
+                st.write("_No goal data yet - update player_stats.csv_")
+        
+        with col2:
+            st.subheader("🎯 Assists")
+            top_assists = players.nlargest(5, 'Assists')[['PlayerName', 'Assists', 'Assists/Game']]
+            if not top_assists.empty and top_assists['Assists'].sum() > 0:
+                for idx, player in top_assists.iterrows():
+                    st.write(f"**{player['PlayerName']}**: {int(player['Assists'])} assists ({player['Assists/Game']:.2f}/game)")
+            else:
+                st.write("_No assist data yet - update player_stats.csv_")
+        
+        with col3:
+            st.subheader("🌟 Total Contributions")
+            top_contrib = players.nlargest(5, 'Goals+Assists')[['PlayerName', 'Goals+Assists', 'GamesPlayed']]
+            if not top_contrib.empty and top_contrib['Goals+Assists'].sum() > 0:
+                for idx, player in top_contrib.iterrows():
+                    st.write(f"**{player['PlayerName']}**: {int(player['Goals+Assists'])} G+A ({int(player['GamesPlayed'])} games)")
+            else:
+                st.write("_No contribution data yet_")
+        
+        st.markdown("---")
+        
+        # Full Player Table
+        st.header("📋 Complete Roster Stats")
+        
+        # Sortable table
+        sort_by = st.selectbox("Sort by", ["PlayerNumber", "PlayerName", "Goals", "Assists", "Goals+Assists", "GamesPlayed", "Minutes"])
+        ascending = st.checkbox("Ascending order", value=False)
+        
+        display_cols = ['PlayerNumber', 'PlayerName', 'Position', 'GamesPlayed', 'Goals', 'Assists', 'Goals+Assists', 'Goals/Game', 'Minutes']
+        display_df = players[display_cols].sort_values(sort_by, ascending=ascending)
+        
+        # Format for display
+        display_df['Goals/Game'] = display_df['Goals/Game'].apply(lambda x: f"{x:.2f}")
+        
+        st.dataframe(display_df, use_container_width=True, hide_index=True)
+        
+        st.markdown("---")
+        
+        # Playing Time Analysis
+        st.header("⏱️ Playing Time Distribution")
+        
+        if players['Minutes'].sum() > 0:
+            fig = px.bar(
+                players.sort_values('Minutes', ascending=False),
+                x='PlayerName',
+                y='Minutes',
+                title='Minutes Played by Player',
+                labels={'PlayerName': 'Player', 'Minutes': 'Minutes Played'}
+            )
+            st.plotly_chart(fig, use_container_width=True)
+            
+            # Fairness check
+            avg_minutes = players['Minutes'].mean()
+            max_minutes = players['Minutes'].max()
+            min_minutes = players['Minutes'].min()
+            
+            if max_minutes - min_minutes < avg_minutes * 0.3:
+                st.success(f"✅ **Fair Distribution**: Playing time is well balanced (range: {min_minutes:.0f}-{max_minutes:.0f} min)")
+            else:
+                st.warning(f"⚠️ **Uneven Distribution**: Large gap in playing time (range: {min_minutes:.0f}-{max_minutes:.0f} min)")
+        else:
+            st.info("No playing time data recorded yet. Update player_stats.csv with minutes played.")
+        
+        st.markdown("---")
+        
+        # Individual Player Details
+        st.header("👤 Player Details")
+        
+        selected_player = st.selectbox("Select Player", players['PlayerName'].tolist())
+        
+        player_data = players[players['PlayerName'] == selected_player].iloc[0]
+        
+        col1, col2 = st.columns([1, 2])
+        
+        with col1:
+            st.subheader("Profile")
+            st.write(f"**Number:** {int(player_data['PlayerNumber'])}")
+            st.write(f"**Position:** {player_data['Position']}")
+            st.write(f"**Games:** {int(player_data['GamesPlayed'])}")
+            st.write(f"**Minutes:** {int(player_data['Minutes'])}")
+            
+        with col2:
+            st.subheader("Season Stats")
+            
+            col_a, col_b, col_c, col_d = st.columns(4)
+            with col_a:
+                st.metric("Goals", int(player_data['Goals']))
+            with col_b:
+                st.metric("Assists", int(player_data['Assists']))
+            with col_c:
+                st.metric("G/Game", f"{player_data['Goals/Game']:.2f}")
+            with col_d:
+                st.metric("Min/Game", f"{player_data['Minutes'] / player_data['GamesPlayed'] if player_data['GamesPlayed'] > 0 else 0:.0f}")
+        
+        if player_data['Notes']:
+            st.write(f"**Notes:** {player_data['Notes']}")
+        
+        st.markdown("---")
+        
+        # Data Management
+        st.header("📝 Update Player Data")
+        
+        st.info("To update player statistics, edit the `player_stats.csv` file and refresh the dashboard.")
+        
+        with st.expander("📂 How to Update Player Stats"):
+            st.write("""
+            1. Open `player_stats.csv` in Excel or text editor
+            2. Update the following columns:
+               - **GamesPlayed**: Number of games the player has participated in
+               - **Goals**: Total goals scored
+               - **Assists**: Total assists
+               - **MinutesPlayed**: Total minutes on field
+               - **Notes**: Any observations about player development
+            3. Save the file
+            4. Click 🔄 Refresh Data in the sidebar
+            """)
+        
+        # Download template
+        if st.button("📥 Download Current Stats as Template"):
+            csv = players[['PlayerNumber', 'PlayerName', 'GamesPlayed', 'Goals', 'Assists', 'MinutesPlayed', 'Notes']].to_csv(index=False)
+            st.download_button(
+                label="Download CSV",
+                data=csv,
+                file_name="player_stats_template.csv",
+                mime="text/csv"
+            )
+            
+    except FileNotFoundError as e:
+        st.error(f"Player data files not found: {e}")
+        st.write("Make sure `player_stats.csv` and `roster.csv` exist in the project directory.")
+        
+        if st.button("Create Template Files"):
+            st.info("Run this command to create template files: `python -c \"import pandas as pd; pd.DataFrame({'PlayerNumber':range(1,11), 'PlayerName':['Player '+str(i) for i in range(1,11)], 'GamesPlayed':[0]*10, 'Goals':[0]*10, 'Assists':[0]*10, 'MinutesPlayed':[0]*10, 'Notes':['']*10}).to_csv('player_stats.csv', index=False)\"`")
 
 
 elif page == "📅 Match History":
