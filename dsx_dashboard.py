@@ -669,12 +669,15 @@ elif page == "👥 Player Stats":
         player_stats['PlayerNumber'] = pd.to_numeric(player_stats['PlayerNumber'], errors='coerce')
         roster['PlayerNumber'] = pd.to_numeric(roster['PlayerNumber'], errors='coerce')
         
-        # Merge stats with roster for full player info (merge on PlayerNumber only)
-        players = roster.merge(
-            player_stats[['PlayerNumber', 'GamesPlayed', 'Goals', 'Assists', 'MinutesPlayed', 'Notes']], 
+        # Select only the columns we need from each dataframe
+        roster_subset = roster[['PlayerNumber', 'PlayerName', 'Position']].copy()
+        stats_subset = player_stats[['PlayerNumber', 'GamesPlayed', 'Goals', 'Assists', 'MinutesPlayed']].copy()
+        
+        # Merge stats with roster for full player info
+        players = roster_subset.merge(
+            stats_subset, 
             on='PlayerNumber', 
-            how='left',
-            suffixes=('', '_stats')
+            how='left'
         )
         
         # Fill missing stats with 0 and convert to numeric
