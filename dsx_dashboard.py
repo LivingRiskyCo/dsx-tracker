@@ -662,28 +662,25 @@ elif page == "👥 Player Stats":
     
     # Load player stats and roster
     try:
-        # Read CSVs - same as Data Manager
-        roster_raw = pd.read_csv("roster.csv")
-        stats_raw = pd.read_csv("player_stats.csv")
+        # Read CSVs exactly like Data Manager (which works!)
+        roster = pd.read_csv("roster.csv")
+        player_stats = pd.read_csv("player_stats.csv")
         
-        # Build clean dataframes with explicit column creation (prevents column misalignment)
-        roster = pd.DataFrame()
-        roster['PlayerNumber'] = pd.to_numeric(roster_raw['PlayerNumber'], errors='coerce')
-        roster['PlayerName'] = roster_raw['PlayerName'].astype(str)
-        roster['Position'] = roster_raw['Position'].astype(str)
+        # Merge directly - no preprocessing
+        players = pd.merge(
+            roster[['PlayerNumber', 'PlayerName', 'Position']], 
+            player_stats[['PlayerNumber', 'GamesPlayed', 'Goals', 'Assists', 'MinutesPlayed', 'Notes']], 
+            on='PlayerNumber', 
+            how='inner'  # Use inner join to only keep matching rows
+        )
         
-        stats = pd.DataFrame()
-        stats['PlayerNumber'] = pd.to_numeric(stats_raw['PlayerNumber'], errors='coerce')
-        stats['GamesPlayed'] = pd.to_numeric(stats_raw['GamesPlayed'], errors='coerce').fillna(0)
-        stats['Goals'] = pd.to_numeric(stats_raw['Goals'], errors='coerce').fillna(0)
-        stats['Assists'] = pd.to_numeric(stats_raw['Assists'], errors='coerce').fillna(0)
-        stats['MinutesPlayed'] = pd.to_numeric(stats_raw['MinutesPlayed'], errors='coerce').fillna(0)
+        # Convert to numeric after merge
+        for col in ['PlayerNumber', 'GamesPlayed', 'Goals', 'Assists', 'MinutesPlayed']:
+            players[col] = pd.to_numeric(players[col], errors='coerce').fillna(0)
         
-        # Merge on PlayerNumber
-        players = pd.merge(roster, stats, on='PlayerNumber', how='left')
-        
-        # Fill any remaining missing values
-        players = players.fillna(0)
+        # Ensure Notes exists
+        if 'Notes' not in players.columns:
+            players['Notes'] = ''
         
         # Calculate derived stats
         players['Goals+Assists'] = players['Goals'] + players['Assists']
@@ -807,7 +804,7 @@ elif page == "👥 Player Stats":
                 with col_d:
                     st.metric("Min/Game", f"{player_data['Minutes'] / player_data['GamesPlayed'] if player_data['GamesPlayed'] > 0 else 0:.0f}")
             
-            if player_data['Notes']:
+            if 'Notes' in player_data and player_data['Notes'] and str(player_data['Notes']).strip():
                 st.write(f"**Notes:** {player_data['Notes']}")
         else:
             st.warning("No players loaded. Check that player_stats.csv and roster.csv are properly formatted.")
