@@ -666,21 +666,31 @@ elif page == "👥 Player Stats":
         roster = pd.read_csv("roster.csv")
         player_stats = pd.read_csv("player_stats.csv")
         
-        # Merge directly - no preprocessing
+        # Convert PlayerNumber to same type BEFORE merge (this is the key!)
+        roster['PlayerNumber'] = roster['PlayerNumber'].astype(str).str.strip()
+        player_stats['PlayerNumber'] = player_stats['PlayerNumber'].astype(str).str.strip()
+        
+        # Now merge will work
         players = pd.merge(
             roster[['PlayerNumber', 'PlayerName', 'Position']], 
             player_stats[['PlayerNumber', 'GamesPlayed', 'Goals', 'Assists', 'MinutesPlayed', 'Notes']], 
             on='PlayerNumber', 
-            how='inner'  # Use inner join to only keep matching rows
+            how='inner'
         )
         
-        # Convert to numeric after merge
-        for col in ['PlayerNumber', 'GamesPlayed', 'Goals', 'Assists', 'MinutesPlayed']:
-            players[col] = pd.to_numeric(players[col], errors='coerce').fillna(0)
+        # Convert numeric columns after merge
+        players['PlayerNumber'] = pd.to_numeric(players['PlayerNumber'], errors='coerce')
+        players['GamesPlayed'] = pd.to_numeric(players['GamesPlayed'], errors='coerce').fillna(0)
+        players['Goals'] = pd.to_numeric(players['Goals'], errors='coerce').fillna(0)
+        players['Assists'] = pd.to_numeric(players['Assists'], errors='coerce').fillna(0)
+        players['MinutesPlayed'] = pd.to_numeric(players['MinutesPlayed'], errors='coerce').fillna(0)
         
         # Ensure Notes exists
         if 'Notes' not in players.columns:
             players['Notes'] = ''
+        
+        # Fill any NaN
+        players = players.fillna(0)
         
         # Calculate derived stats
         players['Goals+Assists'] = players['Goals'] + players['Assists']
