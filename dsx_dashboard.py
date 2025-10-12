@@ -919,6 +919,393 @@ elif page == "📅 Match History":
     st.plotly_chart(fig, use_container_width=True)
 
 
+elif page == "🎮 Game Predictions":
+    st.title("🎮 Game Predictions & Scenarios")
+    
+    st.info("🔮 Predict match outcomes and explore what-if scenarios")
+    
+    # Load data
+    try:
+        upcoming = pd.read_csv("DSX_Upcoming_Opponents.csv")
+        stripes_div = pd.read_csv("OCL_BU08_Stripes_Division_Rankings.csv")
+        white_div = pd.read_csv("OCL_BU08_White_Division_Rankings.csv")
+        dsx_matches = pd.read_csv("DSX_Matches_Fall2025.csv")
+        
+        # DSX stats
+        dsx_si = 35.6
+        dsx_gf_avg = 4.17
+        dsx_ga_avg = 5.08
+        
+        # Prediction Calculator
+        st.header("🔮 Match Predictor")
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            st.subheader("Select Opponent")
+            
+            # Get all division teams
+            all_teams = []
+            if not stripes_div.empty:
+                all_teams.extend(stripes_div['Team'].tolist())
+            if not white_div.empty:
+                all_teams.extend(white_div['Team'].tolist())
+            
+            # Add upcoming opponents
+            if not upcoming.empty:
+                all_teams.extend(upcoming['Opponent'].tolist())
+            
+            all_teams = sorted(list(set(all_teams)))
+            
+            selected_opponent = st.selectbox("Choose opponent", all_teams)
+            
+            # Get opponent stats
+            opp_si = None
+            opp_gf = None
+            opp_ga = None
+            
+            # Check stripes
+            if not stripes_div.empty:
+                opp_data = stripes_div[stripes_div['Team'] == selected_opponent]
+                if not opp_data.empty:
+                    opp_si = opp_data.iloc[0]['StrengthIndex']
+                    opp_gf = opp_data.iloc[0]['GF']
+                    opp_ga = opp_data.iloc[0]['GA']
+            
+            # Check white
+            if opp_si is None and not white_div.empty:
+                opp_data = white_div[white_div['Team'] == selected_opponent]
+                if not opp_data.empty:
+                    opp_si = opp_data.iloc[0]['StrengthIndex']
+                    opp_gf = opp_data.iloc[0]['GF']
+                    opp_ga = opp_data.iloc[0]['GA']
+            
+            if opp_si is None:
+                opp_si = st.number_input("Opponent Strength Index", min_value=0.0, max_value=100.0, value=50.0)
+                opp_gf = st.number_input("Opponent Goals/Game", min_value=0.0, max_value=10.0, value=3.0)
+                opp_ga = st.number_input("Opponent Goals Against/Game", min_value=0.0, max_value=10.0, value=3.0)
+        
+        with col2:
+            st.subheader("Prediction")
+            
+            if opp_si is not None:
+                # Display comparison
+                col_a, col_b = st.columns(2)
+                with col_a:
+                    st.metric("DSX SI", f"{dsx_si:.1f}")
+                    st.metric("DSX GF/Game", f"{dsx_gf_avg:.2f}")
+                with col_b:
+                    st.metric("Opponent SI", f"{opp_si:.1f}")
+                    st.metric("Opp GF/Game", f"{opp_gf:.2f}")
+                
+                st.markdown("---")
+                
+                # Calculate prediction
+                si_diff = dsx_si - opp_si
+                
+                pred_dsx_goals = max(0, dsx_gf_avg + (si_diff * 0.05))
+                pred_opp_goals = max(0, opp_gf - (si_diff * 0.05))
+                
+                st.subheader("📊 Predicted Score")
+                st.write(f"### DSX: {pred_dsx_goals:.1f}")
+                st.write(f"### {selected_opponent}: {pred_opp_goals:.1f}")
+                
+                # Win probability
+                if si_diff > 15:
+                    win_prob = 70
+                    draw_prob = 20
+                    loss_prob = 10
+                elif si_diff > 5:
+                    win_prob = 55
+                    draw_prob = 25
+                    loss_prob = 20
+                elif si_diff > -5:
+                    win_prob = 40
+                    draw_prob = 30
+                    loss_prob = 30
+                elif si_diff > -15:
+                    win_prob = 25
+                    draw_prob = 25
+                    loss_prob = 50
+                else:
+                    win_prob = 15
+                    draw_prob = 20
+                    loss_prob = 65
+                
+                st.markdown("---")
+                st.subheader("📈 Outcome Probability")
+                
+                col_w, col_d, col_l = st.columns(3)
+                with col_w:
+                    st.metric("Win", f"{win_prob}%")
+                with col_d:
+                    st.metric("Draw", f"{draw_prob}%")
+                with col_l:
+                    st.metric("Loss", f"{loss_prob}%")
+        
+        st.markdown("---")
+        
+        # What-If Scenarios
+        st.header("💭 What-If Scenarios")
+        
+        scenario = st.selectbox("Choose Scenario", [
+            "What if DSX wins next game?",
+            "What if DSX wins all remaining games?",
+            "What if DSX beats a top-3 team?",
+            "Custom scenario"
+        ])
+        
+        if "wins next game" in scenario:
+            st.subheader("Impact of Next Win")
+            
+            current_points = dsx_matches['Points'].sum()
+            current_gp = len(dsx_matches)
+            current_ppg = current_points / current_gp if current_gp > 0 else 0
+            
+            new_points = current_points + 3
+            new_gp = current_gp + 1
+            new_ppg = new_points / new_gp
+            
+            col1, col2 = st.columns(2)
+            with col1:
+                st.metric("Current PPG", f"{current_ppg:.2f}")
+                st.metric("Current Points", current_points)
+            with col2:
+                st.metric("New PPG", f"{new_ppg:.2f}", delta=f"+{new_ppg - current_ppg:.2f}")
+                st.metric("New Points", new_points, delta="+3")
+            
+            st.success(f"✅ A win would improve DSX's PPG by {new_ppg - current_ppg:.2f} points!")
+        
+        elif "wins all remaining" in scenario:
+            st.subheader("Best Case Scenario")
+            
+            remaining_games = len(upcoming) if not upcoming.empty else 3
+            
+            current_points = dsx_matches['Points'].sum()
+            current_gp = len(dsx_matches)
+            
+            best_case_points = current_points + (remaining_games * 3)
+            best_case_gp = current_gp + remaining_games
+            best_case_ppg = best_case_points / best_case_gp
+            
+            st.write(f"If DSX wins all {remaining_games} remaining games:")
+            
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                st.metric("Total Points", best_case_points)
+            with col2:
+                st.metric("Total Games", best_case_gp)
+            with col3:
+                st.metric("Final PPG", f"{best_case_ppg:.2f}")
+            
+            st.success(f"🏆 This would give DSX a {best_case_ppg:.2f} PPG - strong finish!")
+        
+        elif "beats a top-3 team" in scenario:
+            st.subheader("Upset Victory Impact")
+            
+            st.write("**Beating a top-3 team would:**")
+            st.write("- ✅ Boost team confidence")
+            st.write("- ✅ Prove DSX can compete with the best")
+            st.write("- ✅ Improve strength of schedule")
+            st.write("- ✅ Potentially move up in rankings")
+            
+            st.info("💡 Focus on defensive organization and counter-attacks against stronger opponents")
+        
+    except Exception as e:
+        st.error(f"Error loading prediction data: {e}")
+        st.write("Make sure all data files are available.")
+
+
+elif page == "📊 Benchmarking":
+    st.title("📊 Team Benchmarking & Comparison")
+    
+    st.info("⚖️ Compare DSX against any opponent or division team")
+    
+    # Load division data
+    try:
+        stripes_div = pd.read_csv("OCL_BU08_Stripes_Division_Rankings.csv")
+        white_div = pd.read_csv("OCL_BU08_White_Division_Rankings.csv")
+        dsx_matches = pd.read_csv("DSX_Matches_Fall2025.csv")
+        
+        # DSX stats
+        dsx_stats = {
+            'Team': 'Dublin DSX Orange 2018 Boys',
+            'StrengthIndex': 35.6,
+            'PPG': 1.00,
+            'GF': 4.17,
+            'GA': 5.08,
+            'GD': -0.92,
+            'GP': len(dsx_matches)
+        }
+        
+        # Combine divisions
+        all_teams = []
+        if not stripes_div.empty:
+            all_teams.append(('Stripes', stripes_div))
+        if not white_div.empty:
+            all_teams.append(('White', white_div))
+        
+        # Team Selector
+        st.header("🔍 Select Teams to Compare")
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            st.subheader("Team 1: DSX (You)")
+            st.write(f"**Strength Index:** {dsx_stats['StrengthIndex']:.1f}")
+            st.write(f"**PPG:** {dsx_stats['PPG']:.2f}")
+            st.write(f"**Goals/Game:** {dsx_stats['GF']:.2f}")
+            st.write(f"**Against/Game:** {dsx_stats['GA']:.2f}")
+        
+        with col2:
+            st.subheader("Team 2: Select Opponent")
+            
+            # Build team list
+            team_options = []
+            for div_name, div_df in all_teams:
+                for _, team in div_df.iterrows():
+                    team_options.append(f"{team['Team']} ({div_name})")
+            
+            selected_team_str = st.selectbox("Choose opponent", team_options)
+            
+            # Get selected team data
+            selected_team_name = selected_team_str.split(' (')[0]
+            opp_stats = None
+            
+            for div_name, div_df in all_teams:
+                team_data = div_df[div_df['Team'] == selected_team_name]
+                if not team_data.empty:
+                    opp_stats = team_data.iloc[0]
+                    break
+            
+            if opp_stats is not None:
+                st.write(f"**Strength Index:** {opp_stats['StrengthIndex']:.1f}")
+                st.write(f"**PPG:** {opp_stats['PPG']:.2f}")
+                st.write(f"**Goals/Game:** {opp_stats['GF']:.2f}")
+                st.write(f"**Against/Game:** {opp_stats['GA']:.2f}")
+        
+        st.markdown("---")
+        
+        # Comparison Charts
+        if opp_stats is not None:
+            st.header("📊 Head-to-Head Comparison")
+            
+            # Strength Index comparison
+            col1, col2, col3 = st.columns(3)
+            
+            with col1:
+                st.subheader("Strength Index")
+                diff_si = dsx_stats['StrengthIndex'] - opp_stats['StrengthIndex']
+                if diff_si > 0:
+                    st.success(f"DSX: +{diff_si:.1f}")
+                elif diff_si < 0:
+                    st.error(f"Opponent: +{abs(diff_si):.1f}")
+                else:
+                    st.info("Even")
+            
+            with col2:
+                st.subheader("Offensive")
+                diff_gf = dsx_stats['GF'] - opp_stats['GF']
+                if diff_gf > 0:
+                    st.success(f"DSX: +{diff_gf:.2f} G/G")
+                elif diff_gf < 0:
+                    st.error(f"Opponent: +{abs(diff_gf):.2f} G/G")
+                else:
+                    st.info("Even")
+            
+            with col3:
+                st.subheader("Defensive")
+                diff_ga = opp_stats['GA'] - dsx_stats['GA']  # Lower is better
+                if diff_ga > 0:
+                    st.success(f"DSX: -{abs(diff_ga):.2f} GA/G")
+                elif diff_ga < 0:
+                    st.error(f"Opponent: -{abs(diff_ga):.2f} GA/G")
+                else:
+                    st.info("Even")
+            
+            st.markdown("---")
+            
+            # Radar Chart
+            st.subheader("📈 Performance Radar")
+            
+            categories = ['Strength Index', 'PPG', 'Goals For', 'Goals Against (Inv)', 'Goal Diff']
+            
+            # Normalize metrics to 0-100 scale
+            dsx_values = [
+                dsx_stats['StrengthIndex'],
+                dsx_stats['PPG'] / 3.0 * 100,
+                dsx_stats['GF'] / 10.0 * 100,
+                (10.0 - dsx_stats['GA']) / 10.0 * 100,  # Inverted (lower is better)
+                (dsx_stats['GD'] + 5) / 10.0 * 100
+            ]
+            
+            opp_values = [
+                opp_stats['StrengthIndex'],
+                opp_stats['PPG'] / 3.0 * 100,
+                opp_stats['GF'] / 10.0 * 100,
+                (10.0 - opp_stats['GA']) / 10.0 * 100,
+                (opp_stats['GD'] + 5) / 10.0 * 100
+            ]
+            
+            fig = go.Figure()
+            
+            fig.add_trace(go.Scatterpolar(
+                r=dsx_values,
+                theta=categories,
+                fill='toself',
+                name='DSX',
+                line_color='orange'
+            ))
+            
+            fig.add_trace(go.Scatterpolar(
+                r=opp_values,
+                theta=categories,
+                fill='toself',
+                name=selected_team_name,
+                line_color='blue'
+            ))
+            
+            fig.update_layout(
+                polar=dict(radialaxis=dict(visible=True, range=[0, 100])),
+                showlegend=True,
+                height=500
+            )
+            
+            st.plotly_chart(fig, use_container_width=True)
+            
+            st.markdown("---")
+            
+            # Matchup Prediction
+            st.subheader("🎯 Predicted Matchup")
+            
+            si_diff = dsx_stats['StrengthIndex'] - opp_stats['StrengthIndex']
+            
+            if si_diff > 15:
+                st.success("✅ **DSX FAVORED** - Significant advantage")
+                st.write("Expected outcome: Win")
+                st.write("Confidence: High")
+            elif si_diff > 5:
+                st.success("✅ **DSX SLIGHT EDGE** - Small advantage")
+                st.write("Expected outcome: Competitive win")
+                st.write("Confidence: Medium")
+            elif si_diff > -5:
+                st.info("⚖️ **EVENLY MATCHED** - Toss-up game")
+                st.write("Expected outcome: Could go either way")
+                st.write("Confidence: Low")
+            elif si_diff > -15:
+                st.warning("⚠️ **OPPONENT SLIGHT EDGE** - Uphill battle")
+                st.write("Expected outcome: Competitive loss")
+                st.write("Confidence: Medium")
+            else:
+                st.error("❌ **OPPONENT FAVORED** - Difficult matchup")
+                st.write("Expected outcome: Likely loss")
+                st.write("Confidence: High")
+            
+    except Exception as e:
+        st.error(f"Error loading benchmarking data: {e}")
+        st.write("Make sure division ranking files are available.")
+
+
 elif page == "🔍 Opponent Intel":
     st.title("🔍 Opponent Intelligence")
     
