@@ -669,9 +669,32 @@ elif page == "👥 Player Stats":
         player_stats['PlayerNumber'] = pd.to_numeric(player_stats['PlayerNumber'], errors='coerce')
         roster['PlayerNumber'] = pd.to_numeric(roster['PlayerNumber'], errors='coerce')
         
+        # Debug: Show what we loaded
+        st.info(f"📊 Debug: Loaded {len(roster)} roster entries, {len(player_stats)} stat entries")
+        st.info(f"Roster columns: {roster.columns.tolist()}")
+        st.info(f"Stats columns: {player_stats.columns.tolist()}")
+        
+        # Check if columns exist before selecting
+        if 'PlayerNumber' not in roster.columns or 'PlayerName' not in roster.columns:
+            st.error("Roster.csv is missing required columns!")
+            st.write("Expected: PlayerNumber, PlayerName, Position")
+            st.write(f"Found: {roster.columns.tolist()}")
+            raise ValueError("Invalid roster.csv format")
+        
+        if 'PlayerNumber' not in player_stats.columns:
+            st.error("player_stats.csv is missing PlayerNumber column!")
+            st.write(f"Found: {player_stats.columns.tolist()}")
+            raise ValueError("Invalid player_stats.csv format")
+        
         # Select only the columns we need from each dataframe
         roster_subset = roster[['PlayerNumber', 'PlayerName', 'Position']].copy()
         stats_subset = player_stats[['PlayerNumber', 'GamesPlayed', 'Goals', 'Assists', 'MinutesPlayed']].copy()
+        
+        st.info(f"Roster subset shape: {roster_subset.shape}, Stats subset shape: {stats_subset.shape}")
+        st.write("**First 3 roster rows:**")
+        st.dataframe(roster_subset.head(3))
+        st.write("**First 3 stats rows:**")
+        st.dataframe(stats_subset.head(3))
         
         # Merge stats with roster for full player info
         players = roster_subset.merge(
@@ -679,6 +702,10 @@ elif page == "👥 Player Stats":
             on='PlayerNumber', 
             how='left'
         )
+        
+        st.info(f"After merge - Players shape: {players.shape}, Columns: {players.columns.tolist()}")
+        st.write("**First 3 merged rows:**")
+        st.dataframe(players.head(3))
         
         # Fill missing stats with 0 and convert to numeric
         for col in ['GamesPlayed', 'Goals', 'Assists', 'MinutesPlayed']:
@@ -690,9 +717,6 @@ elif page == "👥 Player Stats":
         players['Minutes'] = players['MinutesPlayed']
         players['Goals/Game'] = players.apply(lambda x: x['Goals'] / x['GamesPlayed'] if x['GamesPlayed'] > 0 else 0, axis=1)
         players['Assists/Game'] = players.apply(lambda x: x['Assists'] / x['GamesPlayed'] if x['GamesPlayed'] > 0 else 0, axis=1)
-        
-        # Debug info
-        st.sidebar.info(f"Loaded {len(players)} players with columns: {', '.join(players.columns.tolist())}")
         
         # Top Stats
         st.header("⭐ Top Performers")
