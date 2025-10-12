@@ -663,8 +663,8 @@ elif page == "👥 Player Stats":
     # Load player stats and roster
     try:
         # Read CSVs exactly like Data Manager (which works!)
-        roster = pd.read_csv("roster.csv")
-        player_stats = pd.read_csv("player_stats.csv")
+        roster = pd.read_csv("roster.csv", index_col=False)
+        player_stats = pd.read_csv("player_stats.csv", index_col=False)
         
         # Convert PlayerNumber to same type BEFORE merge (this is the key!)
         roster['PlayerNumber'] = roster['PlayerNumber'].astype(str).str.strip()
@@ -2341,7 +2341,10 @@ elif page == "⚙️ Data Manager":
         st.write("Update player names, positions, and parent info")
         
         try:
-            roster = pd.read_csv("roster.csv")
+            roster = pd.read_csv("roster.csv", index_col=False)
+            
+            # Reset index to ensure no extra columns
+            roster = roster.reset_index(drop=True)
             
             # Editable dataframe
             edited_roster = st.data_editor(
@@ -2392,7 +2395,10 @@ elif page == "⚙️ Data Manager":
         st.write("Update goals, assists, and playing time")
         
         try:
-            player_stats = pd.read_csv("player_stats.csv")
+            player_stats = pd.read_csv("player_stats.csv", index_col=False)
+            
+            # Reset index to ensure no extra columns
+            player_stats = player_stats.reset_index(drop=True)
             
             # Editable dataframe
             edited_stats = st.data_editor(
@@ -2447,7 +2453,10 @@ elif page == "⚙️ Data Manager":
         st.write("Update match results and scores")
         
         try:
-            matches = pd.read_csv("DSX_Matches_Fall2025.csv")
+            matches = pd.read_csv("DSX_Matches_Fall2025.csv", index_col=False)
+            
+            # Reset index to ensure no extra columns
+            matches = matches.reset_index(drop=True)
             
             # Editable dataframe
             edited_matches = st.data_editor(
@@ -2501,7 +2510,10 @@ elif page == "⚙️ Data Manager":
         st.write("Track who scored and assisted in each game")
         
         try:
-            game_stats = pd.read_csv("game_player_stats.csv")
+            game_stats = pd.read_csv("game_player_stats.csv", index_col=False)
+            
+            # Reset index to ensure no extra columns
+            game_stats = game_stats.reset_index(drop=True)
             
             # Editable dataframe
             edited_game_stats = st.data_editor(
