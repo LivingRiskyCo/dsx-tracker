@@ -662,45 +662,26 @@ elif page == "👥 Player Stats":
     
     # Load player stats and roster
     try:
-        # Read CSVs with explicit settings to prevent pandas from misreading
-        roster = pd.read_csv("roster.csv", header=0, encoding='utf-8-sig')
-        player_stats = pd.read_csv("player_stats.csv", header=0, encoding='utf-8-sig')
+        # Use simple reading - same as Data Manager (which works correctly!)
+        roster = pd.read_csv("roster.csv")
+        player_stats = pd.read_csv("player_stats.csv")
         
-        # Clean column names
-        roster.columns = roster.columns.str.strip()
-        player_stats.columns = player_stats.columns.str.strip()
+        # Keep only the columns we need (prevent parent names, etc. from interfering)
+        roster = roster[['PlayerNumber', 'PlayerName', 'Position']].copy()
+        player_stats = player_stats[['PlayerNumber', 'GamesPlayed', 'Goals', 'Assists', 'MinutesPlayed']].copy()
         
-        # Verify we have the right data structure
-        if len(roster) == 0 or len(player_stats) == 0:
-            st.error("CSV files are empty!")
-            raise ValueError("Empty CSV files")
+        # Convert PlayerNumber to int for matching
+        roster['PlayerNumber'] = pd.to_numeric(roster['PlayerNumber'], errors='coerce')
+        player_stats['PlayerNumber'] = pd.to_numeric(player_stats['PlayerNumber'], errors='coerce')
         
-        # Create clean subsets with only needed columns
-        try:
-            roster_clean = pd.DataFrame({
-                'PlayerNumber': pd.to_numeric(roster['PlayerNumber'], errors='coerce'),
-                'PlayerName': roster['PlayerName'].astype(str),
-                'Position': roster['Position'].astype(str)
-            })
-            
-            stats_clean = pd.DataFrame({
-                'PlayerNumber': pd.to_numeric(player_stats['PlayerNumber'], errors='coerce'),
-                'GamesPlayed': pd.to_numeric(player_stats['GamesPlayed'], errors='coerce').fillna(0),
-                'Goals': pd.to_numeric(player_stats['Goals'], errors='coerce').fillna(0),
-                'Assists': pd.to_numeric(player_stats['Assists'], errors='coerce').fillna(0),
-                'MinutesPlayed': pd.to_numeric(player_stats['MinutesPlayed'], errors='coerce').fillna(0)
-            })
-        except KeyError as e:
-            st.error(f"Missing required column: {e}")
-            st.write("Roster columns:", roster.columns.tolist())
-            st.write("Stats columns:", player_stats.columns.tolist())
-            raise
+        # Merge
+        players = pd.merge(roster, player_stats, on='PlayerNumber', how='left')
         
-        # Merge on PlayerNumber
-        players = roster_clean.merge(stats_clean, on='PlayerNumber', how='left')
-        
-        # Fill any remaining NaN values
-        players = players.fillna(0)
+        # Fill missing values
+        players['GamesPlayed'] = players['GamesPlayed'].fillna(0)
+        players['Goals'] = players['Goals'].fillna(0)
+        players['Assists'] = players['Assists'].fillna(0)
+        players['MinutesPlayed'] = players['MinutesPlayed'].fillna(0)
         
         # Calculate derived stats
         players['Goals+Assists'] = players['Goals'] + players['Assists']
