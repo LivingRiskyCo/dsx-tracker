@@ -2447,7 +2447,7 @@ elif page == "⚙️ Data Manager":
                 use_container_width=True,
                 hide_index=True,
                 column_config={
-                    "Date": st.column_config.DateColumn("Date", required=True),
+                    "Date": st.column_config.TextColumn("Date (YYYY-MM-DD)", required=True),
                     "Tournament": st.column_config.TextColumn("Tournament"),
                     "Opponent": st.column_config.TextColumn("Opponent", required=True),
                     "GF": st.column_config.NumberColumn("Goals For", min_value=0),
@@ -2501,7 +2501,7 @@ elif page == "⚙️ Data Manager":
                 use_container_width=True,
                 hide_index=True,
                 column_config={
-                    "Date": st.column_config.DateColumn("Date", required=True),
+                    "Date": st.column_config.TextColumn("Date (YYYY-MM-DD)", required=True),
                     "Opponent": st.column_config.TextColumn("Opponent", required=True),
                     "PlayerName": st.column_config.TextColumn("Player", required=True),
                     "Goals": st.column_config.NumberColumn("Goals", min_value=0),
