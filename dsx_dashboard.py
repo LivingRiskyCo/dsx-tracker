@@ -871,9 +871,11 @@ elif page == "📅 Match History":
             col1, col2 = st.columns([2, 3])
             
             with col1:
-                st.write(f"**Tournament:** {match['Tournament']}")
-                st.write(f"**Location:** {match['Location']}")
-                st.write(f"**Result:** {match['Result']} - {match['Outcome']}")
+                st.write(f"**Tournament:** {match.get('Tournament', 'N/A')}")
+                if 'Location' in match:
+                    st.write(f"**Location:** {match['Location']}")
+                outcome = match.get('Outcome', match['Result'])
+                st.write(f"**Result:** {match['Result']} - {outcome}")
                 st.write(f"**Score:** DSX {match['GF']} - {match['GA']} {match['Opponent']}")
                 st.write(f"**Goal Diff:** {match['GD']:+d}")
             
