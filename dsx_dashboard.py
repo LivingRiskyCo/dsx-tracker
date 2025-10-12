@@ -176,7 +176,7 @@ with st.sidebar:
     
     page = st.radio(
         "Navigation",
-        ["🎯 What's Next", "🏆 Division Rankings", "📊 Team Analysis", "👥 Player Stats", "📅 Match History", "🔍 Opponent Intel", "🎮 Game Predictions", "📊 Benchmarking", "📋 Full Analysis", "📖 Quick Start Guide", "⚙️ Data Manager"]
+        ["🎯 What's Next", "🏆 Division Rankings", "📊 Team Analysis", "👥 Player Stats", "📅 Match History", "📝 Game Log", "🔍 Opponent Intel", "🎮 Game Predictions", "📊 Benchmarking", "📋 Full Analysis", "📖 Quick Start Guide", "⚙️ Data Manager"]
     )
     
     st.markdown("---")
@@ -754,34 +754,37 @@ elif page == "👥 Player Stats":
         # Individual Player Details
         st.header("👤 Player Details")
         
-        selected_player = st.selectbox("Select Player", players['PlayerName'].tolist())
-        
-        player_data = players[players['PlayerName'] == selected_player].iloc[0]
-        
-        col1, col2 = st.columns([1, 2])
-        
-        with col1:
-            st.subheader("Profile")
-            st.write(f"**Number:** {int(player_data['PlayerNumber'])}")
-            st.write(f"**Position:** {player_data['Position']}")
-            st.write(f"**Games:** {int(player_data['GamesPlayed'])}")
-            st.write(f"**Minutes:** {int(player_data['Minutes'])}")
+        if len(players) > 0:
+            selected_player = st.selectbox("Select Player", players['PlayerName'].tolist())
             
-        with col2:
-            st.subheader("Season Stats")
+            player_data = players[players['PlayerName'] == selected_player].iloc[0]
             
-            col_a, col_b, col_c, col_d = st.columns(4)
-            with col_a:
-                st.metric("Goals", int(player_data['Goals']))
-            with col_b:
-                st.metric("Assists", int(player_data['Assists']))
-            with col_c:
-                st.metric("G/Game", f"{player_data['Goals/Game']:.2f}")
-            with col_d:
-                st.metric("Min/Game", f"{player_data['Minutes'] / player_data['GamesPlayed'] if player_data['GamesPlayed'] > 0 else 0:.0f}")
-        
-        if player_data['Notes']:
-            st.write(f"**Notes:** {player_data['Notes']}")
+            col1, col2 = st.columns([1, 2])
+            
+            with col1:
+                st.subheader("Profile")
+                st.write(f"**Number:** {int(player_data['PlayerNumber'])}")
+                st.write(f"**Position:** {player_data['Position']}")
+                st.write(f"**Games:** {int(player_data['GamesPlayed'])}")
+                st.write(f"**Minutes:** {int(player_data['Minutes'])}")
+                
+            with col2:
+                st.subheader("Season Stats")
+                
+                col_a, col_b, col_c, col_d = st.columns(4)
+                with col_a:
+                    st.metric("Goals", int(player_data['Goals']))
+                with col_b:
+                    st.metric("Assists", int(player_data['Assists']))
+                with col_c:
+                    st.metric("G/Game", f"{player_data['Goals/Game']:.2f}")
+                with col_d:
+                    st.metric("Min/Game", f"{player_data['Minutes'] / player_data['GamesPlayed'] if player_data['GamesPlayed'] > 0 else 0:.0f}")
+            
+            if player_data['Notes']:
+                st.write(f"**Notes:** {player_data['Notes']}")
+        else:
+            st.warning("No players loaded. Check that player_stats.csv and roster.csv are properly formatted.")
         
         st.markdown("---")
         
