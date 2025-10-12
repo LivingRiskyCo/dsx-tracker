@@ -169,13 +169,17 @@ def refresh_data():
 
 # Sidebar
 with st.sidebar:
-    # Team header
-    st.markdown("""
-    <div style='text-align: center; padding: 20px; background: linear-gradient(135deg, #ff6b35 0%, #f7931e 100%); border-radius: 10px; margin-bottom: 20px;'>
-        <h1 style='color: white; margin: 0; font-size: 2.5em;'>⚽ DSX ORANGE</h1>
-        <p style='color: white; margin: 5px 0 0 0; font-size: 1.2em;'>U8 Boys 2018 - Fall 2025</p>
-    </div>
-    """, unsafe_allow_html=True)
+    # Team logo
+    import os
+    if os.path.exists("dsx_logo.png"):
+        st.image("dsx_logo.png", use_container_width=True)
+    else:
+        st.markdown("""
+        <div style='text-align: center; padding: 20px; background: linear-gradient(135deg, #ff6b35 0%, #f7931e 100%); border-radius: 10px; margin-bottom: 20px;'>
+            <h1 style='color: white; margin: 0; font-size: 2.5em;'>⚽ DSX ORANGE</h1>
+            <p style='color: white; margin: 5px 0 0 0; font-size: 1.2em;'>U8 Boys 2018 - Fall 2025</p>
+        </div>
+        """, unsafe_allow_html=True)
     st.title("⚽ DSX Tracker")
     st.markdown("**Dublin DSX Orange**  \n2018 Boys")
     st.markdown("---")
