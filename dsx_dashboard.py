@@ -662,26 +662,28 @@ elif page == "👥 Player Stats":
     
     # Load player stats and roster
     try:
-        # Use simple reading - same as Data Manager (which works correctly!)
-        roster = pd.read_csv("roster.csv")
-        player_stats = pd.read_csv("player_stats.csv")
+        # Read CSVs - same as Data Manager
+        roster_raw = pd.read_csv("roster.csv")
+        stats_raw = pd.read_csv("player_stats.csv")
         
-        # Keep only the columns we need (prevent parent names, etc. from interfering)
-        roster = roster[['PlayerNumber', 'PlayerName', 'Position']].copy()
-        player_stats = player_stats[['PlayerNumber', 'GamesPlayed', 'Goals', 'Assists', 'MinutesPlayed']].copy()
+        # Build clean dataframes with explicit column creation (prevents column misalignment)
+        roster = pd.DataFrame()
+        roster['PlayerNumber'] = pd.to_numeric(roster_raw['PlayerNumber'], errors='coerce')
+        roster['PlayerName'] = roster_raw['PlayerName'].astype(str)
+        roster['Position'] = roster_raw['Position'].astype(str)
         
-        # Convert PlayerNumber to int for matching
-        roster['PlayerNumber'] = pd.to_numeric(roster['PlayerNumber'], errors='coerce')
-        player_stats['PlayerNumber'] = pd.to_numeric(player_stats['PlayerNumber'], errors='coerce')
+        stats = pd.DataFrame()
+        stats['PlayerNumber'] = pd.to_numeric(stats_raw['PlayerNumber'], errors='coerce')
+        stats['GamesPlayed'] = pd.to_numeric(stats_raw['GamesPlayed'], errors='coerce').fillna(0)
+        stats['Goals'] = pd.to_numeric(stats_raw['Goals'], errors='coerce').fillna(0)
+        stats['Assists'] = pd.to_numeric(stats_raw['Assists'], errors='coerce').fillna(0)
+        stats['MinutesPlayed'] = pd.to_numeric(stats_raw['MinutesPlayed'], errors='coerce').fillna(0)
         
-        # Merge
-        players = pd.merge(roster, player_stats, on='PlayerNumber', how='left')
+        # Merge on PlayerNumber
+        players = pd.merge(roster, stats, on='PlayerNumber', how='left')
         
-        # Fill missing values
-        players['GamesPlayed'] = players['GamesPlayed'].fillna(0)
-        players['Goals'] = players['Goals'].fillna(0)
-        players['Assists'] = players['Assists'].fillna(0)
-        players['MinutesPlayed'] = players['MinutesPlayed'].fillna(0)
+        # Fill any remaining missing values
+        players = players.fillna(0)
         
         # Calculate derived stats
         players['Goals+Assists'] = players['Goals'] + players['Assists']
