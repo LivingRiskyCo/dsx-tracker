@@ -169,7 +169,13 @@ def refresh_data():
 
 # Sidebar
 with st.sidebar:
-    st.image("https://via.placeholder.com/200x100/ff6b35/ffffff?text=DSX+ORANGE", use_container_width=True)
+    # Team header
+    st.markdown("""
+    <div style='text-align: center; padding: 20px; background: linear-gradient(135deg, #ff6b35 0%, #f7931e 100%); border-radius: 10px; margin-bottom: 20px;'>
+        <h1 style='color: white; margin: 0; font-size: 2.5em;'>⚽ DSX ORANGE</h1>
+        <p style='color: white; margin: 5px 0 0 0; font-size: 1.2em;'>U8 Boys 2018 - Fall 2025</p>
+    </div>
+    """, unsafe_allow_html=True)
     st.title("⚽ DSX Tracker")
     st.markdown("**Dublin DSX Orange**  \n2018 Boys")
     st.markdown("---")
@@ -682,6 +688,9 @@ elif page == "👥 Player Stats":
         players['Goals/Game'] = players.apply(lambda x: x['Goals'] / x['GamesPlayed'] if x['GamesPlayed'] > 0 else 0, axis=1)
         players['Assists/Game'] = players.apply(lambda x: x['Assists'] / x['GamesPlayed'] if x['GamesPlayed'] > 0 else 0, axis=1)
         
+        # Debug info
+        st.sidebar.info(f"Loaded {len(players)} players with columns: {', '.join(players.columns.tolist())}")
+        
         # Top Stats
         st.header("⭐ Top Performers")
         
@@ -719,17 +728,25 @@ elif page == "👥 Player Stats":
         # Full Player Table
         st.header("📋 Complete Roster Stats")
         
-        # Sortable table
-        sort_by = st.selectbox("Sort by", ["PlayerNumber", "PlayerName", "Goals", "Assists", "Goals+Assists", "GamesPlayed", "Minutes"])
-        ascending = st.checkbox("Ascending order", value=False)
-        
-        display_cols = ['PlayerNumber', 'PlayerName', 'Position', 'GamesPlayed', 'Goals', 'Assists', 'Goals+Assists', 'Goals/Game', 'Minutes']
-        display_df = players[display_cols].sort_values(sort_by, ascending=ascending)
-        
-        # Format for display
-        display_df['Goals/Game'] = display_df['Goals/Game'].apply(lambda x: f"{x:.2f}")
-        
-        st.dataframe(display_df, use_container_width=True, hide_index=True)
+        # Check if we have player data
+        if len(players) == 0:
+            st.warning("No player data loaded. Check that roster.csv and player_stats.csv are properly formatted.")
+        else:
+            # Sortable table
+            sort_by = st.selectbox("Sort by", ["PlayerNumber", "PlayerName", "Goals", "Assists", "Goals+Assists", "GamesPlayed", "Minutes"])
+            ascending = st.checkbox("Ascending order", value=False)
+            
+            # Only include columns that exist
+            desired_cols = ['PlayerNumber', 'PlayerName', 'Position', 'GamesPlayed', 'Goals', 'Assists', 'Goals+Assists', 'Goals/Game', 'Minutes']
+            display_cols = [col for col in desired_cols if col in players.columns]
+            
+            display_df = players[display_cols].sort_values(sort_by, ascending=ascending)
+            
+            # Format for display
+            if 'Goals/Game' in display_df.columns:
+                display_df['Goals/Game'] = display_df['Goals/Game'].apply(lambda x: f"{x:.2f}")
+            
+            st.dataframe(display_df, use_container_width=True, hide_index=True)
         
         st.markdown("---")
         
