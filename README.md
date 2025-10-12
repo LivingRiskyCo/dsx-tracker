@@ -55,6 +55,30 @@ python fetch_bsa_celtic.py          # BSA Celtic only
 python fetch_gotsport_division.py   # OCL division only
 ```
 
+### 4. Push Updates to GitHub
+
+**After updating CSVs or Excel files:**
+
+```bash
+# Quick push (Windows) - Double-click:
+push_updates.bat
+
+# Or manually:
+git add .
+git commit -m "Update match data"
+git push
+```
+
+**From the Dashboard:**
+- ⚙️ Go to **Data Manager**
+- ✏️ Edit your data in any tab
+- 💾 Click **Save Locally** (on Streamlit Cloud)
+- 📥 Download the updated CSV
+- Replace local file and push with `push_updates.bat`
+
+**OR** (if running locally):
+- 🚀 Click **Save & Push to GitHub** (auto-commits and pushes!)
+
 **📖 See [QUICKSTART.md](QUICKSTART.md) for detailed guide, opponent insights, and automation tips.**
 
 ## Tools Included
