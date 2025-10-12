@@ -2381,15 +2381,32 @@ elif page == "⚙️ Data Manager":
                 }
             )
             
-            col1, col2 = st.columns(2)
+            col1, col2, col3 = st.columns(3)
             with col1:
-                if st.button("💾 Save Roster", type="primary"):
+                if st.button("💾 Save Locally", type="secondary", key="save_roster_local"):
                     edited_roster.to_csv("roster.csv", index=False)
-                    st.success("✅ Roster saved successfully!")
-                    st.balloons()
+                    st.success("✅ Saved to local file!")
             
             with col2:
-                if st.button("↩️ Reset Changes"):
+                if st.button("🚀 Save & Push to GitHub", type="primary", key="push_roster"):
+                    try:
+                        edited_roster.to_csv("roster.csv", index=False)
+                        
+                        # Git commands
+                        os.system("git add roster.csv")
+                        os.system('git commit -m "Update roster from dashboard"')
+                        result = os.system("git push")
+                        
+                        if result == 0:
+                            st.success("✅ Pushed to GitHub successfully!")
+                            st.balloons()
+                        else:
+                            st.error("❌ Git push failed - check credentials")
+                    except Exception as e:
+                        st.error(f"Error: {e}")
+            
+            with col3:
+                if st.button("↩️ Reset", key="reset_roster"):
                     st.rerun()
         
         except FileNotFoundError:
@@ -2419,15 +2436,32 @@ elif page == "⚙️ Data Manager":
                 }
             )
             
-            col1, col2 = st.columns(2)
+            col1, col2, col3 = st.columns(3)
             with col1:
-                if st.button("💾 Save Player Stats", type="primary"):
+                if st.button("💾 Save Locally", type="secondary", key="save_stats_local"):
                     edited_stats.to_csv("player_stats.csv", index=False)
-                    st.success("✅ Player stats saved successfully!")
-                    st.balloons()
+                    st.success("✅ Saved to local file!")
             
             with col2:
-                if st.button("↩️ Reset Changes ", key="reset_stats"):
+                if st.button("🚀 Save & Push to GitHub", type="primary", key="push_stats"):
+                    try:
+                        edited_stats.to_csv("player_stats.csv", index=False)
+                        
+                        # Git commands
+                        os.system("git add player_stats.csv")
+                        os.system('git commit -m "Update player stats from dashboard"')
+                        result = os.system("git push")
+                        
+                        if result == 0:
+                            st.success("✅ Pushed to GitHub successfully!")
+                            st.balloons()
+                        else:
+                            st.error("❌ Git push failed - check credentials")
+                    except Exception as e:
+                        st.error(f"Error: {e}")
+            
+            with col3:
+                if st.button("↩️ Reset", key="reset_stats"):
                     st.rerun()
         
         except FileNotFoundError:
@@ -2456,15 +2490,32 @@ elif page == "⚙️ Data Manager":
                 }
             )
             
-            col1, col2 = st.columns(2)
+            col1, col2, col3 = st.columns(3)
             with col1:
-                if st.button("💾 Save Matches", type="primary"):
+                if st.button("💾 Save Locally", type="secondary", key="save_matches_local"):
                     edited_matches.to_csv("DSX_Matches_Fall2025.csv", index=False)
-                    st.success("✅ Match data saved successfully!")
-                    st.balloons()
+                    st.success("✅ Saved to local file!")
             
             with col2:
-                if st.button("↩️ Reset Changes  ", key="reset_matches"):
+                if st.button("🚀 Save & Push to GitHub", type="primary", key="push_matches"):
+                    try:
+                        edited_matches.to_csv("DSX_Matches_Fall2025.csv", index=False)
+                        
+                        # Git commands
+                        os.system("git add DSX_Matches_Fall2025.csv")
+                        os.system('git commit -m "Update match results from dashboard"')
+                        result = os.system("git push")
+                        
+                        if result == 0:
+                            st.success("✅ Pushed to GitHub successfully!")
+                            st.balloons()
+                        else:
+                            st.error("❌ Git push failed - check credentials")
+                    except Exception as e:
+                        st.error(f"Error: {e}")
+            
+            with col3:
+                if st.button("↩️ Reset", key="reset_matches"):
                     st.rerun()
         
         except FileNotFoundError:
@@ -2493,15 +2544,32 @@ elif page == "⚙️ Data Manager":
                 }
             )
             
-            col1, col2 = st.columns(2)
+            col1, col2, col3 = st.columns(3)
             with col1:
-                if st.button("💾 Save Game Stats", type="primary"):
+                if st.button("💾 Save Locally", type="secondary", key="save_game_stats_local"):
                     edited_game_stats.to_csv("game_player_stats.csv", index=False)
-                    st.success("✅ Game stats saved successfully!")
-                    st.balloons()
+                    st.success("✅ Saved to local file!")
             
             with col2:
-                if st.button("↩️ Reset Changes   ", key="reset_game_stats"):
+                if st.button("🚀 Save & Push to GitHub", type="primary", key="push_game_stats"):
+                    try:
+                        edited_game_stats.to_csv("game_player_stats.csv", index=False)
+                        
+                        # Git commands
+                        os.system("git add game_player_stats.csv")
+                        os.system('git commit -m "Update game stats from dashboard"')
+                        result = os.system("git push")
+                        
+                        if result == 0:
+                            st.success("✅ Pushed to GitHub successfully!")
+                            st.balloons()
+                        else:
+                            st.error("❌ Git push failed - check credentials")
+                    except Exception as e:
+                        st.error(f"Error: {e}")
+            
+            with col3:
+                if st.button("↩️ Reset", key="reset_game_stats"):
                     st.rerun()
         
         except FileNotFoundError:
@@ -2540,6 +2608,61 @@ elif page == "⚙️ Data Manager":
                             file_name=filename,
                             key=f"download_{filename}"
                         )
+    
+    st.markdown("---")
+    
+    # Help Section
+    with st.expander("❓ How to Use the Editor & GitHub Push"):
+        st.markdown("""
+        ### 📝 **Editing Data:**
+        1. Click on any cell to edit it
+        2. Use **+** button at bottom to add new rows
+        3. Select a row and press **Delete** to remove it
+        
+        ### 💾 **Two Save Options:**
+        
+        **Option 1: 💾 Save Locally**
+        - Saves changes to the file immediately
+        - **On Streamlit Cloud:** Changes are temporary (lost on next deploy)
+        - **On Local Computer:** Changes persist until you push to GitHub
+        
+        **Option 2: 🚀 Save & Push to GitHub** ⭐ **RECOMMENDED**
+        - Saves changes AND pushes to GitHub
+        - Makes changes permanent across all devices
+        - Updates Streamlit Cloud automatically
+        - Dashboard will refresh in 60-90 seconds
+        
+        ### 🎯 **After Each Game Workflow:**
+        
+        1. **⚽ Matches Tab:**
+           - Add new match with date, opponent, score
+           - Click **🚀 Save & Push to GitHub**
+        
+        2. **🎮 Game Stats Tab:**
+           - Add a row for each player who scored/assisted
+           - Example: `2024-10-15 | BSA Celtic | Jax Derryberry | 2 | 1 | Hat-trick`
+           - Click **🚀 Save & Push to GitHub**
+        
+        3. **📊 Player Stats Tab:**
+           - Update season totals (add goals from this game)
+           - Update games played (+1 for each player)
+           - Update minutes played
+           - Click **🚀 Save & Push to GitHub**
+        
+        ### 🔧 **Troubleshooting:**
+        
+        **"Git push failed" error:**
+        - On **Local Computer:** Make sure Git is configured
+        - On **Streamlit Cloud:** This feature works automatically!
+        
+        **Changes not showing up:**
+        - Wait 60-90 seconds for Streamlit Cloud to redeploy
+        - Check the "Manage App" button to see deployment status
+        
+        **Data looks wrong:**
+        - Use the **📥 Downloads** tab to backup your data first
+        - Click **↩️ Reset** to discard changes and reload from file
+        """)
     
     st.markdown("---")
     
