@@ -665,13 +665,9 @@ elif page == "👥 Player Stats":
         player_stats = pd.read_csv("player_stats.csv")
         roster = pd.read_csv("roster.csv")
         
-        # Clean and convert PlayerNumber to int, handling any errors
-        player_stats['PlayerNumber'] = pd.to_numeric(player_stats['PlayerNumber'], errors='coerce').astype('Int64')
-        roster['PlayerNumber'] = pd.to_numeric(roster['PlayerNumber'], errors='coerce').astype('Int64')
-        
-        # Remove any rows with missing PlayerNumber
-        player_stats = player_stats.dropna(subset=['PlayerNumber'])
-        roster = roster.dropna(subset=['PlayerNumber'])
+        # Convert PlayerNumber to int for matching
+        player_stats['PlayerNumber'] = pd.to_numeric(player_stats['PlayerNumber'], errors='coerce')
+        roster['PlayerNumber'] = pd.to_numeric(roster['PlayerNumber'], errors='coerce')
         
         # Merge stats with roster for full player info (merge on PlayerNumber only)
         players = roster.merge(
@@ -681,10 +677,10 @@ elif page == "👥 Player Stats":
             suffixes=('', '_stats')
         )
         
-        # Fill missing stats with 0
+        # Fill missing stats with 0 and convert to numeric
         for col in ['GamesPlayed', 'Goals', 'Assists', 'MinutesPlayed']:
             if col in players.columns:
-                players[col] = players[col].fillna(0)
+                players[col] = pd.to_numeric(players[col], errors='coerce').fillna(0)
         
         # Calculate derived stats
         players['Goals+Assists'] = players['Goals'] + players['Assists']
