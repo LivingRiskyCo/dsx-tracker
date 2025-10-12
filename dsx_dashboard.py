@@ -663,9 +663,18 @@ elif page == "👥 Player Stats":
         player_stats = player_stats.dropna(subset=['PlayerNumber'])
         roster = roster.dropna(subset=['PlayerNumber'])
         
-        # Merge stats with roster for full player info
-        players = roster.merge(player_stats, on=['PlayerNumber', 'PlayerName'], how='left')
-        players = players.fillna(0)
+        # Merge stats with roster for full player info (merge on PlayerNumber only)
+        players = roster.merge(
+            player_stats[['PlayerNumber', 'GamesPlayed', 'Goals', 'Assists', 'MinutesPlayed', 'Notes']], 
+            on='PlayerNumber', 
+            how='left',
+            suffixes=('', '_stats')
+        )
+        
+        # Fill missing stats with 0
+        for col in ['GamesPlayed', 'Goals', 'Assists', 'MinutesPlayed']:
+            if col in players.columns:
+                players[col] = players[col].fillna(0)
         
         # Calculate derived stats
         players['Goals+Assists'] = players['Goals'] + players['Assists']
@@ -1443,8 +1452,9 @@ elif page == "📝 Game Log":
             st.write(f"**Result:** {result_text}")
         
         with col2:
-            st.write(f"**Tournament:** {match['Tournament']}")
-            st.write(f"**Location:** {match['Location']}")
+            st.write(f"**Tournament:** {match.get('Tournament', 'N/A')}")
+            if 'Location' in match:
+                st.write(f"**Location:** {match['Location']}")
             st.write(f"**Goal Diff:** {match['GD']:+d}")
         
         with col3:
