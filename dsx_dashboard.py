@@ -662,60 +662,45 @@ elif page == "👥 Player Stats":
     
     # Load player stats and roster
     try:
-        # Read CSVs with explicit index handling
-        player_stats = pd.read_csv("player_stats.csv", dtype={'PlayerNumber': str})
-        roster = pd.read_csv("roster.csv", dtype={'PlayerNumber': str})
+        # Read CSVs with explicit settings to prevent pandas from misreading
+        roster = pd.read_csv("roster.csv", header=0, encoding='utf-8-sig')
+        player_stats = pd.read_csv("player_stats.csv", header=0, encoding='utf-8-sig')
         
-        # Strip whitespace from column names (common issue)
-        player_stats.columns = player_stats.columns.str.strip()
+        # Clean column names
         roster.columns = roster.columns.str.strip()
+        player_stats.columns = player_stats.columns.str.strip()
         
-        # Convert PlayerNumber to numeric AFTER reading
-        player_stats['PlayerNumber'] = pd.to_numeric(player_stats['PlayerNumber'].astype(str).str.strip(), errors='coerce')
-        roster['PlayerNumber'] = pd.to_numeric(roster['PlayerNumber'].astype(str).str.strip(), errors='coerce')
+        # Verify we have the right data structure
+        if len(roster) == 0 or len(player_stats) == 0:
+            st.error("CSV files are empty!")
+            raise ValueError("Empty CSV files")
         
-        # Debug: Show what we loaded
-        st.info(f"📊 Debug: Loaded {len(roster)} roster entries, {len(player_stats)} stat entries")
-        st.info(f"Roster columns: {roster.columns.tolist()}")
-        st.info(f"Stats columns: {player_stats.columns.tolist()}")
+        # Create clean subsets with only needed columns
+        try:
+            roster_clean = pd.DataFrame({
+                'PlayerNumber': pd.to_numeric(roster['PlayerNumber'], errors='coerce'),
+                'PlayerName': roster['PlayerName'].astype(str),
+                'Position': roster['Position'].astype(str)
+            })
+            
+            stats_clean = pd.DataFrame({
+                'PlayerNumber': pd.to_numeric(player_stats['PlayerNumber'], errors='coerce'),
+                'GamesPlayed': pd.to_numeric(player_stats['GamesPlayed'], errors='coerce').fillna(0),
+                'Goals': pd.to_numeric(player_stats['Goals'], errors='coerce').fillna(0),
+                'Assists': pd.to_numeric(player_stats['Assists'], errors='coerce').fillna(0),
+                'MinutesPlayed': pd.to_numeric(player_stats['MinutesPlayed'], errors='coerce').fillna(0)
+            })
+        except KeyError as e:
+            st.error(f"Missing required column: {e}")
+            st.write("Roster columns:", roster.columns.tolist())
+            st.write("Stats columns:", player_stats.columns.tolist())
+            raise
         
-        # Check if columns exist before selecting
-        if 'PlayerNumber' not in roster.columns or 'PlayerName' not in roster.columns:
-            st.error("Roster.csv is missing required columns!")
-            st.write("Expected: PlayerNumber, PlayerName, Position")
-            st.write(f"Found: {roster.columns.tolist()}")
-            raise ValueError("Invalid roster.csv format")
+        # Merge on PlayerNumber
+        players = roster_clean.merge(stats_clean, on='PlayerNumber', how='left')
         
-        if 'PlayerNumber' not in player_stats.columns:
-            st.error("player_stats.csv is missing PlayerNumber column!")
-            st.write(f"Found: {player_stats.columns.tolist()}")
-            raise ValueError("Invalid player_stats.csv format")
-        
-        # Select only the columns we need from each dataframe
-        roster_subset = roster[['PlayerNumber', 'PlayerName', 'Position']].copy()
-        stats_subset = player_stats[['PlayerNumber', 'GamesPlayed', 'Goals', 'Assists', 'MinutesPlayed']].copy()
-        
-        st.info(f"Roster subset shape: {roster_subset.shape}, Stats subset shape: {stats_subset.shape}")
-        st.write("**First 3 roster rows:**")
-        st.dataframe(roster_subset.head(3))
-        st.write("**First 3 stats rows:**")
-        st.dataframe(stats_subset.head(3))
-        
-        # Merge stats with roster for full player info
-        players = roster_subset.merge(
-            stats_subset, 
-            on='PlayerNumber', 
-            how='left'
-        )
-        
-        st.info(f"After merge - Players shape: {players.shape}, Columns: {players.columns.tolist()}")
-        st.write("**First 3 merged rows:**")
-        st.dataframe(players.head(3))
-        
-        # Fill missing stats with 0 and convert to numeric
-        for col in ['GamesPlayed', 'Goals', 'Assists', 'MinutesPlayed']:
-            if col in players.columns:
-                players[col] = pd.to_numeric(players[col], errors='coerce').fillna(0)
+        # Fill any remaining NaN values
+        players = players.fillna(0)
         
         # Calculate derived stats
         players['Goals+Assists'] = players['Goals'] + players['Assists']
