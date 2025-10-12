@@ -655,6 +655,10 @@ elif page == "👥 Player Stats":
         player_stats = pd.read_csv("player_stats.csv")
         roster = pd.read_csv("roster.csv")
         
+        # Ensure PlayerNumber is the same type in both dataframes
+        player_stats['PlayerNumber'] = player_stats['PlayerNumber'].astype(int)
+        roster['PlayerNumber'] = roster['PlayerNumber'].astype(int)
+        
         # Merge stats with roster for full player info
         players = roster.merge(player_stats, on=['PlayerNumber', 'PlayerName'], how='left')
         players = players.fillna(0)
