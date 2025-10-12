@@ -662,12 +662,17 @@ elif page == "👥 Player Stats":
     
     # Load player stats and roster
     try:
-        player_stats = pd.read_csv("player_stats.csv")
-        roster = pd.read_csv("roster.csv")
+        # Read CSVs with explicit index handling
+        player_stats = pd.read_csv("player_stats.csv", dtype={'PlayerNumber': str})
+        roster = pd.read_csv("roster.csv", dtype={'PlayerNumber': str})
         
-        # Convert PlayerNumber to int for matching
-        player_stats['PlayerNumber'] = pd.to_numeric(player_stats['PlayerNumber'], errors='coerce')
-        roster['PlayerNumber'] = pd.to_numeric(roster['PlayerNumber'], errors='coerce')
+        # Strip whitespace from column names (common issue)
+        player_stats.columns = player_stats.columns.str.strip()
+        roster.columns = roster.columns.str.strip()
+        
+        # Convert PlayerNumber to numeric AFTER reading
+        player_stats['PlayerNumber'] = pd.to_numeric(player_stats['PlayerNumber'].astype(str).str.strip(), errors='coerce')
+        roster['PlayerNumber'] = pd.to_numeric(roster['PlayerNumber'].astype(str).str.strip(), errors='coerce')
         
         # Debug: Show what we loaded
         st.info(f"📊 Debug: Loaded {len(roster)} roster entries, {len(player_stats)} stat entries")
