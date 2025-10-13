@@ -483,6 +483,12 @@ elif page == "🎮 Live Game Tracker":
         except:
             has_upcoming = False
         
+        # Initialize defaults
+        default_date = datetime.now().date()
+        default_opponent = ""
+        default_location = ""
+        default_tournament = "MVYSA Fall 2025"
+        
         # Quick select from upcoming matches
         if has_upcoming and not upcoming_matches.empty:
             st.subheader("⚡ Quick Select (Upcoming Match)")
@@ -490,7 +496,11 @@ elif page == "🎮 Live Game Tracker":
                 f"{row['Date'].strftime('%b %d')} - {row['Opponent']} @ {row.get('Location', 'TBD')}"
                 for _, row in upcoming_matches.iterrows()
             ]
-            selected_match = st.selectbox("Select upcoming game or enter manually:", upcoming_options)
+            selected_match = st.selectbox(
+                "Select upcoming game or enter manually:", 
+                upcoming_options,
+                key="match_selector"
+            )
             
             if selected_match != "Enter manually...":
                 # Auto-fill from selected match
@@ -500,26 +510,36 @@ elif page == "🎮 Live Game Tracker":
                 default_opponent = selected_data['Opponent']
                 default_location = selected_data.get('Location', '')
                 default_tournament = selected_data.get('Tournament', 'MVYSA Fall 2025')
+                
+                # Store in session state for persistence
+                st.session_state['selected_game_date'] = default_date
+                st.session_state['selected_game_opponent'] = default_opponent
+                st.session_state['selected_game_location'] = default_location
+                st.session_state['selected_game_tournament'] = default_tournament
             else:
-                default_date = datetime.now().date()
-                default_opponent = ""
-                default_location = ""
-                default_tournament = "MVYSA Fall 2025"
+                # Clear session state when manual entry is selected
+                if 'selected_game_opponent' in st.session_state:
+                    del st.session_state['selected_game_opponent']
+                    del st.session_state['selected_game_date']
+                    del st.session_state['selected_game_location']
+                    del st.session_state['selected_game_tournament']
             
             st.markdown("---")
-        else:
-            default_date = datetime.now().date()
-            default_opponent = ""
-            default_location = ""
-            default_tournament = "MVYSA Fall 2025"
+        
+        # Use session state values if they exist (for persistence after selection)
+        if 'selected_game_opponent' in st.session_state:
+            default_date = st.session_state['selected_game_date']
+            default_opponent = st.session_state['selected_game_opponent']
+            default_location = st.session_state['selected_game_location']
+            default_tournament = st.session_state['selected_game_tournament']
         
         col1, col2 = st.columns(2)
         
         with col1:
-            game_date = st.date_input("Date", default_date)
-            opponent = st.text_input("Opponent Team", default_opponent)
-            location = st.text_input("Location", default_location)
-            tournament = st.text_input("Tournament/League", default_tournament)
+            game_date = st.date_input("Date", value=default_date, key="game_date_input")
+            opponent = st.text_input("Opponent Team", value=default_opponent, key="game_opponent_input")
+            location = st.text_input("Location", value=default_location, key="game_location_input")
+            tournament = st.text_input("Tournament/League", value=default_tournament, key="game_tournament_input")
         
         with col2:
             st.subheader("⚙️ Game Settings")
