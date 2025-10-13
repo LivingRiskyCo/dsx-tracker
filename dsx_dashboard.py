@@ -502,27 +502,34 @@ elif page == "🎮 Live Game Tracker":
                 key="match_selector"
             )
             
-            if selected_match != "Enter manually...":
-                # Auto-fill from selected match
-                match_idx = upcoming_options.index(selected_match) - 1
-                selected_data = upcoming_matches.iloc[match_idx]
-                default_date = selected_data['Date'].date()
-                default_opponent = selected_data['Opponent']
-                default_location = selected_data.get('Location', '')
-                default_tournament = selected_data.get('Tournament', 'MVYSA Fall 2025')
+            # Check if selection changed (to trigger rerun)
+            if 'last_selected_match' not in st.session_state:
+                st.session_state['last_selected_match'] = "Enter manually..."
+            
+            if selected_match != st.session_state['last_selected_match']:
+                # Selection changed! Update session state and rerun
+                st.session_state['last_selected_match'] = selected_match
                 
-                # Store in session state for persistence
-                st.session_state['selected_game_date'] = default_date
-                st.session_state['selected_game_opponent'] = default_opponent
-                st.session_state['selected_game_location'] = default_location
-                st.session_state['selected_game_tournament'] = default_tournament
-            else:
-                # Clear session state when manual entry is selected
-                if 'selected_game_opponent' in st.session_state:
-                    del st.session_state['selected_game_opponent']
-                    del st.session_state['selected_game_date']
-                    del st.session_state['selected_game_location']
-                    del st.session_state['selected_game_tournament']
+                if selected_match != "Enter manually...":
+                    # Auto-fill from selected match
+                    match_idx = upcoming_options.index(selected_match) - 1
+                    selected_data = upcoming_matches.iloc[match_idx]
+                    
+                    # Store in session state
+                    st.session_state['selected_game_date'] = selected_data['Date'].date()
+                    st.session_state['selected_game_opponent'] = selected_data['Opponent']
+                    st.session_state['selected_game_location'] = selected_data.get('Location', '')
+                    st.session_state['selected_game_tournament'] = selected_data.get('Tournament', 'MVYSA Fall 2025')
+                else:
+                    # Clear session state when manual entry is selected
+                    if 'selected_game_opponent' in st.session_state:
+                        del st.session_state['selected_game_opponent']
+                        del st.session_state['selected_game_date']
+                        del st.session_state['selected_game_location']
+                        del st.session_state['selected_game_tournament']
+                
+                # Force rerun to update the input fields
+                st.rerun()
             
             st.markdown("---")
         
