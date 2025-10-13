@@ -963,37 +963,41 @@ elif page == "📊 Team Analysis":
     if df.empty:
         st.warning("No division data found.")
     else:
-        # Build comprehensive team list from all sources
-        all_teams = set(df['Team'].tolist())
-        
-        # Add teams from upcoming opponents
-        try:
-            upcoming = pd.read_csv("DSX_Upcoming_Opponents.csv")
-            all_teams.update(upcoming['Opponent'].dropna().tolist())
-        except:
-            pass
-        
-        # Add teams from actual opponents
-        try:
-            actual = pd.read_csv("DSX_Actual_Opponents.csv")
-            all_teams.update(actual['Opponent'].dropna().tolist())
-        except:
-            pass
-        
-        # Add teams from matches
-        try:
-            matches = pd.read_csv("DSX_Matches_Fall2025.csv")
-            all_teams.update(matches['Opponent'].dropna().tolist())
-        except:
-            pass
-        
-        # Convert to sorted list
-        teams = sorted(list(all_teams))
+        # ONLY show teams with actual data (from division rankings)
+        teams_with_data = df['Team'].tolist()
         
         # Ensure DSX is first if present
-        dsx_teams = [t for t in teams if 'DSX' in t or 'Dublin' in t]
-        other_teams = [t for t in teams if t not in dsx_teams]
+        dsx_teams = [t for t in teams_with_data if 'DSX' in t or 'Dublin' in t]
+        other_teams = sorted([t for t in teams_with_data if t not in dsx_teams])
         teams = dsx_teams + other_teams
+        
+        # Check for upcoming opponents without data
+        teams_without_data = []
+        try:
+            upcoming = pd.read_csv("DSX_Upcoming_Opponents.csv")
+            for opp in upcoming['Opponent'].dropna().unique():
+                if opp not in teams_with_data:
+                    teams_without_data.append(opp)
+        except:
+            pass
+        
+        try:
+            matches = pd.read_csv("DSX_Matches_Fall2025.csv")
+            for opp in matches['Opponent'].dropna().unique():
+                if opp not in teams_with_data and opp not in teams_without_data:
+                    teams_without_data.append(opp)
+        except:
+            pass
+        
+        # Show info about teams without data
+        if teams_without_data:
+            with st.expander(f"ℹ️ Teams on Schedule (No Data Yet) - {len(teams_without_data)} teams"):
+                st.write("**These teams are on your schedule but don't have stats data yet:**")
+                for team in sorted(teams_without_data):
+                    st.write(f"• {team}")
+                st.info("💡 **To add data:** Run `update_all_data.py` or add these teams' divisions to tracking.")
+        
+        st.success(f"✅ Analyzing {len(teams)} teams with complete data")
         
         col1, col2 = st.columns(2)
         
@@ -1007,25 +1011,9 @@ elif page == "📊 Team Analysis":
             team2_options = [t for t in teams if t != team1]
             team2 = st.selectbox("Team 2", team2_options, index=0, label_visibility="collapsed", key="team2_analysis")
         
-        # Get team data (with fallback for teams not in division data)
-        team1_df = df[df['Team'] == team1]
-        team2_df = df[df['Team'] == team2]
-        
-        if team1_df.empty:
-            st.warning(f"⚠️ {team1} - Limited data available. Team is on schedule but stats not yet tracked.")
-            team1_data = None
-        else:
-            team1_data = team1_df.iloc[0]
-        
-        if team2_df.empty:
-            st.warning(f"⚠️ {team2} - Limited data available. Team is on schedule but stats not yet tracked.")
-            team2_data = None
-        else:
-            team2_data = team2_df.iloc[0]
-        
-        if team1_data is None or team2_data is None:
-            st.info("💡 **Tip:** Run `update_all_data.py` to fetch latest stats for all teams, or add them to a tracked division.")
-            st.stop()
+        # Get team data (guaranteed to exist now)
+        team1_data = df[df['Team'] == team1].iloc[0]
+        team2_data = df[df['Team'] == team2].iloc[0]
         
         st.markdown("---")
         
@@ -1726,28 +1714,44 @@ elif page == "📊 Benchmarking":
             'GP': len(dsx_matches)
         }
         
-        # Combine divisions
-        all_teams = []
-        if not stripes_div.empty:
-            all_teams.append(('Stripes', stripes_div))
-        if not white_div.empty:
-            all_teams.append(('White', white_div))
+        # ONLY include teams with actual stats data (from divisions)
+        all_teams_with_data = []
+        teams_with_data_list = []
         
-        # Add upcoming opponents (with limited stats)
+        if not stripes_div.empty:
+            all_teams_with_data.append(('Stripes', stripes_div))
+            teams_with_data_list.extend(stripes_div['Team'].tolist())
+        if not white_div.empty:
+            all_teams_with_data.append(('White', white_div))
+            teams_with_data_list.extend(white_div['Team'].tolist())
+        
+        # Check for scheduled opponents without data
+        teams_without_data = []
         try:
             upcoming = pd.read_csv("DSX_Upcoming_Opponents.csv")
-            if not upcoming.empty:
-                all_teams.append(('Upcoming Opponents', upcoming.rename(columns={'Opponent': 'Team'})))
+            for opp in upcoming['Opponent'].dropna().unique():
+                if opp not in teams_with_data_list:
+                    teams_without_data.append(opp)
         except:
             pass
         
-        # Add actual opponents from matches
         try:
-            actual = pd.read_csv("DSX_Actual_Opponents.csv")
-            if not actual.empty:
-                all_teams.append(('Past Opponents', actual.rename(columns={'Opponent': 'Team'})))
+            matches = pd.read_csv("DSX_Matches_Fall2025.csv")
+            for opp in matches['Opponent'].dropna().unique():
+                if opp not in teams_with_data_list and opp not in teams_without_data:
+                    teams_without_data.append(opp)
         except:
             pass
+        
+        # Show info about teams without data
+        if teams_without_data:
+            with st.expander(f"ℹ️ Teams on Schedule (No Data Yet) - {len(teams_without_data)} teams"):
+                st.write("**These teams are on your schedule but don't have benchmarking data yet:**")
+                for team in sorted(teams_without_data):
+                    st.write(f"• {team}")
+                st.info("💡 **To add data:** Run `update_all_data.py` to fetch their division stats.")
+        
+        st.success(f"✅ Ready to benchmark against {len(teams_with_data_list)} teams with complete data")
         
         # Team Selector
         st.header("🔍 Select Teams to Compare")
@@ -1764,9 +1768,9 @@ elif page == "📊 Benchmarking":
         with col2:
             st.subheader("Team 2: Select Opponent")
             
-            # Build team list from all sources
+            # Build team list from ONLY teams with complete data
             team_options = []
-            for div_name, div_df in all_teams:
+            for div_name, div_df in all_teams_with_data:
                 for _, team in div_df.iterrows():
                     team_name = team.get('Team', '')
                     if team_name and pd.notna(team_name):
@@ -1778,7 +1782,7 @@ elif page == "📊 Benchmarking":
             selected_team_name = selected_team_str.split(' (')[0]
             opp_stats = None
             
-            for div_name, div_df in all_teams:
+            for div_name, div_df in all_teams_with_data:
                 team_data = div_df[div_df['Team'] == selected_team_name]
                 if not team_data.empty:
                     opp_stats = team_data.iloc[0]
