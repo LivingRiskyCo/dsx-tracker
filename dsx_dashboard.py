@@ -1168,48 +1168,159 @@ elif page == "📺 Watch Live Game":
 
 
 elif page == "🏆 Division Rankings":
-    st.title("🏆 OCL BU08 Stripes Division Rankings")
+    st.title("🏆 Competitive Rankings - DSX vs Opponents")
     
+    st.info("📊 **DSX isn't in a division, but here's how you rank against all the teams you play!**")
+    
+    # Load DSX match history
+    try:
+        dsx_matches = pd.read_csv("DSX_Matches_Fall2025.csv", index_col=False).reset_index(drop=True)
+    except:
+        dsx_matches = pd.DataFrame()
+    
+    # Calculate DSX stats
+    if not dsx_matches.empty:
+        completed = dsx_matches[dsx_matches['Result'].notna()].copy()
+        
+        if len(completed) > 0:
+            dsx_gp = len(completed)
+            dsx_w = len(completed[completed['Result'] == 'W'])
+            dsx_d = len(completed[completed['Result'] == 'D'])
+            dsx_l = len(completed[completed['Result'] == 'L'])
+            dsx_gf = completed['GF'].sum()
+            dsx_ga = completed['GA'].sum()
+            dsx_gd = dsx_gf - dsx_ga
+            dsx_pts = (dsx_w * 3) + dsx_d
+            dsx_ppg = dsx_pts / dsx_gp if dsx_gp > 0 else 0
+            dsx_gf_pg = dsx_gf / dsx_gp if dsx_gp > 0 else 0
+            dsx_ga_pg = dsx_ga / dsx_gp if dsx_gp > 0 else 0
+            dsx_gd_pg = dsx_gd / dsx_gp if dsx_gp > 0 else 0
+            
+            # Calculate DSX Strength Index
+            ppg_norm = max(0.0, min(3.0, dsx_ppg)) / 3.0 * 100.0
+            gdpg_norm = (max(-5.0, min(5.0, dsx_gd_pg)) + 5.0) / 10.0 * 100.0
+            dsx_strength = round(0.7 * ppg_norm + 0.3 * gdpg_norm, 1)
+            
+            # Create DSX row
+            dsx_row = pd.DataFrame([{
+                'Team': 'DSX Orange 2018',
+                'GP': dsx_gp,
+                'W': dsx_w,
+                'D': dsx_d,
+                'L': dsx_l,
+                'GF': dsx_gf,
+                'GA': dsx_ga,
+                'GD': dsx_gd,
+                'Pts': dsx_pts,
+                'PPG': dsx_ppg,
+                'GF_PG': dsx_gf_pg,
+                'GA_PG': dsx_ga_pg,
+                'GD_PG': dsx_gd_pg,
+                'StrengthIndex': dsx_strength,
+                'IsDSX': True
+            }])
+        else:
+            st.warning("No completed matches found for DSX. Record some games in **📅 Match History** or **🎮 Live Game Tracker**!")
+            dsx_row = pd.DataFrame()
+    else:
+        st.warning("No match history found. Add games to `DSX_Matches_Fall2025.csv`!")
+        dsx_row = pd.DataFrame()
+    
+    # Load opponent stats from all divisions being tracked
+    opponent_stats = []
+    
+    # Get unique opponents DSX has played or will play
+    try:
+        actual_opponents = pd.read_csv("DSX_Actual_Opponents.csv", index_col=False).reset_index(drop=True)
+        opponent_names = actual_opponents['Opponent'].unique().tolist()
+    except:
+        opponent_names = []
+    
+    try:
+        upcoming_opponents = pd.read_csv("DSX_Upcoming_Opponents.csv", index_col=False).reset_index(drop=True)
+        opponent_names.extend(upcoming_opponents['Opponent'].unique().tolist())
+    except:
+        pass
+    
+    # Add opponents from match history
+    if not dsx_matches.empty:
+        opponent_names.extend(dsx_matches['Opponent'].unique().tolist())
+    
+    opponent_names = list(set(opponent_names))  # Remove duplicates
+    
+    # Load division data and filter for DSX opponents
     df = load_division_data()
     
-    if df.empty:
-        st.warning("No division data found. Run `python fetch_gotsport_division.py` to fetch data.")
-    else:
-        # Top metrics
-        col1, col2, col3, col4 = st.columns(4)
+    if not df.empty and not dsx_row.empty:
+        # Filter to only teams DSX plays
+        opponent_df = df[df['Team'].isin(opponent_names)].copy()
         
-        dsx_row = df[df['Team'].str.contains('DSX', na=False)]
-        if not dsx_row.empty:
-            dsx_rank = int(dsx_row['Rank'].values[0])
-            dsx_strength = float(dsx_row['StrengthIndex'].values[0])
-            dsx_record = f"{int(dsx_row['W'].values[0])}-{int(dsx_row['D'].values[0])}-{int(dsx_row['L'].values[0])}"
-            dsx_gd = float(dsx_row['GD'].values[0])
+        # Recalculate per-game stats for consistency
+        for idx, row in opponent_df.iterrows():
+            gp = row['GP'] if row['GP'] > 0 else 1
+            opponent_df.at[idx, 'GF_PG'] = row['GF'] / gp if 'GF' in row else 0
+            opponent_df.at[idx, 'GA_PG'] = row['GA'] / gp if 'GA' in row else 0
+            opponent_df.at[idx, 'GD_PG'] = row['GD'] / gp if 'GD' in row else 0
+            opponent_df.at[idx, 'IsDSX'] = False
+        
+        # Combine DSX with opponents
+        combined_df = pd.concat([dsx_row, opponent_df], ignore_index=True)
+        
+        # Sort by PPG (primary) and StrengthIndex (secondary)
+        combined_df = combined_df.sort_values(['PPG', 'StrengthIndex'], ascending=[False, False]).reset_index(drop=True)
+        
+        # Add rank
+        combined_df['Rank'] = range(1, len(combined_df) + 1)
+        
+        # Get DSX rank
+        dsx_rank_row = combined_df[combined_df['IsDSX'] == True]
+        if not dsx_rank_row.empty:
+            dsx_rank = int(dsx_rank_row['Rank'].values[0])
+            total_teams = len(combined_df)
+            
+            # Top metrics
+            st.markdown("---")
+            col1, col2, col3, col4 = st.columns(4)
             
             with col1:
-                st.metric("DSX Rank", f"#{dsx_rank} of {len(df)}", 
-                         f"{dsx_rank - 4} from 4th" if dsx_rank > 4 else "Top 4!")
+                delta = f"Top {dsx_rank}" if dsx_rank <= 3 else f"{total_teams - dsx_rank} teams behind"
+                st.metric("DSX Rank", f"#{dsx_rank} of {total_teams}", delta)
+            
             with col2:
                 st.metric("Strength Index", f"{dsx_strength:.1f}", 
-                         f"{dsx_strength - 43.4:.1f} from 4th")
+                         f"{'Strong' if dsx_strength > 60 else 'Improving' if dsx_strength > 40 else 'Building'}")
+            
             with col3:
-                st.metric("Record", dsx_record)
+                st.metric("Record", f"{dsx_w}-{dsx_l}-{dsx_d}", f"{dsx_ppg:.2f} PPG")
+            
             with col4:
-                st.metric("Goal Diff/Game", f"{dsx_gd:+.2f}")
+                st.metric("Goal Diff/Game", f"{dsx_gd_pg:+.2f}", 
+                         f"{'Positive' if dsx_gd_pg > 0 else 'Even' if dsx_gd_pg == 0 else 'Negative'}")
         
         st.markdown("---")
         
-        # Division table
-        st.subheader("Complete Rankings")
+        # Rankings table
+        st.subheader("📊 Complete Rankings - DSX vs Opponents")
+        st.caption("Ranked by Points Per Game (PPG), then Strength Index")
         
-        # Format the dataframe
-        display_df = df.copy()
-        display_df['Team'] = display_df['Team'].apply(
-            lambda x: f"🟢 **{x}**" if 'DSX' in x else x
+        # Format the dataframe for display
+        display_df = combined_df.copy()
+        
+        # Highlight DSX
+        display_df['Team'] = display_df.apply(
+            lambda row: f"🟢 **{row['Team']}**" if row['IsDSX'] else row['Team'],
+            axis=1
         )
         
+        # Round numeric columns
+        display_df['PPG'] = display_df['PPG'].round(2)
+        display_df['GF_PG'] = display_df['GF_PG'].round(2)
+        display_df['GA_PG'] = display_df['GA_PG'].round(2)
+        display_df['GD_PG'] = display_df['GD_PG'].round(2)
+        display_df['StrengthIndex'] = display_df['StrengthIndex'].round(1)
+        
         # Select columns to display
-        display_cols = ['Rank', 'Team', 'GP', 'W', 'D', 'L', 'GF', 'GA', 'GD', 'Pts', 'PPG', 'StrengthIndex']
-        display_cols = [col for col in display_cols if col in display_df.columns]
+        display_cols = ['Rank', 'Team', 'GP', 'W', 'L', 'D', 'GF', 'GA', 'GD', 'Pts', 'PPG', 'StrengthIndex']
         
         st.dataframe(
             display_df[display_cols],
@@ -1220,12 +1331,12 @@ elif page == "🏆 Division Rankings":
                 "Team": st.column_config.TextColumn("Team"),
                 "GP": st.column_config.NumberColumn("GP", help="Games Played"),
                 "W": st.column_config.NumberColumn("W", help="Wins"),
-                "D": st.column_config.NumberColumn("D", help="Draws"),
                 "L": st.column_config.NumberColumn("L", help="Losses"),
-                "GF": st.column_config.NumberColumn("GF", help="Goals For per game", format="%.2f"),
-                "GA": st.column_config.NumberColumn("GA", help="Goals Against per game", format="%.2f"),
-                "GD": st.column_config.NumberColumn("GD", help="Goal Differential per game", format="%+.2f"),
-                "Pts": st.column_config.NumberColumn("Pts", help="Total Points"),
+                "D": st.column_config.NumberColumn("D", help="Draws"),
+                "GF": st.column_config.NumberColumn("GF", help="Goals For (Total)"),
+                "GA": st.column_config.NumberColumn("GA", help="Goals Against (Total)"),
+                "GD": st.column_config.NumberColumn("GD", help="Goal Differential (Total)", format="%+d"),
+                "Pts": st.column_config.NumberColumn("Pts", help="Total Points (3 for W, 1 for D)"),
                 "PPG": st.column_config.NumberColumn("PPG", help="Points Per Game", format="%.2f"),
                 "StrengthIndex": st.column_config.ProgressColumn(
                     "Strength",
@@ -1239,20 +1350,20 @@ elif page == "🏆 Division Rankings":
         
         # Visualizations
         st.markdown("---")
-        st.subheader("📊 Division Analysis")
+        st.subheader("📊 Visual Comparison")
         
         col1, col2 = st.columns(2)
         
         with col1:
             # Strength Index chart
             fig = px.bar(
-                df,
+                combined_df,
                 x='Team',
                 y='StrengthIndex',
-                title='Strength Index by Team',
-                color='StrengthIndex',
-                color_continuous_scale='RdYlGn',
-                text='StrengthIndex'
+                title='Strength Index Comparison',
+                text='StrengthIndex',
+                color='IsDSX',
+                color_discrete_map={True: '#00ff00', False: '#667eea'}
             )
             fig.update_traces(texttemplate='%{text:.1f}', textposition='outside')
             fig.update_layout(
@@ -1265,26 +1376,55 @@ elif page == "🏆 Division Rankings":
             st.plotly_chart(fig, use_container_width=True)
         
         with col2:
-            # Offensive vs Defensive
-            fig = px.scatter(
-                df,
-                x='GA',
-                y='GF',
-                size='GP',
-                color='StrengthIndex',
-                hover_name='Team',
-                title='Offense vs Defense',
-                color_continuous_scale='RdYlGn',
-                labels={'GF': 'Goals For/Game', 'GA': 'Goals Against/Game'}
+            # PPG comparison
+            fig = px.bar(
+                combined_df,
+                x='Team',
+                y='PPG',
+                title='Points Per Game Comparison',
+                text='PPG',
+                color='IsDSX',
+                color_discrete_map={True: '#00ff00', False: '#667eea'}
             )
-            fig.add_shape(
-                type='line',
-                x0=df['GA'].min(), y0=df['GA'].min(),
-                x1=df['GA'].max(), y1=df['GA'].max(),
-                line=dict(color='gray', dash='dash'),
+            fig.update_traces(texttemplate='%{text:.2f}', textposition='outside')
+            fig.update_layout(
+                xaxis_title="",
+                yaxis_title="Points Per Game",
+                showlegend=False,
+                height=400
             )
-            fig.update_layout(height=400)
+            fig.update_xaxes(tickangle=-45)
             st.plotly_chart(fig, use_container_width=True)
+        
+        # Offensive vs Defensive scatter
+        st.markdown("---")
+        st.subheader("⚔️ Offense vs Defense")
+        
+        fig = px.scatter(
+            combined_df,
+            x='GA_PG',
+            y='GF_PG',
+            size='GP',
+            color='IsDSX',
+            color_discrete_map={True: '#00ff00', False: '#667eea'},
+            hover_name='Team',
+            hover_data={'GP': True, 'PPG': ':.2f', 'StrengthIndex': ':.1f', 'IsDSX': False},
+            title='Offensive Output vs Defensive Performance',
+            labels={'GF_PG': 'Goals For Per Game', 'GA_PG': 'Goals Against Per Game'}
+        )
+        fig.add_hline(y=combined_df['GF_PG'].mean(), line_dash="dash", line_color="gray", 
+                      annotation_text="Avg GF/G", annotation_position="right")
+        fig.add_vline(x=combined_df['GA_PG'].mean(), line_dash="dash", line_color="gray",
+                      annotation_text="Avg GA/G", annotation_position="top")
+        fig.update_layout(height=500, showlegend=False)
+        st.plotly_chart(fig, use_container_width=True)
+        
+        st.info("💡 **Top-right quadrant** = Strong offense & weak defense | **Top-left quadrant** = Strong offense & strong defense (best!)")
+    
+    elif not dsx_row.empty:
+        st.warning("No division data found for your opponents. Run `python update_all_data.py` to fetch latest standings.")
+    else:
+        st.warning("No DSX match data found. Add games to see your competitive ranking!")
 
 
 elif page == "📊 Team Analysis":
