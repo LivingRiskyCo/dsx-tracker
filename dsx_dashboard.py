@@ -835,6 +835,82 @@ elif page == "🎮 Live Game Tracker":
                         st.session_state.show_goal_dialog = False
                         st.rerun()
         
+        # Shot dialog
+        if 'show_shot_dialog' in st.session_state and st.session_state.show_shot_dialog:
+            with st.form("shot_form"):
+                st.subheader("🎯 SHOT ON GOAL")
+                on_field_players = roster_tracker[roster_tracker['PlayerNumber'].isin(st.session_state.on_field)]
+                shooter = st.selectbox("Who took the shot?", [f"#{int(row['PlayerNumber'])} {row['PlayerName']}" 
+                                                               for _, row in on_field_players.iterrows()])
+                notes = st.text_input("Notes (optional)")
+                col1, col2 = st.columns(2)
+                with col1:
+                    if st.form_submit_button("✅ RECORD", use_container_width=True, type="primary"):
+                        player_name = shooter.split(' ', 1)[1]
+                        add_event_tracker('SHOT', player=player_name, notes=notes)
+                        st.session_state.show_shot_dialog = False
+                        st.rerun()
+                with col2:
+                    if st.form_submit_button("❌ Cancel", use_container_width=True):
+                        st.session_state.show_shot_dialog = False
+                        st.rerun()
+        
+        # Save dialog
+        if 'show_save_dialog' in st.session_state and st.session_state.show_save_dialog:
+            with st.form("save_form"):
+                st.subheader("🧤 GOALKEEPER SAVE")
+                on_field_players = roster_tracker[roster_tracker['PlayerNumber'].isin(st.session_state.on_field)]
+                keeper = st.selectbox("Who made the save?", [f"#{int(row['PlayerNumber'])} {row['PlayerName']}" 
+                                                              for _, row in on_field_players.iterrows()])
+                notes = st.text_input("Notes (optional)")
+                col1, col2 = st.columns(2)
+                with col1:
+                    if st.form_submit_button("✅ RECORD", use_container_width=True, type="primary"):
+                        player_name = keeper.split(' ', 1)[1]
+                        add_event_tracker('SAVE', player=player_name, notes=notes)
+                        st.session_state.show_save_dialog = False
+                        st.rerun()
+                with col2:
+                    if st.form_submit_button("❌ Cancel", use_container_width=True):
+                        st.session_state.show_save_dialog = False
+                        st.rerun()
+        
+        # Sub dialog
+        if 'show_sub_dialog' in st.session_state and st.session_state.show_sub_dialog:
+            with st.form("sub_form"):
+                st.subheader("🔄 SUBSTITUTION")
+                on_field_players = roster_tracker[roster_tracker['PlayerNumber'].isin(st.session_state.on_field)]
+                bench_players_df = roster_tracker[roster_tracker['PlayerNumber'].isin(st.session_state.bench_players)]
+                
+                player_out = st.selectbox("Player COMING OFF:", [f"#{int(row['PlayerNumber'])} {row['PlayerName']}" 
+                                                                  for _, row in on_field_players.iterrows()])
+                player_in = st.selectbox("Player GOING ON:", [f"#{int(row['PlayerNumber'])} {row['PlayerName']}" 
+                                                               for _, row in bench_players_df.iterrows()])
+                notes = st.text_input("Notes (optional)")
+                col1, col2 = st.columns(2)
+                with col1:
+                    if st.form_submit_button("✅ RECORD", use_container_width=True, type="primary"):
+                        # Parse player numbers
+                        out_num = int(player_out.split('#')[1].split(' ')[0])
+                        in_num = int(player_in.split('#')[1].split(' ')[0])
+                        
+                        # Update on_field and bench
+                        st.session_state.on_field.remove(out_num)
+                        st.session_state.on_field.append(in_num)
+                        st.session_state.bench_players.remove(in_num)
+                        st.session_state.bench_players.append(out_num)
+                        
+                        # Record event
+                        out_name = player_out.split(' ', 1)[1]
+                        in_name = player_in.split(' ', 1)[1]
+                        add_event_tracker('SUBSTITUTION', player=f"OUT: {out_name}, IN: {in_name}", notes=notes)
+                        st.session_state.show_sub_dialog = False
+                        st.rerun()
+                with col2:
+                    if st.form_submit_button("❌ Cancel", use_container_width=True):
+                        st.session_state.show_sub_dialog = False
+                        st.rerun()
+        
         st.markdown("---")
         
         # Live Feed
@@ -854,8 +930,20 @@ elif page == "🎮 Live Game Tracker":
                             event_text += f" (assist: {event['assist']})"
                     elif event['type'] == 'OPP_GOAL':
                         event_text += "Opponent Goal"
+                    elif event['type'] == 'SHOT':
+                        event_text += f"Shot by {event.get('player', 'Unknown')}"
+                        if event.get('notes'):
+                            event_text += f" - {event['notes']}"
+                    elif event['type'] == 'SAVE':
+                        event_text += f"Save by {event.get('player', 'Unknown')}"
+                        if event.get('notes'):
+                            event_text += f" - {event['notes']}"
+                    elif event['type'] == 'SUBSTITUTION':
+                        event_text += f"SUB: {event.get('player', 'Unknown')}"
                     else:
                         event_text += event['type'].replace('_', ' ').title()
+                        if event.get('notes'):
+                            event_text += f" - {event['notes']}"
                     st.write(event_text)
             else:
                 st.info("No events yet. Start recording!")
@@ -864,9 +952,11 @@ elif page == "🎮 Live Game Tracker":
             st.subheader("📊 Stats")
             goals = [e for e in st.session_state.events if e['type'] == 'DSX_GOAL']
             shots = [e for e in st.session_state.events if e['type'] == 'SHOT']
+            saves = [e for e in st.session_state.events if e['type'] == 'SAVE']
             corners = [e for e in st.session_state.events if e['type'] == 'CORNER']
             st.metric("Goals", len(goals))
             st.metric("Shots", len(shots))
+            st.metric("Saves", len(saves))
             st.metric("Corners", len(corners))
     
     # Game summary
