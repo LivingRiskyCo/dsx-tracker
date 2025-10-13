@@ -36,13 +36,23 @@ python -m streamlit run dsx_dashboard.py
 
 ### 🚀 Quick Launch (Game Day)
 
+**🎯 RECOMMENDED: Use on Your Phone at the Field!**
+
+Since you're on Streamlit Cloud, just:
+1. Open `https://dsx-tracker.streamlit.app` on your phone
+2. Click "🎮 Live Game Tracker" in sidebar
+3. Use it at the field with cell signal!
+
+**For local testing only:**
 ```bash
 # Windows - Double-click:
 launch_game_tracker.bat
 
 # Or run directly:
-streamlit run live_game_tracker.py
+python -m streamlit run live_game_tracker.py
 ```
+
+**📱 See [MOBILE_GAME_DAY_GUIDE.md](MOBILE_GAME_DAY_GUIDE.md) for complete mobile instructions!**
 
 ### ✨ Features
 
@@ -56,6 +66,9 @@ streamlit run live_game_tracker.py
 - ⚽ Track goals with scorer + assist
 - 🎯 Record shots, saves, corners
 - 🔄 Track substitutions (who's on field)
+- ↩️ **NEW: Undo button** (fix mistakes instantly)
+- 📝 **NEW: Add notes** (injuries, weather, coaching)
+- 🚨 **NEW: Injury/timeout** (auto-pauses timer)
 - 📋 Live event feed with timestamps
 - 📊 Real-time stats display
 
@@ -65,10 +78,12 @@ streamlit run live_game_tracker.py
 - 📈 Auto-updates main dashboard
 - 📥 Download detailed event log
 
-**For Parents:**
-- 📱 Share live link for real-time score updates
+**For Parents (Mobile Viewing):**
+- 📱 Share Streamlit Cloud URL with parents
+- 🌐 Works from **anywhere** (not just same network!)
 - 👀 Read-only viewing mode
 - 🔄 Auto-refreshing score and events
+- 📶 Parents need only cell signal or WiFi
 
 ### 🎯 Perfect For:
 - Sideline recording (tablet/phone optimized)

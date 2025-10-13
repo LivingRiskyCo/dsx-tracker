@@ -296,6 +296,35 @@ else:
             st.session_state.show_sub_dialog = True
             st.rerun()
     
+    # Undo button
+    col7, col8, col9 = st.columns(3)
+    
+    with col7:
+        if st.button("↩️ UNDO LAST", use_container_width=True, type="secondary"):
+            if st.session_state.events:
+                last_event = st.session_state.events[0]
+                # If it was a substitution, reverse it
+                if last_event['type'] == 'SUBSTITUTION':
+                    # Note: Full reversal would be complex, just remove from log
+                    st.warning("⚠️ Sub removed from log - manually adjust lineup if needed")
+                st.session_state.events.pop(0)
+                st.success(f"✅ Undid: {last_event['type']}")
+                st.rerun()
+            else:
+                st.error("No events to undo!")
+    
+    with col8:
+        if st.button("📝 ADD NOTE", use_container_width=True):
+            st.session_state.show_note_dialog = True
+            st.rerun()
+    
+    with col9:
+        if st.button("🚨 INJURY/TIMEOUT", use_container_width=True):
+            add_event('TIMEOUT', notes="Injury/timeout - clock stopped")
+            if st.session_state.timer_running:
+                st.session_state.timer_running = False
+            st.rerun()
+    
     # Goal dialog
     if 'show_goal_dialog' in st.session_state and st.session_state.show_goal_dialog:
         with st.form("goal_form"):
@@ -425,6 +454,28 @@ else:
                     st.session_state.show_sub_dialog = False
                     st.rerun()
     
+    # Note dialog
+    if 'show_note_dialog' in st.session_state and st.session_state.show_note_dialog:
+        with st.form("note_form"):
+            st.subheader("📝 Add Note")
+            
+            note_text = st.text_area("Note", placeholder="Great defense, injury, weather change, coaching decision, etc.")
+            
+            col1, col2 = st.columns(2)
+            with col1:
+                if st.form_submit_button("✅ ADD NOTE", use_container_width=True, type="primary"):
+                    if note_text:
+                        add_event('NOTE', notes=note_text)
+                        st.session_state.show_note_dialog = False
+                        st.rerun()
+                    else:
+                        st.error("Please enter a note!")
+            
+            with col2:
+                if st.form_submit_button("❌ Cancel", use_container_width=True):
+                    st.session_state.show_note_dialog = False
+                    st.rerun()
+    
     st.markdown("---")
     
     # Live Event Feed and Current Stats
@@ -442,7 +493,9 @@ else:
                     'SAVE': '🧤',
                     'CORNER': '⚠️',
                     'SUBSTITUTION': '🔄',
-                    'HALF_TIME': '⏰'
+                    'HALF_TIME': '⏰',
+                    'TIMEOUT': '🚨',
+                    'NOTE': '📝'
                 }.get(event['type'], '📝')
                 
                 event_text = f"{icon} {event['timestamp']} - "
@@ -463,6 +516,10 @@ else:
                     event_text += f"Sub: {event['notes']}"
                 elif event['type'] == 'HALF_TIME':
                     event_text += "HALF TIME"
+                elif event['type'] == 'TIMEOUT':
+                    event_text += f"Timeout - {event['notes']}"
+                elif event['type'] == 'NOTE':
+                    event_text += f"Note: {event['notes']}"
                 
                 st.markdown(f'<div class="event-item">{event_text}</div>', unsafe_allow_html=True)
         else:

@@ -505,28 +505,45 @@ elif page == "🎮 Live Game Tracker":
         - 💾 **Save early** - Don't wait until end to save important events
         """)
     
-    with st.expander("👨‍👩‍👧‍👦 Parent Live View Mode"):
+    with st.expander("📱 Mobile Usage at the Field (RECOMMENDED!)"):
         st.markdown("""
-        ### Share Live Updates with Parents
+        ### 🎯 Use Streamlit Cloud on Your Phone!
         
-        **How it works:**
-        1. Start the game tracker on your device
-        2. Get the Streamlit URL (shown in terminal)
-        3. Share URL with parents via group chat
-        4. Parents can watch score update in real-time
-        5. Read-only view - they can't edit anything
+        **THIS IS THE BEST OPTION for game day:**
         
-        **Example URLs:**
-        - **Local network:** `http://192.168.1.100:8501`
-        - **With ngrok:** `https://abc123.ngrok.io`
-        - **Streamlit Cloud:** `https://dsx-tracker.streamlit.app`
+        1. **You're already on Streamlit Cloud!** 
+           - URL: `https://dsx-tracker.streamlit.app`
+        2. **At the field:**
+           - Open this URL on your phone browser
+           - Navigate to "🎮 Live Game Tracker" 
+           - Use the app from your phone!
+        3. **Share with parents:**
+           - Text them the same URL
+           - They can watch live from anywhere
+           - Works on any device, any location
+           - No WiFi network required!
         
-        **What parents see:**
+        ### ✅ Why Streamlit Cloud is Perfect:
+        - 📱 Works from anywhere with cell signal
+        - 🌐 Parents don't need to be on same network
+        - 💾 Auto-saves to GitHub (data syncs everywhere)
+        - 🔄 No installation needed
+        - 🆓 Completely free!
+        
+        ### 👨‍👩‍👧‍👦 What Parents See:
         - ✅ Live score updates
-        - ✅ Goal scorers in real-time
-        - ✅ Game timer
-        - ✅ Event feed
-        - ❌ Can't press buttons or edit
+        - ✅ Goal scorers in real-time  
+        - ✅ Game timer countdown
+        - ✅ Full event feed
+        - ❌ Can't edit (read-only)
+        
+        ### 📲 Quick Share Message Template:
+        ```
+        Watch live game updates here:
+        https://dsx-tracker.streamlit.app
+        
+        Click "🎮 Live Game Tracker" in sidebar
+        ```
         """)
     
     st.markdown("---")
