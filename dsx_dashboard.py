@@ -475,13 +475,51 @@ elif page == "🎮 Live Game Tracker":
         # PRE-GAME SETUP
         st.header("🏟️ New Game Setup")
         
+        # Load upcoming matches for quick select
+        try:
+            upcoming_matches = pd.read_csv("DSX_Upcoming_Opponents.csv")
+            upcoming_matches['Date'] = pd.to_datetime(upcoming_matches['Date'])
+            has_upcoming = True
+        except:
+            has_upcoming = False
+        
+        # Quick select from upcoming matches
+        if has_upcoming and not upcoming_matches.empty:
+            st.subheader("⚡ Quick Select (Upcoming Match)")
+            upcoming_options = ["Enter manually..."] + [
+                f"{row['Date'].strftime('%b %d')} - {row['Opponent']} @ {row.get('Location', 'TBD')}"
+                for _, row in upcoming_matches.iterrows()
+            ]
+            selected_match = st.selectbox("Select upcoming game or enter manually:", upcoming_options)
+            
+            if selected_match != "Enter manually...":
+                # Auto-fill from selected match
+                match_idx = upcoming_options.index(selected_match) - 1
+                selected_data = upcoming_matches.iloc[match_idx]
+                default_date = selected_data['Date'].date()
+                default_opponent = selected_data['Opponent']
+                default_location = selected_data.get('Location', '')
+                default_tournament = selected_data.get('Tournament', 'MVYSA Fall 2025')
+            else:
+                default_date = datetime.now().date()
+                default_opponent = ""
+                default_location = ""
+                default_tournament = "MVYSA Fall 2025"
+            
+            st.markdown("---")
+        else:
+            default_date = datetime.now().date()
+            default_opponent = ""
+            default_location = ""
+            default_tournament = "MVYSA Fall 2025"
+        
         col1, col2 = st.columns(2)
         
         with col1:
-            game_date = st.date_input("Date", datetime.now())
-            opponent = st.text_input("Opponent Team", "")
-            location = st.text_input("Location", "")
-            tournament = st.text_input("Tournament/League", "MVYSA Fall 2025")
+            game_date = st.date_input("Date", default_date)
+            opponent = st.text_input("Opponent Team", default_opponent)
+            location = st.text_input("Location", default_location)
+            tournament = st.text_input("Tournament/League", default_tournament)
         
         with col2:
             st.subheader("⚙️ Game Settings")
@@ -890,20 +928,69 @@ elif page == "📊 Team Analysis":
     if df.empty:
         st.warning("No division data found.")
     else:
-        # Team selector
-        teams = df['Team'].tolist()
+        # Build comprehensive team list from all sources
+        all_teams = set(df['Team'].tolist())
+        
+        # Add teams from upcoming opponents
+        try:
+            upcoming = pd.read_csv("DSX_Upcoming_Opponents.csv")
+            all_teams.update(upcoming['Opponent'].dropna().tolist())
+        except:
+            pass
+        
+        # Add teams from actual opponents
+        try:
+            actual = pd.read_csv("DSX_Actual_Opponents.csv")
+            all_teams.update(actual['Opponent'].dropna().tolist())
+        except:
+            pass
+        
+        # Add teams from matches
+        try:
+            matches = pd.read_csv("DSX_Matches_Fall2025.csv")
+            all_teams.update(matches['Opponent'].dropna().tolist())
+        except:
+            pass
+        
+        # Convert to sorted list
+        teams = sorted(list(all_teams))
+        
+        # Ensure DSX is first if present
+        dsx_teams = [t for t in teams if 'DSX' in t or 'Dublin' in t]
+        other_teams = [t for t in teams if t not in dsx_teams]
+        teams = dsx_teams + other_teams
         
         col1, col2 = st.columns(2)
         
         with col1:
-            team1 = st.selectbox("Select Team 1", teams, index=next((i for i, t in enumerate(teams) if 'DSX' in t), 0))
+            st.write("**Select Team 1**")
+            team1 = st.selectbox("Team 1", teams, index=0, label_visibility="collapsed", key="team1_analysis")
         
         with col2:
-            team2 = st.selectbox("Select Team 2", teams, index=0 if team1 != teams[0] else 1)
+            st.write("**Select Team 2**")
+            # Filter out team1 from team2 options
+            team2_options = [t for t in teams if t != team1]
+            team2 = st.selectbox("Team 2", team2_options, index=0, label_visibility="collapsed", key="team2_analysis")
         
-        # Get team data
-        team1_data = df[df['Team'] == team1].iloc[0]
-        team2_data = df[df['Team'] == team2].iloc[0]
+        # Get team data (with fallback for teams not in division data)
+        team1_df = df[df['Team'] == team1]
+        team2_df = df[df['Team'] == team2]
+        
+        if team1_df.empty:
+            st.warning(f"⚠️ {team1} - Limited data available. Team is on schedule but stats not yet tracked.")
+            team1_data = None
+        else:
+            team1_data = team1_df.iloc[0]
+        
+        if team2_df.empty:
+            st.warning(f"⚠️ {team2} - Limited data available. Team is on schedule but stats not yet tracked.")
+            team2_data = None
+        else:
+            team2_data = team2_df.iloc[0]
+        
+        if team1_data is None or team2_data is None:
+            st.info("💡 **Tip:** Run `update_all_data.py` to fetch latest stats for all teams, or add them to a tracked division.")
+            st.stop()
         
         st.markdown("---")
         
@@ -1611,6 +1698,22 @@ elif page == "📊 Benchmarking":
         if not white_div.empty:
             all_teams.append(('White', white_div))
         
+        # Add upcoming opponents (with limited stats)
+        try:
+            upcoming = pd.read_csv("DSX_Upcoming_Opponents.csv")
+            if not upcoming.empty:
+                all_teams.append(('Upcoming Opponents', upcoming.rename(columns={'Opponent': 'Team'})))
+        except:
+            pass
+        
+        # Add actual opponents from matches
+        try:
+            actual = pd.read_csv("DSX_Actual_Opponents.csv")
+            if not actual.empty:
+                all_teams.append(('Past Opponents', actual.rename(columns={'Opponent': 'Team'})))
+        except:
+            pass
+        
         # Team Selector
         st.header("🔍 Select Teams to Compare")
         
@@ -1626,11 +1729,13 @@ elif page == "📊 Benchmarking":
         with col2:
             st.subheader("Team 2: Select Opponent")
             
-            # Build team list
+            # Build team list from all sources
             team_options = []
             for div_name, div_df in all_teams:
                 for _, team in div_df.iterrows():
-                    team_options.append(f"{team['Team']} ({div_name})")
+                    team_name = team.get('Team', '')
+                    if team_name and pd.notna(team_name):
+                        team_options.append(f"{team_name} ({div_name})")
             
             selected_team_str = st.selectbox("Choose opponent", team_options)
             
