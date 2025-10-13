@@ -53,7 +53,7 @@ try:
             losses = (completed['GD'] < 0).sum()
             
             print(f"[TEAM] {team}")
-            print(f"   Record: {wins}-{draws}-{losses}")
+            print(f"   Record: {wins}-{losses}-{draws} (W-L-D)")
             print(f"   Games Played: {len(completed)}")
             print(f"   Goals For: {completed['GF'].sum()} ({completed['GF'].mean():.2f}/game)")
             print(f"   Goals Against: {completed['GA'].sum()} ({completed['GA'].mean():.2f}/game)")
