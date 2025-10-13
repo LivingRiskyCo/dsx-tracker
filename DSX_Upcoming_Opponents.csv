@@ -1,4 +1,7 @@
-Date,Opponent,Location,Tournament,Status,Notes
-2025-10-18,BSA Celtic 18B United,John Ankeney Soccer Complex,MVYSA Fall 2025,Upcoming,Check BSA_Celtic_Schedules.csv for their results
-2025-10-19,Club Ohio West 18B Academy,John Ankeney Soccer Complex,OCL BU08 White,Upcoming,Division team - rank and stats available
-2025-11-01,BSA Celtic 18B City,Hilliard,MVYSA Fall 2025,Upcoming,Check BSA_Celtic_Schedules.csv for their results
+Date,Opponent,Location,Tournament,GameTime,Status,Notes
+2025-10-18,BSA Celtic 18B United,John Ankeney Soccer Complex,MVYSA Fall 2025,11:20 AM,Upcoming,Game 1 of 2 on this day
+2025-10-18,Club Ohio West 18B Academy,John Ankeney Soccer Complex,OCL BU08 White,3:05 PM,Upcoming,Game 2 of 2 on this day
+2025-10-19,BSA Celtic 18B City,John Ankeney Soccer Complex,MVYSA Fall 2025,10:05 AM,Upcoming,Single game
+2025-11-01,Club Ohio Fall Classic TBD,Hilliard,Club Ohio Fall Classic,TBD,Upcoming,Game 1 of 2 - Tournament placeholder
+2025-11-01,Club Ohio Fall Classic TBD,Hilliard,Club Ohio Fall Classic,TBD,Upcoming,Game 2 of 2 - Tournament placeholder
+2025-11-02,Club Ohio Fall Classic TBD,Hilliard,Club Ohio Fall Classic,TBD,Upcoming,Single tournament game

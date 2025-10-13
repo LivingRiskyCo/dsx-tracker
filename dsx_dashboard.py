@@ -517,9 +517,12 @@ elif page == "🎮 Live Game Tracker":
                     
                     # Store in session state
                     st.session_state['selected_game_date'] = selected_data['Date'].date()
-                    st.session_state['selected_game_opponent'] = selected_data['Opponent']
-                    st.session_state['selected_game_location'] = selected_data.get('Location', '')
-                    st.session_state['selected_game_tournament'] = selected_data.get('Tournament', 'MVYSA Fall 2025')
+                    st.session_state['selected_game_opponent'] = str(selected_data['Opponent'])
+                    st.session_state['selected_game_location'] = str(selected_data.get('Location', ''))
+                    st.session_state['selected_game_tournament'] = str(selected_data.get('Tournament', 'MVYSA Fall 2025')).strip()
+                    
+                    # Debug: Show what was selected
+                    st.info(f"✅ Auto-filled from: {selected_data['Opponent']} - Tournament: {st.session_state['selected_game_tournament']}")
                 else:
                     # Clear session state when manual entry is selected
                     if 'selected_game_opponent' in st.session_state:
@@ -2859,7 +2862,7 @@ elif page == "⚙️ Data Manager":
     st.info("✏️ Edit your data directly! Changes are saved when you click the save button.")
     
     # Tabs for different editable data
-    tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs(["👥 Roster", "📊 Player Stats", "⚽ Matches", "🎮 Game Stats", "⚽ Positions", "📥 Downloads"])
+    tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs(["👥 Roster", "📊 Player Stats", "⚽ Matches", "🎮 Game Stats", "📅 Schedule", "⚽ Positions", "📥 Downloads"])
     
     with tab1:
         st.subheader("👥 Edit Roster")
@@ -3172,7 +3175,103 @@ elif page == "⚙️ Data Manager":
             default_positions.to_csv("position_config.csv", index=False)
             st.success("✅ Created default position_config.csv - Refresh page to edit!")
     
-    with tab6:
+    with tab5:
+        st.subheader("📅 Edit Upcoming Schedule")
+        st.write("Manage your upcoming games and opponents")
+        st.info("💡 **This schedule feeds the Quick Select dropdown in Live Game Tracker!**")
+        
+        try:
+            schedule = pd.read_csv("DSX_Upcoming_Opponents.csv", index_col=False)
+            
+            # Reset index to ensure no extra columns
+            schedule = schedule.reset_index(drop=True)
+            
+            # Editable dataframe
+            edited_schedule = st.data_editor(
+                schedule,
+                num_rows="dynamic",
+                use_container_width=True,
+                hide_index=True,
+                column_config={
+                    "Date": st.column_config.TextColumn("Date (YYYY-MM-DD)", required=True, help="Format: 2025-10-18"),
+                    "Opponent": st.column_config.TextColumn("Opponent Team", required=True),
+                    "Location": st.column_config.TextColumn("Location/Complex", required=True),
+                    "Tournament": st.column_config.TextColumn("Tournament/League", required=True),
+                    "GameTime": st.column_config.TextColumn("Game Time", help="e.g., 11:20 AM or TBD"),
+                    "Status": st.column_config.SelectboxColumn("Status", options=["Upcoming", "Completed", "Cancelled"]),
+                    "Notes": st.column_config.TextColumn("Notes"),
+                }
+            )
+            
+            st.caption("""
+            **Tips:**
+            - Date format must be YYYY-MM-DD (e.g., 2025-10-18)
+            - Multiple games on same day? Add multiple rows with same date
+            - Tournament teams use tournament name in Tournament column
+            - Use "TBD" for unknown opponents or times
+            """)
+            
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                if st.button("💾 Save Locally", type="secondary", key="save_schedule_local"):
+                    # Sort by date before saving
+                    edited_schedule['Date'] = pd.to_datetime(edited_schedule['Date'])
+                    edited_schedule = edited_schedule.sort_values('Date')
+                    edited_schedule['Date'] = edited_schedule['Date'].dt.strftime('%Y-%m-%d')
+                    edited_schedule.to_csv("DSX_Upcoming_Opponents.csv", index=False)
+                    st.success("✅ Saved! Quick Select will update on next game setup.")
+            
+            with col2:
+                if st.button("🚀 Save & Push to GitHub", type="primary", key="push_schedule"):
+                    try:
+                        # Sort by date before saving
+                        edited_schedule['Date'] = pd.to_datetime(edited_schedule['Date'])
+                        edited_schedule = edited_schedule.sort_values('Date')
+                        edited_schedule['Date'] = edited_schedule['Date'].dt.strftime('%Y-%m-%d')
+                        edited_schedule.to_csv("DSX_Upcoming_Opponents.csv", index=False)
+                        
+                        # Git commands
+                        os.system("git add DSX_Upcoming_Opponents.csv")
+                        os.system('git commit -m "Update schedule from dashboard"')
+                        result = os.system("git push")
+                        
+                        if result == 0:
+                            st.success("✅ Pushed to GitHub successfully!")
+                            st.balloons()
+                        else:
+                            st.error("❌ Git push failed - check credentials")
+                    except Exception as e:
+                        st.error(f"Error: {e}")
+            
+            with col3:
+                if st.button("↩️ Reset", key="reset_schedule"):
+                    st.rerun()
+            
+            st.markdown("---")
+            
+            # Preview upcoming games
+            with st.expander("👀 Preview - Games in Quick Select"):
+                st.write("**These games will appear in the dropdown:**")
+                for _, game in edited_schedule.iterrows():
+                    date_str = game['Date'] if isinstance(game['Date'], str) else game['Date'].strftime('%b %d')
+                    st.write(f"• {date_str} - {game['Opponent']} @ {game['Location']} ({game.get('GameTime', 'TBD')})")
+        
+        except FileNotFoundError:
+            st.error("DSX_Upcoming_Opponents.csv not found")
+            st.info("Creating default schedule file...")
+            default_schedule = pd.DataFrame({
+                'Date': ['2025-10-18'],
+                'Opponent': ['Example Team'],
+                'Location': ['John Ankeney Soccer Complex'],
+                'Tournament': ['MVYSA Fall 2025'],
+                'GameTime': ['11:20 AM'],
+                'Status': ['Upcoming'],
+                'Notes': ['Edit or delete this example']
+            })
+            default_schedule.to_csv("DSX_Upcoming_Opponents.csv", index=False)
+            st.success("✅ Created default DSX_Upcoming_Opponents.csv - Refresh page to edit!")
+    
+    with tab7:
         st.subheader("📥 Download Data Files")
         
         # Check what data is available
