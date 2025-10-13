@@ -1180,15 +1180,18 @@ elif page == "🏆 Division Rankings":
     
     # Calculate DSX stats
     if not dsx_matches.empty:
-        completed = dsx_matches[dsx_matches['Result'].notna()].copy()
+        # Check if Result or Outcome column exists
+        result_col = 'Result' if 'Result' in dsx_matches.columns else 'Outcome'
+        
+        completed = dsx_matches[dsx_matches[result_col].notna()].copy()
         
         if len(completed) > 0:
             dsx_gp = len(completed)
-            dsx_w = len(completed[completed['Result'] == 'W'])
-            dsx_d = len(completed[completed['Result'] == 'D'])
-            dsx_l = len(completed[completed['Result'] == 'L'])
-            dsx_gf = completed['GF'].sum()
-            dsx_ga = completed['GA'].sum()
+            dsx_w = len(completed[completed[result_col] == 'W'])
+            dsx_d = len(completed[completed[result_col] == 'D'])
+            dsx_l = len(completed[completed[result_col] == 'L'])
+            dsx_gf = pd.to_numeric(completed['GF'], errors='coerce').fillna(0).sum()
+            dsx_ga = pd.to_numeric(completed['GA'], errors='coerce').fillna(0).sum()
             dsx_gd = dsx_gf - dsx_ga
             dsx_pts = (dsx_w * 3) + dsx_d
             dsx_ppg = dsx_pts / dsx_gp if dsx_gp > 0 else 0
