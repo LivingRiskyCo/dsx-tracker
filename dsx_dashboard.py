@@ -229,9 +229,9 @@ if page == "🎯 What's Next":
         
         for idx, game in upcoming.head(3).iterrows():
             opponent = game['Opponent']
-            game_date = game['GameDate']
+            game_date = game['Date']
             location = game['Location']
-            league = game['League']
+            league = game.get('Tournament', game.get('League', 'N/A'))
             
             with st.expander(f"**{game_date}**: {opponent} ({league})", expanded=(idx==0)):
                 col1, col2 = st.columns([2, 3])
@@ -241,7 +241,7 @@ if page == "🎯 What's Next":
                     st.write(f"**Date:** {game_date}")
                     st.write(f"**Location:** {location}")
                     st.write(f"**League:** {league}")
-                    st.write(f"**Notes:** {game['Notes']}")
+                    st.write(f"**Notes:** {game.get('Notes', 'N/A')}")
                 
                 with col2:
                     st.subheader("🎯 Match Prediction")
@@ -2235,10 +2235,11 @@ elif page == "🔍 Opponent Intel":
             st.markdown("### 📅 Upcoming Schedule")
             
             for _, game in upcoming.iterrows():
-                with st.expander(f"**{game['GameDate']}**: {game['Opponent']} ({game['League']})", expanded=False):
+                league = game.get('Tournament', game.get('League', 'N/A'))
+                with st.expander(f"**{game['Date']}**: {game['Opponent']} ({league})", expanded=False):
                     st.write(f"📍 **Location:** {game['Location']}")
-                    st.write(f"🏆 **League:** {game['League']}")
-                    st.write(f"📝 **Notes:** {game['Notes']}")
+                    st.write(f"🏆 **League:** {league}")
+                    st.write(f"📝 **Notes:** {game.get('Notes', 'N/A')}")
             
             st.markdown("---")
             
