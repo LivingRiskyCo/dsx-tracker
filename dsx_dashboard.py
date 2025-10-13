@@ -1255,68 +1255,128 @@ elif page == "🏆 Division Rankings":
     df = load_division_data()
     
     if not df.empty and not dsx_row.empty:
-        # Filter to only teams DSX plays
+        # Try exact match first
         opponent_df = df[df['Team'].isin(opponent_names)].copy()
         
-        # Recalculate per-game stats for consistency
-        for idx, row in opponent_df.iterrows():
-            gp = row['GP'] if row['GP'] > 0 else 1
-            opponent_df.at[idx, 'GF_PG'] = row['GF'] / gp if 'GF' in row else 0
-            opponent_df.at[idx, 'GA_PG'] = row['GA'] / gp if 'GA' in row else 0
-            opponent_df.at[idx, 'GD_PG'] = row['GD'] / gp if 'GD' in row else 0
-            opponent_df.at[idx, 'IsDSX'] = False
-        
-        # Combine DSX with opponents
-        combined_df = pd.concat([dsx_row, opponent_df], ignore_index=True)
-        
-        # Sort by PPG (primary) and StrengthIndex (secondary)
-        combined_df = combined_df.sort_values(['PPG', 'StrengthIndex'], ascending=[False, False]).reset_index(drop=True)
-        
-        # Add rank
-        combined_df['Rank'] = range(1, len(combined_df) + 1)
-        
-        # Get DSX rank
-        dsx_rank_row = combined_df[combined_df['IsDSX'] == True]
-        if not dsx_rank_row.empty:
-            dsx_rank = int(dsx_rank_row['Rank'].values[0])
-            total_teams = len(combined_df)
+        # Show matching results
+        with st.expander(f"🔍 Opponent Matching Details ({len(opponent_df)} of {len(opponent_names)} matched)"):
+            if not opponent_df.empty:
+                st.success(f"✅ Found {len(opponent_df)} exact matches!")
+                st.write("**Matched teams:**", opponent_df['Team'].tolist())
             
-            # Top metrics
+            unmatched = [opp for opp in opponent_names if opp not in opponent_df['Team'].values]
+            if unmatched:
+                st.warning(f"⚠️ {len(unmatched)} opponents not found in division data:")
+                st.write(unmatched)
+                st.caption("These teams might not be in the divisions we're tracking, or the names might not match exactly.")
+        
+        # If no exact matches, try fuzzy matching
+        if opponent_df.empty and opponent_names:
+            st.warning("⚠️ No exact matches found. Trying fuzzy matching...")
+            
+            # Try partial matching (case-insensitive)
+            matched_teams = []
+            for opp in opponent_names:
+                opp_lower = str(opp).lower()
+                for idx, row in df.iterrows():
+                    team_lower = str(row['Team']).lower()
+                    # Check if opponent name is in team name or vice versa
+                    if opp_lower in team_lower or team_lower in opp_lower:
+                        matched_teams.append(row['Team'])
+                        break
+            
+            if matched_teams:
+                opponent_df = df[df['Team'].isin(matched_teams)].copy()
+                st.success(f"✅ Found {len(opponent_df)} teams using fuzzy matching!")
+            else:
+                st.error(f"❌ Could not find any matching teams.")
+                with st.expander("🔍 Troubleshooting"):
+                    st.write("**Your opponents:**")
+                    st.write(opponent_names[:10])
+                    st.write("\n**Available teams in division data (sample):**")
+                    st.write(df['Team'].head(15).tolist())
+                    st.info("💡 **Tip:** Run `python update_all_data.py` to refresh division data and make sure your opponents' divisions are being tracked!")
+        
+        # If still no matches, at least show DSX stats
+        if opponent_df.empty:
+            st.warning("⚠️ No opponent data available for ranking. Showing DSX stats only.")
+            
+            # Show just DSX stats
             st.markdown("---")
-            col1, col2, col3, col4 = st.columns(4)
+            st.subheader("📊 DSX Season Stats")
             
+            col1, col2 = st.columns(2)
             with col1:
-                delta = f"Top {dsx_rank}" if dsx_rank <= 3 else f"{total_teams - dsx_rank} teams behind"
-                st.metric("DSX Rank", f"#{dsx_rank} of {total_teams}", delta)
-            
+                st.metric("Record", f"{dsx_w}-{dsx_l}-{dsx_d}")
+                st.metric("Goals For", f"{dsx_gf} ({dsx_gf_pg:.2f}/game)")
+                st.metric("Points", f"{dsx_pts} ({dsx_ppg:.2f} PPG)")
             with col2:
-                st.metric("Strength Index", f"{dsx_strength:.1f}", 
-                         f"{'Strong' if dsx_strength > 60 else 'Improving' if dsx_strength > 40 else 'Building'}")
+                st.metric("Games Played", dsx_gp)
+                st.metric("Goals Against", f"{dsx_ga} ({dsx_ga_pg:.2f}/game)")
+                st.metric("Goal Diff", f"{dsx_gd:+d} ({dsx_gd_pg:+.2f}/game)")
             
-            with col3:
-                st.metric("Record", f"{dsx_w}-{dsx_l}-{dsx_d}", f"{dsx_ppg:.2f} PPG")
+            st.info("💡 **To see rankings:** Add your opponents' divisions to the tracking system by running `python update_all_data.py`")
             
-            with col4:
-                st.metric("Goal Diff/Game", f"{dsx_gd_pg:+.2f}", 
-                         f"{'Positive' if dsx_gd_pg > 0 else 'Even' if dsx_gd_pg == 0 else 'Negative'}")
-        
-        st.markdown("---")
-        
-        # Rankings table
-        st.subheader("📊 Complete Rankings - DSX vs Opponents")
-        st.caption("Ranked by Points Per Game (PPG), then Strength Index")
-        
-        # Format the dataframe for display
-        display_df = combined_df.copy()
-        
-        # Highlight DSX
-        display_df['Team'] = display_df.apply(
-            lambda row: f"🟢 **{row['Team']}**" if row['IsDSX'] else row['Team'],
-            axis=1
-        )
-        
-        # Round numeric columns
-        display_df['PPG'] = display_df['PPG'].round(2)
+        # Recalculate per-game stats for consistency
+        if not opponent_df.empty:
+            for idx, row in opponent_df.iterrows():
+                gp = row['GP'] if row['GP'] > 0 else 1
+                opponent_df.at[idx, 'GF_PG'] = row['GF'] / gp if 'GF' in row else 0
+                opponent_df.at[idx, 'GA_PG'] = row['GA'] / gp if 'GA' in row else 0
+                opponent_df.at[idx, 'GD_PG'] = row['GD'] / gp if 'GD' in row else 0
+                opponent_df.at[idx, 'IsDSX'] = False
+            
+            # Combine DSX with opponents
+            combined_df = pd.concat([dsx_row, opponent_df], ignore_index=True)
+            
+            # Sort by PPG (primary) and StrengthIndex (secondary)
+            combined_df = combined_df.sort_values(['PPG', 'StrengthIndex'], ascending=[False, False]).reset_index(drop=True)
+            
+            # Add rank
+            combined_df['Rank'] = range(1, len(combined_df) + 1)
+            
+            # Get DSX rank
+            dsx_rank_row = combined_df[combined_df['IsDSX'] == True]
+            if not dsx_rank_row.empty:
+                dsx_rank = int(dsx_rank_row['Rank'].values[0])
+                total_teams = len(combined_df)
+                
+                # Top metrics
+                st.markdown("---")
+                col1, col2, col3, col4 = st.columns(4)
+                
+                with col1:
+                    delta = f"Top {dsx_rank}" if dsx_rank <= 3 else f"{total_teams - dsx_rank} teams behind"
+                    st.metric("DSX Rank", f"#{dsx_rank} of {total_teams}", delta)
+                
+                with col2:
+                    st.metric("Strength Index", f"{dsx_strength:.1f}", 
+                             f"{'Strong' if dsx_strength > 60 else 'Improving' if dsx_strength > 40 else 'Building'}")
+                
+                with col3:
+                    st.metric("Record", f"{dsx_w}-{dsx_l}-{dsx_d}", f"{dsx_ppg:.2f} PPG")
+                
+                with col4:
+                    st.metric("Goal Diff/Game", f"{dsx_gd_pg:+.2f}", 
+                             f"{'Positive' if dsx_gd_pg > 0 else 'Even' if dsx_gd_pg == 0 else 'Negative'}")
+                
+                st.markdown("---")
+                
+                # Rankings table
+                st.subheader("📊 Complete Rankings - DSX vs Opponents")
+                st.caption("Ranked by Points Per Game (PPG), then Strength Index")
+                
+                # Format the dataframe for display
+                display_df = combined_df.copy()
+                
+                # Highlight DSX
+                display_df['Team'] = display_df.apply(
+                    lambda row: f"🟢 **{row['Team']}**" if row['IsDSX'] else row['Team'],
+                    axis=1
+                )
+                
+                # Round numeric columns
+                display_df['PPG'] = display_df['PPG'].round(2)
         display_df['GF_PG'] = display_df['GF_PG'].round(2)
         display_df['GA_PG'] = display_df['GA_PG'].round(2)
         display_df['GD_PG'] = display_df['GD_PG'].round(2)
