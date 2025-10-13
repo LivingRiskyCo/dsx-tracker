@@ -490,74 +490,102 @@ elif page == "🎮 Live Game Tracker":
         default_location = ""
         default_tournament = "MVYSA Fall 2025"
         
-        # Quick select from upcoming matches
+        # Quick select from upcoming matches - NEW APPROACH: Skip manual form!
         if has_upcoming and not upcoming_matches.empty:
-            st.subheader("⚡ Quick Select (Upcoming Match)")
-            upcoming_options = ["Enter manually..."] + [
-                f"{row['Date'].strftime('%b %d')} - {row['Opponent']} @ {row.get('Location', 'TBD')}"
-                for _, row in upcoming_matches.iterrows()
-            ]
-            selected_match = st.selectbox(
-                "Select upcoming game or enter manually:", 
-                upcoming_options,
-                key="match_selector"
+            st.subheader("⚡ Quick Select (Recommended)")
+            
+            # Build game options
+            game_options = {}
+            for idx, row in upcoming_matches.iterrows():
+                game_key = f"{row['Date'].strftime('%b %d')} - {row['Opponent']} @ {row.get('Location', 'TBD')}"
+                game_options[game_key] = {
+                    'date': row['Date'].date(),
+                    'opponent': str(row['Opponent']),
+                    'location': str(row.get('Location', '')),
+                    'tournament': str(row.get('Tournament', 'MVYSA Fall 2025')),
+                    'time': str(row.get('GameTime', 'TBD'))
+                }
+            
+            game_choice = st.radio(
+                "Select your game:",
+                ["Manual entry..."] + list(game_options.keys()),
+                key="game_radio_selector"
             )
             
-            # Check if selection changed (to trigger rerun)
-            if 'last_selected_match' not in st.session_state:
-                st.session_state['last_selected_match'] = "Enter manually..."
-            
-            if selected_match != st.session_state['last_selected_match']:
-                # Selection changed! Update session state and rerun
-                st.session_state['last_selected_match'] = selected_match
+            if game_choice != "Manual entry...":
+                # Show selected game card
+                selected_game = game_options[game_choice]
                 
-                if selected_match != "Enter manually...":
-                    # Auto-fill from selected match
-                    match_idx = upcoming_options.index(selected_match) - 1
-                    selected_data = upcoming_matches.iloc[match_idx]
-                    
-                    # Store in session state
-                    st.session_state['selected_game_date'] = selected_data['Date'].date()
-                    st.session_state['selected_game_opponent'] = str(selected_data['Opponent'])
-                    st.session_state['selected_game_location'] = str(selected_data.get('Location', ''))
-                    st.session_state['selected_game_tournament'] = str(selected_data.get('Tournament', 'MVYSA Fall 2025')).strip()
-                    
-                    # Debug: Show what was selected
-                    st.info(f"✅ Auto-filled from: {selected_data['Opponent']} - Tournament: {st.session_state['selected_game_tournament']}")
-                else:
-                    # Clear session state when manual entry is selected
-                    if 'selected_game_opponent' in st.session_state:
-                        del st.session_state['selected_game_opponent']
-                        del st.session_state['selected_game_date']
-                        del st.session_state['selected_game_location']
-                        del st.session_state['selected_game_tournament']
+                st.success("📋 **Selected Game:**")
+                col1, col2 = st.columns(2)
+                with col1:
+                    st.write(f"**📅 Date:** {selected_game['date']}")
+                    st.write(f"**⏰ Time:** {selected_game['time']}")
+                    st.write(f"**🏆 Tournament:** {selected_game['tournament']}")
+                with col2:
+                    st.write(f"**🏟️ Opponent:** {selected_game['opponent']}")
+                    st.write(f"**📍 Location:** {selected_game['location']}")
                 
-                # Force rerun to update the input fields
-                st.rerun()
+                st.markdown("---")
+                
+                # Store game data and skip to lineup
+                col_a, col_b = st.columns([3, 1])
+                with col_a:
+                    if st.button("✅ CONFIRM & SELECT LINEUP", type="primary", use_container_width=True):
+                        st.session_state.game_data = {
+                            'date': str(selected_game['date']),
+                            'opponent': selected_game['opponent'],
+                            'location': selected_game['location'],
+                            'tournament': selected_game['tournament'],
+                            'half_length': 25
+                        }
+                        st.session_state['skip_manual_form'] = True
+                        st.rerun()
+                with col_b:
+                    if st.button("↩️ Back", use_container_width=True):
+                        st.rerun()
+                
+                # Don't show manual form below
+                show_manual_form = False
+            else:
+                show_manual_form = True
             
             st.markdown("---")
+        else:
+            show_manual_form = True
         
-        # Use session state values if they exist (for persistence after selection)
-        if 'selected_game_opponent' in st.session_state:
-            default_date = st.session_state['selected_game_date']
-            default_opponent = st.session_state['selected_game_opponent']
-            default_location = st.session_state['selected_game_location']
-            default_tournament = st.session_state['selected_game_tournament']
-        
-        col1, col2 = st.columns(2)
-        
-        with col1:
-            game_date = st.date_input("Date", value=default_date, key="game_date_input")
-            opponent = st.text_input("Opponent Team", value=default_opponent, key="game_opponent_input")
-            location = st.text_input("Location", value=default_location, key="game_location_input")
-            tournament = st.text_input("Tournament/League", value=default_tournament, key="game_tournament_input")
-        
-        with col2:
-            st.subheader("⚙️ Game Settings")
-            half_length = st.number_input("Half Length (minutes)", min_value=10, max_value=45, value=25)
-            st.info(f"Game will be 2 halves of {half_length} minutes each")
-        
-        st.markdown("---")
+        # Only show manual form if needed
+        if show_manual_form and 'skip_manual_form' not in st.session_state:
+            st.subheader("📝 Manual Entry")
+            
+            col1, col2 = st.columns(2)
+            
+            with col1:
+                game_date = st.date_input("Date", value=default_date)
+                opponent = st.text_input("Opponent Team", value=default_opponent)
+                location = st.text_input("Location", value=default_location)
+                tournament = st.text_input("Tournament/League", value=default_tournament)
+            
+            with col2:
+                st.subheader("⚙️ Game Settings")
+                half_length = st.number_input("Half Length (minutes)", min_value=10, max_value=45, value=25)
+                st.info(f"Game will be 2 halves of {half_length} minutes each")
+            
+            st.markdown("---")
+        elif 'skip_manual_form' in st.session_state:
+            # Use game data from quick select
+            game_date = datetime.strptime(st.session_state.game_data['date'], '%Y-%m-%d').date()
+            opponent = st.session_state.game_data['opponent']
+            location = st.session_state.game_data['location']
+            tournament = st.session_state.game_data['tournament']
+            half_length = st.session_state.game_data['half_length']
+        else:
+            # Fallback defaults if nothing is set
+            game_date = default_date
+            opponent = default_opponent
+            location = default_location
+            tournament = default_tournament
+            half_length = 25
         
         # Load position configuration
         try:
@@ -641,6 +669,9 @@ elif page == "🎮 Live Game Tracker":
                     st.session_state.starting_lineup = selected_starters
                     st.session_state.on_field = selected_starters.copy()
                     st.session_state.bench_players = [int(row['PlayerNumber']) for _, row in bench.iterrows()]
+                    # Clear quick select flag for next game
+                    if 'skip_manual_form' in st.session_state:
+                        del st.session_state['skip_manual_form']
                     st.rerun()
                 else:
                     st.error("Please enter opponent name and select at least 7 starting players!")
@@ -865,6 +896,9 @@ elif page == "🎮 Live Game Tracker":
             st.session_state.game_active = False
             st.session_state.show_summary = False
             st.session_state.events = []
+            # Clear quick select flag for fresh setup
+            if 'skip_manual_form' in st.session_state:
+                del st.session_state['skip_manual_form']
             st.rerun()
 
 
