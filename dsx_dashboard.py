@@ -412,158 +412,354 @@ if page == "🎯 What's Next":
 
 
 elif page == "🎮 Live Game Tracker":
-    st.title("🎮 Live Game Tracker")
+    st.title("⚽ DSX Live Game Tracker")
     
-    st.info("🚀 **Use the standalone app for best experience during games!**")
+    st.success("📱 **Perfect for phones!** Use this page at the field to track games in real-time!")
     
-    col1, col2 = st.columns(2)
+    # Initialize game tracker session state
+    if 'game_active' not in st.session_state:
+        st.session_state.game_active = False
+    if 'game_data' not in st.session_state:
+        st.session_state.game_data = {}
+    if 'events' not in st.session_state:
+        st.session_state.events = []
+    if 'timer_running' not in st.session_state:
+        st.session_state.timer_running = False
+    if 'time_remaining' not in st.session_state:
+        st.session_state.time_remaining = 25 * 60
+    if 'current_half' not in st.session_state:
+        st.session_state.current_half = 1
+    if 'last_update' not in st.session_state:
+        st.session_state.last_update = None
+    if 'starting_lineup' not in st.session_state:
+        st.session_state.starting_lineup = []
+    if 'bench_players' not in st.session_state:
+        st.session_state.bench_players = []
+    if 'on_field' not in st.session_state:
+        st.session_state.on_field = []
     
-    with col1:
-        st.subheader("📱 Launch Live Tracker")
-        st.write("""
-        The Live Game Tracker is a dedicated app optimized for sideline use:
-        
-        ✅ **Features:**
-        - 25-minute countdown timer per half
-        - Starting 7 lineup selection
-        - Big buttons for quick actions
-        - Track goals, assists, shots, saves, corners, subs
-        - Live event feed
-        - Auto-save to CSVs
-        - Parent viewing mode
-        
-        **To launch:**
-        ```bash
-        streamlit run live_game_tracker.py
-        ```
-        
-        Or double-click: `launch_game_tracker.bat`
-        """)
-        
-        st.success("Perfect for tablets or phones on the sideline!")
+    # Helper functions
+    def format_time(seconds):
+        mins = seconds // 60
+        secs = seconds % 60
+        return f"{mins:02d}:{secs:02d}"
     
-    with col2:
-        st.subheader("📊 What Gets Tracked")
-        
-        st.write("**Player Actions:**")
-        st.write("⚽ Goals (with timestamps)")
-        st.write("🎯 Assists")
-        st.write("🏹 Shot attempts")
-        st.write("🧤 Goalkeeper saves")
-        
-        st.write("")
-        st.write("**Team Events:**")
-        st.write("⚠️ Corner kicks")
-        st.write("🔄 Substitutions (in/out)")
-        st.write("⏱️ Game time tracking")
-        st.write("🥅 Opponent goals")
-        
-        st.write("")
-        st.write("**Auto-Generated:**")
-        st.write("📈 Live stats (shots, saves, corners)")
-        st.write("📋 Event log with timestamps")
-        st.write("💾 CSV exports to dashboard")
-        st.write("🏆 Game summary report")
+    def add_event_tracker(event_type, player=None, assist=None, notes=""):
+        elapsed = (25 * 60) - st.session_state.time_remaining
+        event = {
+            'timestamp': format_time(elapsed),
+            'half': st.session_state.current_half,
+            'type': event_type,
+            'player': player,
+            'assist': assist,
+            'notes': notes,
+            'time': datetime.now().strftime('%H:%M:%S')
+        }
+        st.session_state.events.insert(0, event)
+        return event
     
-    st.markdown("---")
+    def get_score_tracker():
+        dsx_goals = len([e for e in st.session_state.events if e['type'] == 'DSX_GOAL'])
+        opp_goals = len([e for e in st.session_state.events if e['type'] == 'OPP_GOAL'])
+        return dsx_goals, opp_goals
     
-    st.subheader("🎯 How To Use")
-    
-    with st.expander("📖 Step-by-Step Game Day Guide"):
-        st.markdown("""
-        ### Before Kickoff (2 minutes):
-        1. Open Live Game Tracker on tablet/phone
-        2. Enter opponent name and game details
-        3. Select starting 7 players
-        4. Click **START GAME**
-        
-        ### During Game:
-        1. Click **▶️ Start** to begin countdown
-        2. Use big buttons for quick actions:
-           - **⚽ DSX GOAL** → Select scorer → Add assist (optional) → Done!
-           - **🥅 OPP GOAL** → Instant record
-           - **🎯 SHOT** → Select player → Note result
-           - **🔄 SUB** → Pick player out, player in → Done!
-        3. Timer auto-counts down (25 min per half)
-        4. All events logged with timestamps
-        
-        ### Half Time:
-        - Click **⏸️ Pause** to stop timer
-        - Review stats and events
-        - Click **⏭️ Next Half** when ready
-        
-        ### End of Game:
-        1. Click **⏹️ End Game**
-        2. Review summary (score, scorers, assists)
-        3. Click **💾 Save to CSV**
-        4. Data auto-updates dashboard!
-        
-        ### Tips:
-        - ⏸️ **Pause often** - Timer can be paused anytime
-        - 🔄 **Use subs** - Track who's on field for accurate stats
-        - 📱 **Share link** - Parents can watch live on their phones
-        - 💾 **Save early** - Don't wait until end to save important events
-        """)
-    
-    with st.expander("📱 Mobile Usage at the Field (RECOMMENDED!)"):
-        st.markdown("""
-        ### 🎯 Use Streamlit Cloud on Your Phone!
-        
-        **THIS IS THE BEST OPTION for game day:**
-        
-        1. **You're already on Streamlit Cloud!** 
-           - URL: `https://dsx-tracker.streamlit.app`
-        2. **At the field:**
-           - Open this URL on your phone browser
-           - Navigate to "🎮 Live Game Tracker" 
-           - Use the app from your phone!
-        3. **Share with parents:**
-           - Text them the same URL
-           - They can watch live from anywhere
-           - Works on any device, any location
-           - No WiFi network required!
-        
-        ### ✅ Why Streamlit Cloud is Perfect:
-        - 📱 Works from anywhere with cell signal
-        - 🌐 Parents don't need to be on same network
-        - 💾 Auto-saves to GitHub (data syncs everywhere)
-        - 🔄 No installation needed
-        - 🆓 Completely free!
-        
-        ### 👨‍👩‍👧‍👦 What Parents See:
-        - ✅ Live score updates
-        - ✅ Goal scorers in real-time  
-        - ✅ Game timer countdown
-        - ✅ Full event feed
-        - ❌ Can't edit (read-only)
-        
-        ### 📲 Quick Share Message Template:
-        ```
-        Watch live game updates here:
-        https://dsx-tracker.streamlit.app
-        
-        Click "🎮 Live Game Tracker" in sidebar
-        ```
-        """)
-    
-    st.markdown("---")
-    
-    # Show recent games tracked
+    # Load roster for game tracker
     try:
-        matches = pd.read_csv("DSX_Matches_Fall2025.csv")
-        matches['Date'] = pd.to_datetime(matches['Date'])
-        recent = matches.nlargest(5, 'Date')
-        
-        st.subheader("📅 Recent Games Tracked")
-        
-        for _, match in recent.iterrows():
-            result_emoji = {'W': '✅', 'D': '➖', 'L': '❌'}
-            emoji = result_emoji.get(match['Result'], '⚽')
-            
-            st.write(f"{emoji} **{match['Date'].strftime('%b %d')}** - {match['Opponent']} "
-                    f"({int(match['GF'])}-{int(match['GA'])}) - {match['Outcome']}")
+        roster_tracker = pd.read_csv("roster.csv")
+        roster_tracker = roster_tracker[['PlayerNumber', 'PlayerName', 'Position']].sort_values('PlayerNumber')
     except:
-        st.info("No games tracked yet. Use the Live Game Tracker to record your first game!")
+        roster_tracker = pd.DataFrame()
+    
+    # Check if game is active
+    if not st.session_state.game_active:
+        # PRE-GAME SETUP
+        st.header("🏟️ New Game Setup")
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            game_date = st.date_input("Date", datetime.now())
+            opponent = st.text_input("Opponent Team", "")
+            location = st.text_input("Location", "")
+            tournament = st.text_input("Tournament/League", "MVYSA Fall 2025")
+        
+        with col2:
+            st.subheader("⚙️ Game Settings")
+            half_length = st.number_input("Half Length (minutes)", min_value=10, max_value=45, value=25)
+            st.info(f"Game will be 2 halves of {half_length} minutes each")
+        
+        st.markdown("---")
+        
+        # STARTING LINEUP SELECTION
+        st.subheader("👥 Select Starting 7")
+        
+        if not roster_tracker.empty:
+            lineup_cols = st.columns(7)
+            
+            selected_starters = []
+            for i, col in enumerate(lineup_cols):
+                with col:
+                    st.write(f"**Position {i+1}**")
+                    player_options = ["Select..."] + [f"#{int(row['PlayerNumber'])} {row['PlayerName']}" 
+                                                       for _, row in roster_tracker.iterrows()]
+                    selected = st.selectbox(f"Player {i+1}", player_options, key=f"starter_{i}", label_visibility="collapsed")
+                    if selected != "Select...":
+                        player_num = int(selected.split('#')[1].split(' ')[0])
+                        selected_starters.append(player_num)
+            
+            st.markdown("---")
+            
+            # Show bench
+            if len(selected_starters) > 0:
+                bench = roster_tracker[~roster_tracker['PlayerNumber'].isin(selected_starters)]
+                if not bench.empty:
+                    st.subheader("🪑 Bench")
+                    bench_display = ", ".join([f"#{int(row['PlayerNumber'])} {row['PlayerName']}" 
+                                               for _, row in bench.iterrows()])
+                    st.write(bench_display)
+            
+            st.markdown("---")
+            
+            # Start game button
+            if st.button("🚀 START GAME", type="primary", use_container_width=True):
+                if opponent and len(selected_starters) >= 7:
+                    st.session_state.game_active = True
+                    st.session_state.game_data = {
+                        'date': game_date.strftime('%Y-%m-%d'),
+                        'opponent': opponent,
+                        'location': location,
+                        'tournament': tournament,
+                        'half_length': half_length
+                    }
+                    st.session_state.time_remaining = half_length * 60
+                    st.session_state.starting_lineup = selected_starters
+                    st.session_state.on_field = selected_starters.copy()
+                    st.session_state.bench_players = [int(row['PlayerNumber']) for _, row in bench.iterrows()]
+                    st.rerun()
+                else:
+                    st.error("Please enter opponent name and select at least 7 starting players!")
+        else:
+            st.error("No roster found! Please add players to roster.csv first.")
+    
+    else:
+        # LIVE GAME INTERFACE  
+        game_data = st.session_state.game_data
+        dsx_score, opp_score = get_score_tracker()
+        
+        # Header with scores
+        st.markdown(f"""
+        <div style="font-size: 48px; font-weight: bold; text-align: center; padding: 20px; margin: 20px 0;">
+            DSX <span style="color: #667eea;">{dsx_score}</span> - 
+            <span style="color: #f093fb;">{opp_score}</span> {game_data['opponent']}
+        </div>
+        """, unsafe_allow_html=True)
+        
+        # Timer
+        half_text = "FIRST HALF" if st.session_state.current_half == 1 else "SECOND HALF"
+        st.markdown(f"""
+        <div style="font-size: 72px; font-weight: bold; text-align: center; padding: 30px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 20px; color: white; margin: 20px 0;">
+            ⏱️ {half_text}<br>
+            {format_time(st.session_state.time_remaining)}
+        </div>
+        """, unsafe_allow_html=True)
+        
+        # Timer controls
+        col1, col2, col3, col4, col5 = st.columns(5)
+        
+        with col1:
+            if st.button("▶️ Start" if not st.session_state.timer_running else "⏸️ Pause", 
+                         use_container_width=True):
+                st.session_state.timer_running = not st.session_state.timer_running
+                st.session_state.last_update = time.time()
+                st.rerun()
+        
+        with col2:
+            if st.button("⏭️ Next Half", use_container_width=True):
+                if st.session_state.current_half == 1:
+                    st.session_state.current_half = 2
+                    st.session_state.time_remaining = game_data['half_length'] * 60
+                    st.session_state.timer_running = False
+                    add_event_tracker('HALF_TIME', notes="Half time break")
+                    st.rerun()
+        
+        with col3:
+            if st.button("🔄 Reset Timer", use_container_width=True):
+                st.session_state.time_remaining = game_data['half_length'] * 60
+                st.session_state.timer_running = False
+                st.rerun()
+        
+        with col4:
+            if st.button("⏹️ End Game", use_container_width=True, type="primary"):
+                st.session_state.game_active = False
+                st.session_state.show_summary = True
+                st.rerun()
+        
+        with col5:
+            if st.button("🔄 Refresh", use_container_width=True):
+                st.rerun()
+        
+        # Update timer
+        if st.session_state.timer_running:
+            if st.session_state.last_update:
+                elapsed = time.time() - st.session_state.last_update
+                st.session_state.time_remaining = max(0, st.session_state.time_remaining - int(elapsed))
+            st.session_state.last_update = time.time()
+            
+            if st.session_state.time_remaining > 0:
+                time.sleep(1)
+                st.rerun()
+            else:
+                st.session_state.timer_running = False
+                st.balloons()
+                st.success(f"{half_text} Complete!")
+        
+        st.markdown("---")
+        
+        # BIG BUTTON DASHBOARD
+        st.subheader("🎮 Quick Actions")
+        
+        col1, col2, col3 = st.columns(3)
+        
+        with col1:
+            if st.button("⚽ DSX GOAL", use_container_width=True, type="primary", key="dsx_goal_btn"):
+                st.session_state.show_goal_dialog = True
+                st.rerun()
+        
+        with col2:
+            if st.button("🥅 OPP GOAL", use_container_width=True, key="opp_goal_btn"):
+                add_event_tracker('OPP_GOAL')
+                st.rerun()
+        
+        with col3:
+            if st.button("🎯 SHOT", use_container_width=True, key="shot_btn"):
+                st.session_state.show_shot_dialog = True
+                st.rerun()
+        
+        col4, col5, col6 = st.columns(3)
+        
+        with col4:
+            if st.button("🧤 SAVE", use_container_width=True, key="save_btn"):
+                st.session_state.show_save_dialog = True
+                st.rerun()
+        
+        with col5:
+            if st.button("⚠️ CORNER", use_container_width=True, key="corner_btn"):
+                add_event_tracker('CORNER')
+                st.rerun()
+        
+        with col6:
+            if st.button("🔄 SUB", use_container_width=True, key="sub_btn"):
+                st.session_state.show_sub_dialog = True
+                st.rerun()
+        
+        col7, col8, col9 = st.columns(3)
+        
+        with col7:
+            if st.button("↩️ UNDO", use_container_width=True, type="secondary", key="undo_btn"):
+                if st.session_state.events:
+                    last_event = st.session_state.events.pop(0)
+                    st.success(f"✅ Undid: {last_event['type']}")
+                    st.rerun()
+                else:
+                    st.error("No events to undo!")
+        
+        with col8:
+            if st.button("📝 NOTE", use_container_width=True, key="note_btn"):
+                st.session_state.show_note_dialog = True
+                st.rerun()
+        
+        with col9:
+            if st.button("🚨 TIMEOUT", use_container_width=True, key="timeout_btn"):
+                add_event_tracker('TIMEOUT', notes="Injury/timeout")
+                if st.session_state.timer_running:
+                    st.session_state.timer_running = False
+                st.rerun()
+        
+        # Dialogs (simplified for embedding)
+        if 'show_goal_dialog' in st.session_state and st.session_state.show_goal_dialog:
+            with st.form("goal_form"):
+                st.subheader("⚽ DSX GOAL!")
+                on_field_players = roster_tracker[roster_tracker['PlayerNumber'].isin(st.session_state.on_field)]
+                scorer = st.selectbox("Who scored?", [f"#{int(row['PlayerNumber'])} {row['PlayerName']}" 
+                                                       for _, row in on_field_players.iterrows()])
+                assist = st.selectbox("Assisted by:", ["None"] + [f"#{int(row['PlayerNumber'])} {row['PlayerName']}" 
+                                                                   for _, row in on_field_players.iterrows()])
+                notes = st.text_input("Notes (optional)")
+                col1, col2 = st.columns(2)
+                with col1:
+                    if st.form_submit_button("✅ RECORD", use_container_width=True, type="primary"):
+                        player_name = scorer.split(' ', 1)[1]
+                        assist_name = assist.split(' ', 1)[1] if assist != "None" else None
+                        add_event_tracker('DSX_GOAL', player=player_name, assist=assist_name, notes=notes)
+                        st.session_state.show_goal_dialog = False
+                        st.rerun()
+                with col2:
+                    if st.form_submit_button("❌ Cancel", use_container_width=True):
+                        st.session_state.show_goal_dialog = False
+                        st.rerun()
+        
+        st.markdown("---")
+        
+        # Live Feed
+        col1, col2 = st.columns([2, 1])
+        
+        with col1:
+            st.subheader("📋 Live Event Feed")
+            if st.session_state.events:
+                for event in st.session_state.events[:20]:
+                    icon = {'DSX_GOAL': '⚽', 'OPP_GOAL': '🥅', 'SHOT': '🎯', 'SAVE': '🧤', 
+                            'CORNER': '⚠️', 'SUBSTITUTION': '🔄', 'HALF_TIME': '⏰', 
+                            'TIMEOUT': '🚨', 'NOTE': '📝'}.get(event['type'], '📝')
+                    event_text = f"{icon} {event['timestamp']} - "
+                    if event['type'] == 'DSX_GOAL':
+                        event_text += f"GOAL! {event['player']}"
+                        if event['assist']:
+                            event_text += f" (assist: {event['assist']})"
+                    elif event['type'] == 'OPP_GOAL':
+                        event_text += "Opponent Goal"
+                    else:
+                        event_text += event['type'].replace('_', ' ').title()
+                    st.write(event_text)
+            else:
+                st.info("No events yet. Start recording!")
+        
+        with col2:
+            st.subheader("📊 Stats")
+            goals = [e for e in st.session_state.events if e['type'] == 'DSX_GOAL']
+            shots = [e for e in st.session_state.events if e['type'] == 'SHOT']
+            corners = [e for e in st.session_state.events if e['type'] == 'CORNER']
+            st.metric("Goals", len(goals))
+            st.metric("Shots", len(shots))
+            st.metric("Corners", len(corners))
+    
+    # Game summary
+    if 'show_summary' in st.session_state and st.session_state.show_summary:
+        st.markdown("---")
+        st.header("🎉 GAME COMPLETE!")
+        dsx_score, opp_score = get_score_tracker()
+        result = "WIN" if dsx_score > opp_score else "LOSS" if dsx_score < opp_score else "DRAW"
+        st.markdown(f"### {result}! DSX {dsx_score} - {opp_score} {st.session_state.game_data['opponent']}")
+        
+        if st.button("💾 Save to CSV", use_container_width=True, type="primary"):
+            # Save match
+            match_data = {
+                'Date': st.session_state.game_data['date'],
+                'Tournament': st.session_state.game_data['tournament'],
+                'Opponent': st.session_state.game_data['opponent'],
+                'Location': st.session_state.game_data['location'],
+                'GF': dsx_score, 'GA': opp_score, 'GD': dsx_score - opp_score,
+                'Result': result[0], 'Outcome': result
+            }
+            matches_df = pd.read_csv("DSX_Matches_Fall2025.csv") if os.path.exists("DSX_Matches_Fall2025.csv") else pd.DataFrame()
+            matches_df = pd.concat([matches_df, pd.DataFrame([match_data])], ignore_index=True)
+            matches_df.to_csv("DSX_Matches_Fall2025.csv", index=False)
+            st.success("✅ Game saved!")
+            
+        if st.button("🔄 New Game", use_container_width=True):
+            st.session_state.game_active = False
+            st.session_state.show_summary = False
+            st.session_state.events = []
+            st.rerun()
 
 
 elif page == "🏆 Division Rankings":
