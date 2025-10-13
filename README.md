@@ -28,6 +28,57 @@ This automatically updates:
 python -m streamlit run dsx_dashboard.py
 ```
 
+---
+
+## 🎮 NEW: Live Game Tracker
+
+**Record games in real-time with automatic stat tracking!**
+
+### 🚀 Quick Launch (Game Day)
+
+```bash
+# Windows - Double-click:
+launch_game_tracker.bat
+
+# Or run directly:
+streamlit run live_game_tracker.py
+```
+
+### ✨ Features
+
+**Pre-Game:**
+- Select starting 7 lineup
+- Enter opponent and game details
+- 2-minute setup time
+
+**During Game:**
+- ⏱️ 25-minute countdown timer (auto per half)
+- ⚽ Track goals with scorer + assist
+- 🎯 Record shots, saves, corners
+- 🔄 Track substitutions (who's on field)
+- 📋 Live event feed with timestamps
+- 📊 Real-time stats display
+
+**Post-Game:**
+- 🎉 Automatic game summary
+- 💾 One-click save to CSVs
+- 📈 Auto-updates main dashboard
+- 📥 Download detailed event log
+
+**For Parents:**
+- 📱 Share live link for real-time score updates
+- 👀 Read-only viewing mode
+- 🔄 Auto-refreshing score and events
+
+### 🎯 Perfect For:
+- Sideline recording (tablet/phone optimized)
+- Parent volunteers
+- Accurate stat tracking
+- No more forgotten scorers!
+- Playing time fairness (sub tracking)
+
+---
+
 ### 1. Install Dependencies
 
 ```bash

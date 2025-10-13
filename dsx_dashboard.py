@@ -186,7 +186,7 @@ with st.sidebar:
     
     page = st.radio(
         "Navigation",
-        ["🎯 What's Next", "🏆 Division Rankings", "📊 Team Analysis", "👥 Player Stats", "📅 Match History", "📝 Game Log", "🔍 Opponent Intel", "🎮 Game Predictions", "📊 Benchmarking", "📋 Full Analysis", "📖 Quick Start Guide", "⚙️ Data Manager"]
+        ["🎯 What's Next", "🎮 Live Game Tracker", "🏆 Division Rankings", "📊 Team Analysis", "👥 Player Stats", "📅 Match History", "📝 Game Log", "🔍 Opponent Intel", "🎮 Game Predictions", "📊 Benchmarking", "📋 Full Analysis", "📖 Quick Start Guide", "⚙️ Data Manager"]
     )
     
     st.markdown("---")
@@ -409,6 +409,144 @@ if page == "🎯 What's Next":
     except FileNotFoundError:
         st.error("Upcoming schedule not found. Create `DSX_Upcoming_Opponents.csv` with your schedule.")
         st.write("Or run `python update_all_data.py` to fetch latest data.")
+
+
+elif page == "🎮 Live Game Tracker":
+    st.title("🎮 Live Game Tracker")
+    
+    st.info("🚀 **Use the standalone app for best experience during games!**")
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        st.subheader("📱 Launch Live Tracker")
+        st.write("""
+        The Live Game Tracker is a dedicated app optimized for sideline use:
+        
+        ✅ **Features:**
+        - 25-minute countdown timer per half
+        - Starting 7 lineup selection
+        - Big buttons for quick actions
+        - Track goals, assists, shots, saves, corners, subs
+        - Live event feed
+        - Auto-save to CSVs
+        - Parent viewing mode
+        
+        **To launch:**
+        ```bash
+        streamlit run live_game_tracker.py
+        ```
+        
+        Or double-click: `launch_game_tracker.bat`
+        """)
+        
+        st.success("Perfect for tablets or phones on the sideline!")
+    
+    with col2:
+        st.subheader("📊 What Gets Tracked")
+        
+        st.write("**Player Actions:**")
+        st.write("⚽ Goals (with timestamps)")
+        st.write("🎯 Assists")
+        st.write("🏹 Shot attempts")
+        st.write("🧤 Goalkeeper saves")
+        
+        st.write("")
+        st.write("**Team Events:**")
+        st.write("⚠️ Corner kicks")
+        st.write("🔄 Substitutions (in/out)")
+        st.write("⏱️ Game time tracking")
+        st.write("🥅 Opponent goals")
+        
+        st.write("")
+        st.write("**Auto-Generated:**")
+        st.write("📈 Live stats (shots, saves, corners)")
+        st.write("📋 Event log with timestamps")
+        st.write("💾 CSV exports to dashboard")
+        st.write("🏆 Game summary report")
+    
+    st.markdown("---")
+    
+    st.subheader("🎯 How To Use")
+    
+    with st.expander("📖 Step-by-Step Game Day Guide"):
+        st.markdown("""
+        ### Before Kickoff (2 minutes):
+        1. Open Live Game Tracker on tablet/phone
+        2. Enter opponent name and game details
+        3. Select starting 7 players
+        4. Click **START GAME**
+        
+        ### During Game:
+        1. Click **▶️ Start** to begin countdown
+        2. Use big buttons for quick actions:
+           - **⚽ DSX GOAL** → Select scorer → Add assist (optional) → Done!
+           - **🥅 OPP GOAL** → Instant record
+           - **🎯 SHOT** → Select player → Note result
+           - **🔄 SUB** → Pick player out, player in → Done!
+        3. Timer auto-counts down (25 min per half)
+        4. All events logged with timestamps
+        
+        ### Half Time:
+        - Click **⏸️ Pause** to stop timer
+        - Review stats and events
+        - Click **⏭️ Next Half** when ready
+        
+        ### End of Game:
+        1. Click **⏹️ End Game**
+        2. Review summary (score, scorers, assists)
+        3. Click **💾 Save to CSV**
+        4. Data auto-updates dashboard!
+        
+        ### Tips:
+        - ⏸️ **Pause often** - Timer can be paused anytime
+        - 🔄 **Use subs** - Track who's on field for accurate stats
+        - 📱 **Share link** - Parents can watch live on their phones
+        - 💾 **Save early** - Don't wait until end to save important events
+        """)
+    
+    with st.expander("👨‍👩‍👧‍👦 Parent Live View Mode"):
+        st.markdown("""
+        ### Share Live Updates with Parents
+        
+        **How it works:**
+        1. Start the game tracker on your device
+        2. Get the Streamlit URL (shown in terminal)
+        3. Share URL with parents via group chat
+        4. Parents can watch score update in real-time
+        5. Read-only view - they can't edit anything
+        
+        **Example URLs:**
+        - **Local network:** `http://192.168.1.100:8501`
+        - **With ngrok:** `https://abc123.ngrok.io`
+        - **Streamlit Cloud:** `https://dsx-tracker.streamlit.app`
+        
+        **What parents see:**
+        - ✅ Live score updates
+        - ✅ Goal scorers in real-time
+        - ✅ Game timer
+        - ✅ Event feed
+        - ❌ Can't press buttons or edit
+        """)
+    
+    st.markdown("---")
+    
+    # Show recent games tracked
+    try:
+        matches = pd.read_csv("DSX_Matches_Fall2025.csv")
+        matches['Date'] = pd.to_datetime(matches['Date'])
+        recent = matches.nlargest(5, 'Date')
+        
+        st.subheader("📅 Recent Games Tracked")
+        
+        for _, match in recent.iterrows():
+            result_emoji = {'W': '✅', 'D': '➖', 'L': '❌'}
+            emoji = result_emoji.get(match['Result'], '⚽')
+            
+            st.write(f"{emoji} **{match['Date'].strftime('%b %d')}** - {match['Opponent']} "
+                    f"({int(match['GF'])}-{int(match['GA'])}) - {match['Outcome']}")
+    except:
+        st.info("No games tracked yet. Use the Live Game Tracker to record your first game!")
 
 
 elif page == "🏆 Division Rankings":
