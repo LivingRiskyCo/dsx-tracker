@@ -122,10 +122,32 @@ st.markdown("""
 
 @st.cache_data(ttl=3600)  # Cache for 1 hour
 def load_division_data():
-    """Load division rankings"""
-    if os.path.exists("OCL_BU08_Stripes_Division_with_DSX.csv"):
-        df = pd.read_csv("OCL_BU08_Stripes_Division_with_DSX.csv")
-        return df
+    """Load division rankings from all tracked divisions"""
+    all_divisions = []
+    
+    # List of all division files to load
+    division_files = [
+        "OCL_BU08_Stripes_Division_Rankings.csv",
+        "OCL_BU08_White_Division_Rankings.csv",
+        "OCL_BU08_Stars_Division_Rankings.csv",
+        "BSA_Celtic_Schedules.csv",
+    ]
+    
+    for file in division_files:
+        if os.path.exists(file):
+            try:
+                df = pd.read_csv(file, index_col=False).reset_index(drop=True)
+                all_divisions.append(df)
+            except Exception as e:
+                st.warning(f"⚠️ Could not load {file}: {str(e)}")
+    
+    # Combine all divisions
+    if all_divisions:
+        combined = pd.concat(all_divisions, ignore_index=True)
+        # Remove duplicates based on Team name
+        combined = combined.drop_duplicates(subset=['Team'], keep='first')
+        return combined
+    
     return pd.DataFrame()
 
 
@@ -1274,20 +1296,40 @@ elif page == "🏆 Division Rankings":
         if opponent_df.empty and opponent_names:
             st.warning("⚠️ No exact matches found. Trying fuzzy matching...")
             
-            # Try partial matching (case-insensitive)
+            # Try partial matching (case-insensitive, more aggressive)
             matched_teams = []
+            match_details = []
+            
             for opp in opponent_names:
                 opp_lower = str(opp).lower()
+                # Extract key parts of opponent name (remove common words)
+                opp_parts = [p for p in opp_lower.split() if p not in ['boys', 'girls', 'academy', 'fc', 'sc', 'soccer', 'club', '2018', '2017', 'b', 'u8', 'u08', 'bu08', '18b']]
+                
+                best_match = None
+                best_match_score = 0
+                
                 for idx, row in df.iterrows():
                     team_lower = str(row['Team']).lower()
-                    # Check if opponent name is in team name or vice versa
-                    if opp_lower in team_lower or team_lower in opp_lower:
-                        matched_teams.append(row['Team'])
-                        break
+                    team_parts = [p for p in team_lower.split() if p not in ['boys', 'girls', 'academy', 'fc', 'sc', 'soccer', 'club', '2018', '2017', 'b', 'u8', 'u08', 'bu08', '18b']]
+                    
+                    # Count matching parts
+                    match_count = sum(1 for part in opp_parts if part in team_lower or any(part in tp for tp in team_parts))
+                    match_count += sum(1 for part in team_parts if part in opp_lower or any(part in op for op in opp_parts))
+                    
+                    if match_count > best_match_score and match_count >= 2:  # At least 2 matching parts
+                        best_match_score = match_count
+                        best_match = row['Team']
+                
+                if best_match and best_match not in matched_teams:
+                    matched_teams.append(best_match)
+                    match_details.append(f"'{opp}' → '{best_match}'")
             
             if matched_teams:
                 opponent_df = df[df['Team'].isin(matched_teams)].copy()
                 st.success(f"✅ Found {len(opponent_df)} teams using fuzzy matching!")
+                with st.expander("🔗 Fuzzy Match Results"):
+                    for detail in match_details:
+                        st.write(detail)
             else:
                 st.error(f"❌ Could not find any matching teams.")
                 with st.expander("🔍 Troubleshooting"):
@@ -1377,112 +1419,112 @@ elif page == "🏆 Division Rankings":
                 
                 # Round numeric columns
                 display_df['PPG'] = display_df['PPG'].round(2)
-        display_df['GF_PG'] = display_df['GF_PG'].round(2)
-        display_df['GA_PG'] = display_df['GA_PG'].round(2)
-        display_df['GD_PG'] = display_df['GD_PG'].round(2)
-        display_df['StrengthIndex'] = display_df['StrengthIndex'].round(1)
-        
-        # Select columns to display
-        display_cols = ['Rank', 'Team', 'GP', 'W', 'L', 'D', 'GF', 'GA', 'GD', 'Pts', 'PPG', 'StrengthIndex']
-        
-        st.dataframe(
-            display_df[display_cols],
-            use_container_width=True,
-            hide_index=True,
-            column_config={
-                "Rank": st.column_config.NumberColumn("Rank", format="%d"),
-                "Team": st.column_config.TextColumn("Team"),
-                "GP": st.column_config.NumberColumn("GP", help="Games Played"),
-                "W": st.column_config.NumberColumn("W", help="Wins"),
-                "L": st.column_config.NumberColumn("L", help="Losses"),
-                "D": st.column_config.NumberColumn("D", help="Draws"),
-                "GF": st.column_config.NumberColumn("GF", help="Goals For (Total)"),
-                "GA": st.column_config.NumberColumn("GA", help="Goals Against (Total)"),
-                "GD": st.column_config.NumberColumn("GD", help="Goal Differential (Total)", format="%+d"),
-                "Pts": st.column_config.NumberColumn("Pts", help="Total Points (3 for W, 1 for D)"),
-                "PPG": st.column_config.NumberColumn("PPG", help="Points Per Game", format="%.2f"),
-                "StrengthIndex": st.column_config.ProgressColumn(
-                    "Strength",
-                    help="Combined strength rating (0-100)",
-                    format="%.1f",
-                    min_value=0,
-                    max_value=100,
-                ),
-            }
-        )
-        
-        # Visualizations
-        st.markdown("---")
-        st.subheader("📊 Visual Comparison")
-        
-        col1, col2 = st.columns(2)
-        
-        with col1:
-            # Strength Index chart
-            fig = px.bar(
-                combined_df,
-                x='Team',
-                y='StrengthIndex',
-                title='Strength Index Comparison',
-                text='StrengthIndex',
-                color='IsDSX',
-                color_discrete_map={True: '#00ff00', False: '#667eea'}
-            )
-            fig.update_traces(texttemplate='%{text:.1f}', textposition='outside')
-            fig.update_layout(
-                xaxis_title="",
-                yaxis_title="Strength Index",
-                showlegend=False,
-                height=400
-            )
-            fig.update_xaxes(tickangle=-45)
-            st.plotly_chart(fig, use_container_width=True)
-        
-        with col2:
-            # PPG comparison
-            fig = px.bar(
-                combined_df,
-                x='Team',
-                y='PPG',
-                title='Points Per Game Comparison',
-                text='PPG',
-                color='IsDSX',
-                color_discrete_map={True: '#00ff00', False: '#667eea'}
-            )
-            fig.update_traces(texttemplate='%{text:.2f}', textposition='outside')
-            fig.update_layout(
-                xaxis_title="",
-                yaxis_title="Points Per Game",
-                showlegend=False,
-                height=400
-            )
-            fig.update_xaxes(tickangle=-45)
-            st.plotly_chart(fig, use_container_width=True)
-        
-        # Offensive vs Defensive scatter
-        st.markdown("---")
-        st.subheader("⚔️ Offense vs Defense")
-        
-        fig = px.scatter(
-            combined_df,
-            x='GA_PG',
-            y='GF_PG',
-            size='GP',
-            color='IsDSX',
-            color_discrete_map={True: '#00ff00', False: '#667eea'},
-            hover_name='Team',
-            hover_data={'GP': True, 'PPG': ':.2f', 'StrengthIndex': ':.1f', 'IsDSX': False},
-            title='Offensive Output vs Defensive Performance',
-            labels={'GF_PG': 'Goals For Per Game', 'GA_PG': 'Goals Against Per Game'}
-        )
-        fig.add_hline(y=combined_df['GF_PG'].mean(), line_dash="dash", line_color="gray", 
-                      annotation_text="Avg GF/G", annotation_position="right")
-        fig.add_vline(x=combined_df['GA_PG'].mean(), line_dash="dash", line_color="gray",
-                      annotation_text="Avg GA/G", annotation_position="top")
-        fig.update_layout(height=500, showlegend=False)
-        st.plotly_chart(fig, use_container_width=True)
-        
-        st.info("💡 **Top-right quadrant** = Strong offense & weak defense | **Top-left quadrant** = Strong offense & strong defense (best!)")
+                display_df['GF_PG'] = display_df['GF_PG'].round(2)
+                display_df['GA_PG'] = display_df['GA_PG'].round(2)
+                display_df['GD_PG'] = display_df['GD_PG'].round(2)
+                display_df['StrengthIndex'] = display_df['StrengthIndex'].round(1)
+                
+                # Select columns to display
+                display_cols = ['Rank', 'Team', 'GP', 'W', 'L', 'D', 'GF', 'GA', 'GD', 'Pts', 'PPG', 'StrengthIndex']
+                
+                st.dataframe(
+                    display_df[display_cols],
+                    use_container_width=True,
+                    hide_index=True,
+                    column_config={
+                        "Rank": st.column_config.NumberColumn("Rank", format="%d"),
+                        "Team": st.column_config.TextColumn("Team"),
+                        "GP": st.column_config.NumberColumn("GP", help="Games Played"),
+                        "W": st.column_config.NumberColumn("W", help="Wins"),
+                        "L": st.column_config.NumberColumn("L", help="Losses"),
+                        "D": st.column_config.NumberColumn("D", help="Draws"),
+                        "GF": st.column_config.NumberColumn("GF", help="Goals For (Total)"),
+                        "GA": st.column_config.NumberColumn("GA", help="Goals Against (Total)"),
+                        "GD": st.column_config.NumberColumn("GD", help="Goal Differential (Total)", format="%+d"),
+                        "Pts": st.column_config.NumberColumn("Pts", help="Total Points (3 for W, 1 for D)"),
+                        "PPG": st.column_config.NumberColumn("PPG", help="Points Per Game", format="%.2f"),
+                        "StrengthIndex": st.column_config.ProgressColumn(
+                            "Strength",
+                            help="Combined strength rating (0-100)",
+                            format="%.1f",
+                            min_value=0,
+                            max_value=100,
+                        ),
+                    }
+                )
+                
+                # Visualizations
+                st.markdown("---")
+                st.subheader("📊 Visual Comparison")
+                
+                col1, col2 = st.columns(2)
+                
+                with col1:
+                    # Strength Index chart
+                    fig = px.bar(
+                        combined_df,
+                        x='Team',
+                        y='StrengthIndex',
+                        title='Strength Index Comparison',
+                        text='StrengthIndex',
+                        color='IsDSX',
+                        color_discrete_map={True: '#00ff00', False: '#667eea'}
+                    )
+                    fig.update_traces(texttemplate='%{text:.1f}', textposition='outside')
+                    fig.update_layout(
+                        xaxis_title="",
+                        yaxis_title="Strength Index",
+                        showlegend=False,
+                        height=400
+                    )
+                    fig.update_xaxes(tickangle=-45)
+                    st.plotly_chart(fig, use_container_width=True)
+                
+                with col2:
+                    # PPG comparison
+                    fig = px.bar(
+                        combined_df,
+                        x='Team',
+                        y='PPG',
+                        title='Points Per Game Comparison',
+                        text='PPG',
+                        color='IsDSX',
+                        color_discrete_map={True: '#00ff00', False: '#667eea'}
+                    )
+                    fig.update_traces(texttemplate='%{text:.2f}', textposition='outside')
+                    fig.update_layout(
+                        xaxis_title="",
+                        yaxis_title="Points Per Game",
+                        showlegend=False,
+                        height=400
+                    )
+                    fig.update_xaxes(tickangle=-45)
+                    st.plotly_chart(fig, use_container_width=True)
+                
+                # Offensive vs Defensive scatter
+                st.markdown("---")
+                st.subheader("⚔️ Offense vs Defense")
+                
+                fig = px.scatter(
+                    combined_df,
+                    x='GA_PG',
+                    y='GF_PG',
+                    size='GP',
+                    color='IsDSX',
+                    color_discrete_map={True: '#00ff00', False: '#667eea'},
+                    hover_name='Team',
+                    hover_data={'GP': True, 'PPG': ':.2f', 'StrengthIndex': ':.1f', 'IsDSX': False},
+                    title='Offensive Output vs Defensive Performance',
+                    labels={'GF_PG': 'Goals For Per Game', 'GA_PG': 'Goals Against Per Game'}
+                )
+                fig.add_hline(y=combined_df['GF_PG'].mean(), line_dash="dash", line_color="gray", 
+                              annotation_text="Avg GF/G", annotation_position="right")
+                fig.add_vline(x=combined_df['GA_PG'].mean(), line_dash="dash", line_color="gray",
+                              annotation_text="Avg GA/G", annotation_position="top")
+                fig.update_layout(height=500, showlegend=False)
+                st.plotly_chart(fig, use_container_width=True)
+                
+                st.info("💡 **Top-right quadrant** = Strong offense & weak defense | **Top-left quadrant** = Strong offense & strong defense (best!)")
     
     elif not dsx_row.empty:
         st.warning("No division data found for your opponents. Run `python update_all_data.py` to fetch latest standings.")
