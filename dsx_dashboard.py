@@ -1330,13 +1330,64 @@ elif page == "🏆 Division Rankings":
                 with st.expander("🔗 Fuzzy Match Results"):
                     for detail in match_details:
                         st.write(detail)
+                
+                # Show unmatched teams
+                matched_opp_names = [detail.split("'")[1] for detail in match_details]
+                unmatched_opps = [opp for opp in opponent_names if opp not in matched_opp_names]
+                
+                if unmatched_opps:
+                    with st.expander(f"⚠️ {len(unmatched_opps)} Teams Still Unmatched - Debug Info"):
+                        st.write("**These opponents couldn't be matched:**")
+                        
+                        for opp in unmatched_opps:
+                            st.markdown(f"**{opp}**")
+                            
+                            # Show extracted key parts
+                            opp_lower = str(opp).lower()
+                            opp_parts = [p for p in opp_lower.split() if p not in ['boys', 'girls', 'academy', 'fc', 'sc', 'soccer', 'club', '2018', '2017', 'b', 'u8', 'u08', 'bu08', '18b']]
+                            st.write(f"   - Key parts extracted: {opp_parts}")
+                            
+                            # Find closest potential matches
+                            potential_matches = []
+                            for idx, row in df.iterrows():
+                                team_lower = str(row['Team']).lower()
+                                team_parts = [p for p in team_lower.split() if p not in ['boys', 'girls', 'academy', 'fc', 'sc', 'soccer', 'club', '2018', '2017', 'b', 'u8', 'u08', 'bu08', '18b']]
+                                
+                                match_count = sum(1 for part in opp_parts if part in team_lower)
+                                if match_count > 0:
+                                    potential_matches.append((row['Team'], match_count, team_parts))
+                            
+                            # Sort by match count
+                            potential_matches.sort(key=lambda x: x[1], reverse=True)
+                            
+                            if potential_matches[:3]:
+                                st.write("   - Closest matches in division data:")
+                                for team, score, parts in potential_matches[:3]:
+                                    st.write(f"      • {team} (score: {score}, parts: {parts})")
+                            else:
+                                st.write("   - ❌ No similar teams found in tracked divisions")
+                                st.caption("   → This team might not be in any division we're tracking")
+                            
+                            st.write("")
+                        
+                        st.info("💡 **To fix:** Run `python update_all_data.py` to fetch more division data, or these teams might not be in tracked leagues.")
             else:
                 st.error(f"❌ Could not find any matching teams.")
-                with st.expander("🔍 Troubleshooting"):
+                with st.expander("🔍 Troubleshooting - Detailed Debug"):
                     st.write("**Your opponents:**")
                     st.write(opponent_names[:10])
                     st.write("\n**Available teams in division data (sample):**")
                     st.write(df['Team'].head(15).tolist())
+                    
+                    st.markdown("---")
+                    st.write("**Why no matches?**")
+                    for opp in opponent_names[:5]:
+                        opp_lower = str(opp).lower()
+                        opp_parts = [p for p in opp_lower.split() if p not in ['boys', 'girls', 'academy', 'fc', 'sc', 'soccer', 'club', '2018', '2017', 'b', 'u8', 'u08', 'bu08', '18b']]
+                        st.write(f"\n'{opp}':")
+                        st.write(f"  - Key parts: {opp_parts}")
+                        st.write(f"  - No teams in division data with 2+ matching parts")
+                    
                     st.info("💡 **Tip:** Run `python update_all_data.py` to refresh division data and make sure your opponents' divisions are being tracked!")
         
         # If still no matches, at least show DSX stats
