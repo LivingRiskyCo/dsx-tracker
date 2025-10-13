@@ -544,16 +544,17 @@ elif page == "🎮 Live Game Tracker":
             selected_starters = []
             selected_positions = {}
             
-            st.write("**Field Positions:**")
+            # Create a more compact, aligned layout
             for i in range(7):
-                col1, col2 = st.columns([2, 3])
+                col1, col2 = st.columns([1, 2])
                 
                 with col1:
                     position = st.selectbox(
-                        f"Position {i+1}",
+                        f"Pos {i+1}",
                         position_names,
                         key=f"pos_{i}",
-                        index=i if i < len(position_names) else 0
+                        index=i if i < len(position_names) else 0,
+                        label_visibility="collapsed"
                     )
                 
                 with col2:
@@ -563,10 +564,11 @@ elif page == "🎮 Live Game Tracker":
                         if int(row['PlayerNumber']) not in selected_starters
                     ]
                     selected = st.selectbox(
-                        f"Player for {position}",
+                        f"Player {i+1}",
                         player_options,
                         key=f"starter_{i}",
-                        label_visibility="collapsed"
+                        label_visibility="collapsed",
+                        help=f"Select player for {position}"
                     )
                     if selected != "Select player...":
                         player_num = int(selected.split('#')[1].split(' ')[0])
