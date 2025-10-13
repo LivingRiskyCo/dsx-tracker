@@ -1,0 +1,13 @@
+PositionName,Abbreviation,SortOrder
+Goalkeeper,GK,1
+Center Back,CB,2
+Right Back,RB,3
+Left Back,LB,4
+Center Midfielder,CM,5
+Right Winger,RW,6
+Left Winger,LW,7
+Striker,ST,8
+Forward,FW,9
+Midfielder,MF,10
+Defender,DF,11
+

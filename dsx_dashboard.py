@@ -528,33 +528,68 @@ elif page == "🎮 Live Game Tracker":
         
         st.markdown("---")
         
+        # Load position configuration
+        try:
+            positions_config = pd.read_csv("position_config.csv")
+            position_names = positions_config['PositionName'].tolist()
+        except:
+            position_names = ["Goalkeeper", "Center Back", "Right Back", "Left Back", "Center Midfielder", "Right Winger", "Left Winger", "Striker"]
+        
         # STARTING LINEUP SELECTION
-        st.subheader("👥 Select Starting 7")
+        st.subheader("👥 Select Starting 7 (with Positions)")
+        st.info("💡 **Tip:** Select player AND their position for each spot. You can customize position names in Data Manager.")
         
         if not roster_tracker.empty:
-            lineup_cols = st.columns(7)
-            
+            # Use 4 columns for better mobile display
             selected_starters = []
-            for i, col in enumerate(lineup_cols):
-                with col:
-                    st.write(f"**Position {i+1}**")
-                    player_options = ["Select..."] + [f"#{int(row['PlayerNumber'])} {row['PlayerName']}" 
-                                                       for _, row in roster_tracker.iterrows()]
-                    selected = st.selectbox(f"Player {i+1}", player_options, key=f"starter_{i}", label_visibility="collapsed")
-                    if selected != "Select...":
+            selected_positions = {}
+            
+            st.write("**Field Positions:**")
+            for i in range(7):
+                col1, col2 = st.columns([2, 3])
+                
+                with col1:
+                    position = st.selectbox(
+                        f"Position {i+1}",
+                        position_names,
+                        key=f"pos_{i}",
+                        index=i if i < len(position_names) else 0
+                    )
+                
+                with col2:
+                    player_options = ["Select player..."] + [
+                        f"#{int(row['PlayerNumber'])} {row['PlayerName']}" 
+                        for _, row in roster_tracker.iterrows()
+                        if int(row['PlayerNumber']) not in selected_starters
+                    ]
+                    selected = st.selectbox(
+                        f"Player for {position}",
+                        player_options,
+                        key=f"starter_{i}",
+                        label_visibility="collapsed"
+                    )
+                    if selected != "Select player...":
                         player_num = int(selected.split('#')[1].split(' ')[0])
                         selected_starters.append(player_num)
+                        selected_positions[player_num] = position
             
             st.markdown("---")
             
-            # Show bench
+            # Show bench prominently
             if len(selected_starters) > 0:
                 bench = roster_tracker[~roster_tracker['PlayerNumber'].isin(selected_starters)]
                 if not bench.empty:
-                    st.subheader("🪑 Bench")
-                    bench_display = ", ".join([f"#{int(row['PlayerNumber'])} {row['PlayerName']}" 
-                                               for _, row in bench.iterrows()])
-                    st.write(bench_display)
+                    st.subheader("🪑 Bench (Ready for Substitution)")
+                    
+                    # Show bench in a nice table format
+                    bench_display = pd.DataFrame({
+                        'Jersey #': [f"#{int(row['PlayerNumber'])}" for _, row in bench.iterrows()],
+                        'Player Name': [row['PlayerName'] for _, row in bench.iterrows()],
+                        'Position': [row['Position'] for _, row in bench.iterrows()],
+                        'Status': ['✅ Ready' for _ in range(len(bench))]
+                    })
+                    st.dataframe(bench_display, hide_index=True, use_container_width=True)
+                    st.caption(f"**{len(bench)} players on bench** - Use 🔄 SUB button during game to make substitutions")
             
             st.markdown("---")
             
@@ -2790,7 +2825,7 @@ elif page == "⚙️ Data Manager":
     st.info("✏️ Edit your data directly! Changes are saved when you click the save button.")
     
     # Tabs for different editable data
-    tab1, tab2, tab3, tab4, tab5 = st.tabs(["👥 Roster", "📊 Player Stats", "⚽ Matches", "🎮 Game Stats", "📥 Downloads"])
+    tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs(["👥 Roster", "📊 Player Stats", "⚽ Matches", "🎮 Game Stats", "⚽ Positions", "📥 Downloads"])
     
     with tab1:
         st.subheader("👥 Edit Roster")
@@ -3020,6 +3055,90 @@ elif page == "⚙️ Data Manager":
             st.info("This file tracks individual player contributions per game")
     
     with tab5:
+        st.subheader("⚽ Edit Position Names")
+        st.write("Customize position names to match your coach's terminology")
+        st.info("💡 **These positions will be used in Live Game Tracker when setting up lineup!**")
+        
+        try:
+            positions = pd.read_csv("position_config.csv", index_col=False)
+            
+            # Reset index to ensure no extra columns
+            positions = positions.reset_index(drop=True)
+            
+            # Editable dataframe
+            edited_positions = st.data_editor(
+                positions,
+                num_rows="dynamic",
+                use_container_width=True,
+                hide_index=True,
+                column_config={
+                    "PositionName": st.column_config.TextColumn("Position Name (e.g. Center Midfielder)", required=True, width="large"),
+                    "Abbreviation": st.column_config.TextColumn("Abbreviation (e.g. CM)", required=True, width="small"),
+                    "SortOrder": st.column_config.NumberColumn("Display Order", min_value=1, help="Lower numbers appear first in dropdowns"),
+                }
+            )
+            
+            st.caption("""
+            **Common positions for 7v7 (U8):**
+            - Goalkeeper (GK)
+            - Center Back (CB), Right Back (RB), Left Back (LB)
+            - Center Midfielder (CM), Right Midfielder (RM), Left Midfielder (LM)
+            - Striker (ST), Forward (FW)
+            - Right Winger (RW), Left Winger (LW)
+            """)
+            
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                if st.button("💾 Save Locally", type="secondary", key="save_positions_local"):
+                    # Sort by SortOrder before saving
+                    edited_positions = edited_positions.sort_values('SortOrder')
+                    edited_positions.to_csv("position_config.csv", index=False)
+                    st.success("✅ Saved! Positions will update in Live Game Tracker.")
+            
+            with col2:
+                if st.button("🚀 Save & Push to GitHub", type="primary", key="push_positions"):
+                    try:
+                        # Sort by SortOrder before saving
+                        edited_positions = edited_positions.sort_values('SortOrder')
+                        edited_positions.to_csv("position_config.csv", index=False)
+                        
+                        # Git commands
+                        os.system("git add position_config.csv")
+                        os.system('git commit -m "Update position names from dashboard"')
+                        result = os.system("git push")
+                        
+                        if result == 0:
+                            st.success("✅ Pushed to GitHub successfully!")
+                            st.balloons()
+                        else:
+                            st.error("❌ Git push failed - check credentials")
+                    except Exception as e:
+                        st.error(f"Error: {e}")
+            
+            with col3:
+                if st.button("↩️ Reset", key="reset_positions"):
+                    st.rerun()
+            
+            st.markdown("---")
+            
+            # Preview
+            with st.expander("👀 Preview - How positions will appear in Live Game Tracker"):
+                st.write("**Position dropdown will show:**")
+                for _, pos in edited_positions.sort_values('SortOrder').iterrows():
+                    st.write(f"{int(pos['SortOrder'])}. {pos['PositionName']} ({pos['Abbreviation']})")
+        
+        except FileNotFoundError:
+            st.error("position_config.csv not found")
+            st.info("Creating default position configuration...")
+            default_positions = pd.DataFrame({
+                'PositionName': ['Goalkeeper', 'Center Back', 'Right Back', 'Left Back', 'Center Midfielder', 'Right Winger', 'Left Winger', 'Striker'],
+                'Abbreviation': ['GK', 'CB', 'RB', 'LB', 'CM', 'RW', 'LW', 'ST'],
+                'SortOrder': [1, 2, 3, 4, 5, 6, 7, 8]
+            })
+            default_positions.to_csv("position_config.csv", index=False)
+            st.success("✅ Created default position_config.csv - Refresh page to edit!")
+    
+    with tab6:
         st.subheader("📥 Download Data Files")
         
         # Check what data is available
