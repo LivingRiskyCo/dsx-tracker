@@ -51,6 +51,18 @@ def main():
         "OCL BU08 White Division Rankings (Club Ohio West)"
     ))
     
+    # 1c. Update OCL Stars 5v5 Division
+    updates.append(run_script(
+        "fetch_gotsport_stars_division.py",
+        "OCL BU08 Stars 5v5 Division Rankings"
+    ))
+    
+    # 1d. Update OCL Stars 7v7 Division (Elite FC Arsenal)
+    updates.append(run_script(
+        "fetch_gotsport_stars_7v7.py",
+        "OCL BU08 Stars 7v7 Division Rankings (Elite FC Arsenal)"
+    ))
+    
     # 2. Update BSA Celtic Schedules (MVYSA)
     updates.append(run_script(
         "fetch_bsa_celtic.py",
