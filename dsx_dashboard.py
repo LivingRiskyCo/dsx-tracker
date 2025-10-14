@@ -359,8 +359,11 @@ if page == "🎯 What's Next":
                         if not opp_data.empty:
                             team = opp_data.iloc[0]
                             opp_si = team['StrengthIndex']
-                            opp_gf = team.get('GF', 0)
-                            opp_ga = team.get('GA', 0)
+                            # Calculate per-game stats
+                            opp_gp = team.get('GP', 1)
+                            opp_gp = opp_gp if opp_gp > 0 else 1
+                            opp_gf = team.get('GF', 0) / opp_gp  # Goals per game
+                            opp_ga = team.get('GA', 0) / opp_gp  # Goals against per game
                     
                     if opp_si is not None:
                         # Display opponent strength
@@ -2762,8 +2765,11 @@ elif page == "🎮 Game Predictions":
                 opp_data = all_divisions_df[all_divisions_df['Team'] == selected_opponent]
                 if not opp_data.empty:
                     opp_si = opp_data.iloc[0]['StrengthIndex']
-                    opp_gf = opp_data.iloc[0].get('GF', 0)
-                    opp_ga = opp_data.iloc[0].get('GA', 0)
+                    # Calculate per-game stats
+                    opp_gp = opp_data.iloc[0].get('GP', 1)
+                    opp_gp = opp_gp if opp_gp > 0 else 1
+                    opp_gf = opp_data.iloc[0].get('GF', 0) / opp_gp  # Goals per game
+                    opp_ga = opp_data.iloc[0].get('GA', 0) / opp_gp  # Goals against per game
             
             if opp_si is None:
                 st.warning("No division data found for this opponent. Enter stats manually:")
