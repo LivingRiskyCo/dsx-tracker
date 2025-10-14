@@ -2129,10 +2129,34 @@ elif page == "📊 Team Analysis":
     
     df = load_division_data()
     
+    # Add DSX to the analysis (they're not in a division, so we calculate their stats separately)
+    dsx_stats = calculate_dsx_stats()
+    dsx_row = pd.DataFrame([{
+        'Team': 'Dublin DSX Orange 2018 Boys',
+        'Rank': 0,  # Not in division
+        'StrengthIndex': dsx_stats['StrengthIndex'],
+        'W': dsx_stats['W'],
+        'L': dsx_stats['L'],
+        'D': dsx_stats['D'],
+        'GF': dsx_stats['GF_PG'],
+        'GA': dsx_stats['GA_PG'],
+        'GD': dsx_stats['GD_PG'],
+        'PPG': dsx_stats['PPG'],
+        'GP': dsx_stats['GP'],
+        'League/Division': 'Independent (plays division teams)',
+        'SourceURL': 'DSX_Matches_Fall2025.csv'
+    }])
+    
+    # Combine DSX with division data
+    if not df.empty:
+        df = pd.concat([dsx_row, df], ignore_index=True)
+    else:
+        df = dsx_row
+    
     if df.empty:
         st.warning("No division data found.")
     else:
-        # ONLY show teams with actual data (from division rankings)
+        # ONLY show teams with actual data (from division rankings + DSX)
         teams_with_data = df['Team'].tolist()
         
         # Filter out NaN/float values and ensure strings only
@@ -2194,9 +2218,13 @@ elif page == "📊 Team Analysis":
         
         with col1:
             st.markdown(f"### {team1}")
-            st.metric("Rank", f"#{int(team1_data['Rank'])}")
+            # Show rank or "Independent" for DSX
+            if team1_data['Rank'] == 0:
+                st.metric("Division Status", "Independent")
+            else:
+                st.metric("Rank", f"#{int(team1_data['Rank'])}")
             st.metric("Strength Index", f"{team1_data['StrengthIndex']:.1f}")
-            st.metric("Record", f"{int(team1_data['W'])}-{int(team1_data['D'])}-{int(team1_data['L'])}")
+            st.metric("Record", f"{int(team1_data['W'])}-{int(team1_data['L'])}-{int(team1_data['D'])}")
             st.metric("Goals/Game", f"{team1_data['GF']:.2f} - {team1_data['GA']:.2f}")
             st.metric("GD/Game", f"{team1_data['GD']:+.2f}")
             st.metric("PPG", f"{team1_data['PPG']:.2f}")
@@ -2206,9 +2234,13 @@ elif page == "📊 Team Analysis":
         
         with col3:
             st.markdown(f"### {team2}")
-            st.metric("Rank", f"#{int(team2_data['Rank'])}")
+            # Show rank or "Independent" for DSX
+            if team2_data['Rank'] == 0:
+                st.metric("Division Status", "Independent")
+            else:
+                st.metric("Rank", f"#{int(team2_data['Rank'])}")
             st.metric("Strength Index", f"{team2_data['StrengthIndex']:.1f}")
-            st.metric("Record", f"{int(team2_data['W'])}-{int(team2_data['D'])}-{int(team2_data['L'])}")
+            st.metric("Record", f"{int(team2_data['W'])}-{int(team2_data['L'])}-{int(team2_data['D'])}")
             st.metric("Goals/Game", f"{team2_data['GF']:.2f} - {team2_data['GA']:.2f}")
             st.metric("GD/Game", f"{team2_data['GD']:+.2f}")
             st.metric("PPG", f"{team2_data['PPG']:.2f}")
