@@ -2498,61 +2498,63 @@ elif page == "📊 Benchmarking":
     
     st.info("⚖️ Compare DSX against any opponent or division team")
     
-    # Load division data
+    # Load ALL division data using centralized function
+    all_divisions_df = load_division_data()
+    
     try:
-        stripes_div = pd.read_csv("OCL_BU08_Stripes_Division_Rankings.csv")
-        white_div = pd.read_csv("OCL_BU08_White_Division_Rankings.csv")
         dsx_matches = pd.read_csv("DSX_Matches_Fall2025.csv")
         
-        # DSX stats
-        dsx_stats = {
-            'Team': 'Dublin DSX Orange 2018 Boys',
-            'StrengthIndex': 35.6,
-            'PPG': 1.00,
-            'GF': 4.17,
-            'GA': 5.08,
-            'GD': -0.92,
-            'GP': len(dsx_matches)
-        }
+        # Calculate DSX stats from actual matches
+        completed = dsx_matches[dsx_matches['Outcome'].notna()]
+        if len(completed) > 0:
+            dsx_gp = len(completed)
+            dsx_w = len(completed[completed['Outcome'] == 'W'])
+            dsx_d = len(completed[completed['Outcome'] == 'D'])
+            dsx_l = len(completed[completed['Outcome'] == 'L'])
+            dsx_gf = pd.to_numeric(completed['GF'], errors='coerce').fillna(0).sum()
+            dsx_ga = pd.to_numeric(completed['GA'], errors='coerce').fillna(0).sum()
+            dsx_gd = dsx_gf - dsx_ga
+            dsx_pts = (dsx_w * 3) + dsx_d
+            dsx_ppg = dsx_pts / dsx_gp if dsx_gp > 0 else 0
+            dsx_gf_pg = dsx_gf / dsx_gp if dsx_gp > 0 else 0
+            dsx_ga_pg = dsx_ga / dsx_gp if dsx_gp > 0 else 0
+            dsx_gd_pg = dsx_gd / dsx_gp if dsx_gp > 0 else 0
+            
+            # Calculate DSX Strength Index
+            ppg_norm = max(0.0, min(3.0, dsx_ppg)) / 3.0 * 100.0
+            gdpg_norm = (max(-5.0, min(5.0, dsx_gd_pg)) + 5.0) / 10.0 * 100.0
+            dsx_strength = round(0.7 * ppg_norm + 0.3 * gdpg_norm, 1)
+            
+            dsx_stats = {
+                'Team': 'Dublin DSX Orange 2018 Boys',
+                'StrengthIndex': dsx_strength,
+                'PPG': dsx_ppg,
+                'GF': dsx_gf_pg,
+                'GA': dsx_ga_pg,
+                'GD': dsx_gd_pg,
+                'GP': dsx_gp,
+                'W': dsx_w,
+                'D': dsx_d,
+                'L': dsx_l
+            }
+        else:
+            dsx_stats = {
+                'Team': 'Dublin DSX Orange 2018 Boys',
+                'StrengthIndex': 0,
+                'PPG': 0,
+                'GF': 0,
+                'GA': 0,
+                'GD': 0,
+                'GP': 0,
+                'W': 0,
+                'D': 0,
+                'L': 0
+            }
         
-        # ONLY include teams with actual stats data (from divisions)
-        all_teams_with_data = []
-        teams_with_data_list = []
-        
-        if not stripes_div.empty:
-            all_teams_with_data.append(('Stripes', stripes_div))
-            teams_with_data_list.extend(stripes_div['Team'].tolist())
-        if not white_div.empty:
-            all_teams_with_data.append(('White', white_div))
-            teams_with_data_list.extend(white_div['Team'].tolist())
-        
-        # Check for scheduled opponents without data
-        teams_without_data = []
-        try:
-            upcoming = pd.read_csv("DSX_Upcoming_Opponents.csv")
-            for opp in upcoming['Opponent'].dropna().unique():
-                if opp not in teams_with_data_list:
-                    teams_without_data.append(opp)
-        except:
-            pass
-        
-        try:
-            matches = pd.read_csv("DSX_Matches_Fall2025.csv")
-            for opp in matches['Opponent'].dropna().unique():
-                if opp not in teams_with_data_list and opp not in teams_without_data:
-                    teams_without_data.append(opp)
-        except:
-            pass
-        
-        # Show info about teams without data
-        if teams_without_data:
-            with st.expander(f"ℹ️ Teams on Schedule (No Data Yet) - {len(teams_without_data)} teams"):
-                st.write("**These teams are on your schedule but don't have benchmarking data yet:**")
-                for team in sorted(teams_without_data):
-                    st.write(f"• {team}")
-                st.info("💡 **To add data:** Run `update_all_data.py` to fetch their division stats.")
-        
-        st.success(f"✅ Ready to benchmark against {len(teams_with_data_list)} teams with complete data")
+        if not all_divisions_df.empty:
+            st.success(f"✅ Ready to benchmark against {len(all_divisions_df)} teams across all divisions")
+        else:
+            st.warning("No division data found. Run `update_all_data.py` to fetch division stats.")
         
         # Team Selector
         st.header("🔍 Select Teams to Compare")
@@ -2569,31 +2571,26 @@ elif page == "📊 Benchmarking":
         with col2:
             st.subheader("Team 2: Select Opponent")
             
-            # Build team list from ONLY teams with complete data
-            team_options = []
-            for div_name, div_df in all_teams_with_data:
-                for _, team in div_df.iterrows():
-                    team_name = team.get('Team', '')
-                    if team_name and pd.notna(team_name):
-                        team_options.append(f"{team_name} ({div_name})")
-            
-            selected_team_str = st.selectbox("Choose opponent", team_options)
-            
-            # Get selected team data
-            selected_team_name = selected_team_str.split(' (')[0]
-            opp_stats = None
-            
-            for div_name, div_df in all_teams_with_data:
-                team_data = div_df[div_df['Team'] == selected_team_name]
-                if not team_data.empty:
-                    opp_stats = team_data.iloc[0]
-                    break
-            
-            if opp_stats is not None:
-                st.write(f"**Strength Index:** {opp_stats['StrengthIndex']:.1f}")
-                st.write(f"**PPG:** {opp_stats['PPG']:.2f}")
-                st.write(f"**Goals/Game:** {opp_stats['GF']:.2f}")
-                st.write(f"**Against/Game:** {opp_stats['GA']:.2f}")
+            # Build team list from ALL divisions
+            if not all_divisions_df.empty:
+                team_options = sorted(all_divisions_df['Team'].dropna().unique().tolist())
+                selected_team_name = st.selectbox("Choose opponent", team_options)
+                
+                # Get selected team data
+                opp_data = all_divisions_df[all_divisions_df['Team'] == selected_team_name]
+                if not opp_data.empty:
+                    opp_stats = opp_data.iloc[0]
+                    st.write(f"**Strength Index:** {opp_stats['StrengthIndex']:.1f}")
+                    st.write(f"**PPG:** {opp_stats.get('PPG', 0):.2f}")
+                    if 'GF' in opp_stats:
+                        st.write(f"**Goals/Game:** {opp_stats['GF']:.2f}")
+                    if 'GA' in opp_stats:
+                        st.write(f"**Against/Game:** {opp_stats['GA']:.2f}")
+                else:
+                    opp_stats = None
+            else:
+                st.warning("No opponent data available")
+                opp_stats = None
         
         st.markdown("---")
         
