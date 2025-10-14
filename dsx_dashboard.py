@@ -296,7 +296,7 @@ with st.sidebar:
     
     page = st.radio(
         "Navigation",
-        ["🎯 What's Next", "🎮 Live Game Tracker", "📺 Watch Live Game", "💬 Team Chat", "🏆 Division Rankings", "📊 Team Analysis", "👥 Player Stats", "📅 Match History", "📝 Game Log", "🔍 Opponent Intel", "🎮 Game Predictions", "📊 Benchmarking", "📋 Full Analysis", "📖 Quick Start Guide", "⚙️ Data Manager"]
+        ["🎯 What's Next", "📅 Team Schedule", "🎮 Live Game Tracker", "📺 Watch Live Game", "💬 Team Chat", "🏆 Division Rankings", "📊 Team Analysis", "👥 Player Stats", "📅 Match History", "📝 Game Log", "🔍 Opponent Intel", "🎮 Game Predictions", "📊 Benchmarking", "📋 Full Analysis", "📖 Quick Start Guide", "⚙️ Data Manager"]
     )
     
     st.markdown("---")
@@ -492,6 +492,259 @@ if page == "🎯 What's Next":
     except FileNotFoundError:
         st.error("Upcoming schedule not found. Create `DSX_Upcoming_Opponents.csv` with your schedule.")
         st.write("Or run `python update_all_data.py` to fetch latest data.")
+
+
+elif page == "📅 Team Schedule":
+    st.title("📅 Team Schedule")
+    
+    st.success("🎯 **Your complete schedule - games, practices, and availability tracking all in one place!**")
+    
+    # Load schedule and availability data
+    try:
+        schedule = pd.read_csv("team_schedule.csv")
+        schedule['Date'] = pd.to_datetime(schedule['Date'])
+        
+        try:
+            availability = pd.read_csv("schedule_availability.csv")
+        except:
+            availability = pd.DataFrame()
+        
+        try:
+            roster = pd.read_csv("roster.csv")
+            total_players = len(roster)
+        except:
+            total_players = 11
+        
+        # Load division data for opponent SI
+        all_divisions = load_division_data()
+        
+        # Auto-populate OpponentStrengthIndex if missing
+        for idx, row in schedule.iterrows():
+            if pd.isna(row.get('OpponentStrengthIndex')) or row.get('OpponentStrengthIndex') == '':
+                if row['EventType'] == 'Game' and row['Opponent']:
+                    opp_data = all_divisions[all_divisions['Team'] == row['Opponent']]
+                    if not opp_data.empty:
+                        schedule.at[idx, 'OpponentStrengthIndex'] = opp_data.iloc[0]['StrengthIndex']
+        
+        # Filters
+        st.subheader("🔍 Filters")
+        col1, col2, col3, col4 = st.columns(4)
+        
+        with col1:
+            view_mode = st.selectbox("View", ["📋 List View", "📅 Calendar View", "📆 Week View"])
+        
+        with col2:
+            event_filter = st.selectbox("Show", ["All Events", "Games Only", "Practices Only"])
+        
+        with col3:
+            status_filter = st.selectbox("Status", ["All", "Upcoming", "Completed", "Cancelled"])
+        
+        with col4:
+            month_filter = st.selectbox("Month", ["All Months"] + sorted(schedule['Date'].dt.strftime('%B %Y').unique().tolist()))
+        
+        # Apply filters
+        filtered = schedule.copy()
+        
+        if event_filter == "Games Only":
+            filtered = filtered[filtered['EventType'] == 'Game']
+        elif event_filter == "Practices Only":
+            filtered = filtered[filtered['EventType'] == 'Practice']
+        
+        if status_filter != "All":
+            filtered = filtered[filtered['Status'] == status_filter]
+        
+        if month_filter != "All Months":
+            filtered = filtered[filtered['Date'].dt.strftime('%B %Y') == month_filter]
+        
+        # Sort by date
+        filtered = filtered.sort_values('Date')
+        
+        st.markdown("---")
+        
+        # LIST VIEW
+        if view_mode == "📋 List View":
+            st.subheader(f"📋 {event_filter} ({len(filtered)} events)")
+            
+            if filtered.empty:
+                st.info("No events match your filters")
+            else:
+                for idx, event in filtered.iterrows():
+                    event_id = event['EventID']
+                    event_type = event['EventType']
+                    event_date = event['Date']
+                    event_time = event['Time']
+                    
+                    # Get availability summary for this event
+                    avail_data = availability[availability['EventID'] == event_id]
+                    available_count = len(avail_data[avail_data['Status'] == 'Available'])
+                    not_available_count = len(avail_data[avail_data['Status'] == 'Not Available'])
+                    maybe_count = len(avail_data[avail_data['Status'] == 'Maybe'])
+                    no_response_count = len(avail_data[avail_data['Status'] == 'No Response'])
+                    
+                    # Event card styling based on type
+                    if event_type == 'Game':
+                        icon = "⚽"
+                        bg_color = "#e3f2fd"
+                        border_color = "#2196F3"
+                    else:
+                        icon = "🏃"
+                        bg_color = "#f3e5f5"
+                        border_color = "#9C27B0"
+                    
+                    # Create expandable event card
+                    with st.expander(
+                        f"{icon} **{event_date.strftime('%a, %b %d')}** - {event['Opponent'] if event['Opponent'] else 'Practice'} @ {event_time}",
+                        expanded=False
+                    ):
+                        # Event details
+                        col1, col2 = st.columns([2, 3])
+                        
+                        with col1:
+                            st.markdown("### 📍 Event Info")
+                            st.write(f"**Type:** {event_type}")
+                            st.write(f"**Date:** {event_date.strftime('%A, %B %d, %Y')}")
+                            st.write(f"**Time:** {event_time}")
+                            st.write(f"**Arrival:** {event.get('ArrivalTime', 'TBD')}")
+                            st.write(f"**Location:** {event['Location']}")
+                            st.write(f"**Field:** {event.get('FieldNumber', 'TBD')}")
+                            st.write(f"**Uniform:** {event.get('UniformColor', 'TBD')}")
+                            
+                            if event_type == 'Game':
+                                st.write(f"**Home/Away:** {event.get('HomeAway', 'TBD')}")
+                                st.write(f"**Tournament:** {event.get('Tournament', 'N/A')}")
+                                
+                                # Opponent Strength Index
+                                opp_si = event.get('OpponentStrengthIndex')
+                                if pd.notna(opp_si) and opp_si != '':
+                                    dsx_stats = calculate_dsx_stats()
+                                    dsx_si = dsx_stats['StrengthIndex']
+                                    st.metric("Opponent SI", f"{opp_si:.1f}", 
+                                             delta=f"DSX: {dsx_si:.1f}",
+                                             delta_color="off")
+                            
+                            if event.get('Notes'):
+                                st.write(f"**Notes:** {event['Notes']}")
+                        
+                        with col2:
+                            st.markdown("### 👥 Availability")
+                            
+                            # Availability summary
+                            total_responded = available_count + not_available_count + maybe_count
+                            response_rate = (total_responded / total_players * 100) if total_players > 0 else 0
+                            
+                            metric_col1, metric_col2, metric_col3 = st.columns(3)
+                            with metric_col1:
+                                st.metric("✅ Available", available_count)
+                            with metric_col2:
+                                st.metric("❌ Not Available", not_available_count)
+                            with metric_col3:
+                                st.metric("❓ Maybe", maybe_count)
+                            
+                            if no_response_count > 0:
+                                st.warning(f"⚠️ {no_response_count} player(s) haven't responded")
+                            
+                            st.progress(response_rate / 100, text=f"Response Rate: {response_rate:.0f}%")
+                            
+                            st.markdown("---")
+                            
+                            # Quick availability response
+                            st.markdown("**Your Response:**")
+                            
+                            # Check if current user (assuming coach) has responded
+                            response_col1, response_col2, response_col3 = st.columns(3)
+                            
+                            with response_col1:
+                                if st.button("✅ Available", key=f"avail_{event_id}", use_container_width=True):
+                                    st.success("Marked as available!")
+                                    # In a real app, this would update the CSV
+                            
+                            with response_col2:
+                                if st.button("❌ Can't Make It", key=f"unavail_{event_id}", use_container_width=True):
+                                    st.error("Marked as unavailable")
+                            
+                            with response_col3:
+                                if st.button("❓ Maybe", key=f"maybe_{event_id}", use_container_width=True):
+                                    st.warning("Marked as maybe")
+                        
+                        st.markdown("---")
+                        
+                        # Quick Actions
+                        st.markdown("### ⚡ Quick Actions")
+                        action_col1, action_col2, action_col3, action_col4 = st.columns(4)
+                        
+                        with action_col1:
+                            if event_type == 'Game':
+                                if st.button("🎮 Start Live Tracker", key=f"track_{event_id}", use_container_width=True):
+                                    st.info("Would redirect to Live Game Tracker with pre-filled data")
+                        
+                        with action_col2:
+                            if st.button("📝 View Details", key=f"detail_{event_id}", use_container_width=True):
+                                st.info("Would show full event details")
+                        
+                        with action_col3:
+                            if event_type == 'Game' and event.get('Opponent'):
+                                if st.button("🔍 Opponent Intel", key=f"intel_{event_id}", use_container_width=True):
+                                    st.info(f"Would redirect to Opponent Intel for {event['Opponent']}")
+                        
+                        with action_col4:
+                            location_query = event['Location'].replace(' ', '+')
+                            maps_url = f"https://www.google.com/maps/search/?api=1&query={location_query}"
+                            st.markdown(f"[🗺️ Directions]({maps_url})", unsafe_allow_html=True)
+                        
+                        # Show who's available (expandable)
+                        if not avail_data.empty:
+                            with st.expander("👀 See Who's Available"):
+                                available_players = avail_data[avail_data['Status'] == 'Available']['PlayerName'].tolist()
+                                unavailable_players = avail_data[avail_data['Status'] == 'Not Available']['PlayerName'].tolist()
+                                maybe_players = avail_data[avail_data['Status'] == 'Maybe']['PlayerName'].tolist()
+                                no_response_players = avail_data[avail_data['Status'] == 'No Response']['PlayerName'].tolist()
+                                
+                                if available_players:
+                                    st.success("**✅ Available (" + str(len(available_players)) + "):** " + ", ".join(available_players))
+                                if unavailable_players:
+                                    st.error("**❌ Not Available (" + str(len(unavailable_players)) + "):** " + ", ".join(unavailable_players))
+                                if maybe_players:
+                                    st.warning("**❓ Maybe (" + str(len(maybe_players)) + "):** " + ", ".join(maybe_players))
+                                if no_response_players:
+                                    st.info("**⚪ No Response (" + str(len(no_response_players)) + "):** " + ", ".join(no_response_players))
+        
+        # CALENDAR VIEW
+        elif view_mode == "📅 Calendar View":
+            st.subheader("📅 Calendar View")
+            st.info("📅 Calendar view coming soon! For now, use List View or Week View.")
+        
+        # WEEK VIEW
+        elif view_mode == "📆 Week View":
+            st.subheader("📆 Week View")
+            st.info("📆 Week view coming soon! For now, use List View.")
+        
+        st.markdown("---")
+        
+        # Quick Stats
+        st.header("📊 Schedule Summary")
+        
+        col1, col2, col3, col4, col5 = st.columns(5)
+        
+        total_events = len(schedule)
+        total_games = len(schedule[schedule['EventType'] == 'Game'])
+        total_practices = len(schedule[schedule['EventType'] == 'Practice'])
+        upcoming_events = len(schedule[schedule['Status'] == 'Upcoming'])
+        completed_events = len(schedule[schedule['Status'] == 'Completed'])
+        
+        with col1:
+            st.metric("Total Events", total_events)
+        with col2:
+            st.metric("Games", total_games)
+        with col3:
+            st.metric("Practices", total_practices)
+        with col4:
+            st.metric("Upcoming", upcoming_events)
+        with col5:
+            st.metric("Completed", completed_events)
+        
+    except FileNotFoundError:
+        st.error("Schedule file not found!")
+        st.write("Create `team_schedule.csv` in the Data Manager to get started.")
 
 
 elif page == "🎮 Live Game Tracker":
@@ -4068,63 +4321,80 @@ elif page == "⚙️ Data Manager":
             st.success("✅ Created default position_config.csv - Refresh page to edit!")
     
     with tab5:
-        st.subheader("📅 Edit Upcoming Schedule")
-        st.write("Manage your upcoming games and opponents")
-        st.info("💡 **This schedule feeds the Quick Select dropdown in Live Game Tracker!**")
+        st.subheader("📅 Edit Team Schedule")
+        st.write("Manage games, practices, and all team events")
+        st.info("💡 **Enhanced schedule with practices, arrival times, uniforms, and more!**")
         
         try:
-            schedule = pd.read_csv("DSX_Upcoming_Opponents.csv", index_col=False)
+            schedule = pd.read_csv("team_schedule.csv", index_col=False)
             
             # Reset index to ensure no extra columns
             schedule = schedule.reset_index(drop=True)
             
-            # Editable dataframe
+            # Editable dataframe with ALL the new columns
             edited_schedule = st.data_editor(
                 schedule,
                 num_rows="dynamic",
                 use_container_width=True,
                 hide_index=True,
                 column_config={
+                    "EventID": st.column_config.NumberColumn("Event ID", help="Unique ID (auto-generated)"),
+                    "EventType": st.column_config.SelectboxColumn("Type", options=["Game", "Practice"], required=True),
                     "Date": st.column_config.TextColumn("Date (YYYY-MM-DD)", required=True, help="Format: 2025-10-18"),
-                    "Opponent": st.column_config.TextColumn("Opponent Team", required=True),
+                    "Time": st.column_config.TextColumn("Time", required=True, help="e.g., 11:20 AM or 6:00 PM"),
+                    "Opponent": st.column_config.TextColumn("Opponent", help="Leave blank for practices"),
                     "Location": st.column_config.TextColumn("Location/Complex", required=True),
-                    "Tournament": st.column_config.TextColumn("Tournament/League", required=True),
-                    "GameTime": st.column_config.TextColumn("Game Time", help="e.g., 11:20 AM or TBD"),
-                    "Status": st.column_config.SelectboxColumn("Status", options=["Upcoming", "Completed", "Cancelled"]),
+                    "FieldNumber": st.column_config.TextColumn("Field #", help="e.g., Field 3"),
+                    "ArrivalTime": st.column_config.TextColumn("Arrival Time", help="e.g., 11:00 AM or '15 min before'"),
+                    "UniformColor": st.column_config.TextColumn("Uniform", help="e.g., Blue Jerseys, White"),
+                    "Tournament": st.column_config.TextColumn("Tournament/League"),
+                    "HomeAway": st.column_config.SelectboxColumn("H/A", options=["Home", "Away", "Neutral"]),
+                    "Status": st.column_config.SelectboxColumn("Status", options=["Upcoming", "Confirmed", "Completed", "Cancelled"]),
                     "Notes": st.column_config.TextColumn("Notes"),
+                    "OpponentStrengthIndex": st.column_config.NumberColumn("Opp SI", help="Auto-populated from division data"),
                 }
             )
             
             st.caption("""
             **Tips:**
-            - Date format must be YYYY-MM-DD (e.g., 2025-10-18)
-            - Multiple games on same day? Add multiple rows with same date
-            - Tournament teams use tournament name in Tournament column
-            - Use "TBD" for unknown opponents or times
+            - **Games:** Set EventType = "Game", fill in Opponent
+            - **Practices:** Set EventType = "Practice", leave Opponent blank
+            - **Arrival Time:** Use "15 min before" or specific time like "11:00 AM"
+            - **Uniform:** Specify jersey color to avoid confusion
+            - **Field Number:** Helps parents find the right field
+            - **OpponentStrengthIndex:** Leave blank - auto-filled from division data
             """)
             
             col1, col2, col3 = st.columns(3)
             with col1:
                 if st.button("💾 Save Locally", type="secondary", key="save_schedule_local"):
+                    # Auto-generate EventIDs if missing
+                    if 'EventID' not in edited_schedule.columns or edited_schedule['EventID'].isna().any():
+                        edited_schedule['EventID'] = range(1, len(edited_schedule) + 1)
+                    
                     # Sort by date before saving
                     edited_schedule['Date'] = pd.to_datetime(edited_schedule['Date'])
                     edited_schedule = edited_schedule.sort_values('Date')
                     edited_schedule['Date'] = edited_schedule['Date'].dt.strftime('%Y-%m-%d')
-                    edited_schedule.to_csv("DSX_Upcoming_Opponents.csv", index=False)
-                    st.success("✅ Saved! Quick Select will update on next game setup.")
+                    edited_schedule.to_csv("team_schedule.csv", index=False)
+                    st.success("✅ Saved! Schedule page will update.")
             
             with col2:
                 if st.button("🚀 Save & Push to GitHub", type="primary", key="push_schedule"):
                     try:
+                        # Auto-generate EventIDs if missing
+                        if 'EventID' not in edited_schedule.columns or edited_schedule['EventID'].isna().any():
+                            edited_schedule['EventID'] = range(1, len(edited_schedule) + 1)
+                        
                         # Sort by date before saving
                         edited_schedule['Date'] = pd.to_datetime(edited_schedule['Date'])
                         edited_schedule = edited_schedule.sort_values('Date')
                         edited_schedule['Date'] = edited_schedule['Date'].dt.strftime('%Y-%m-%d')
-                        edited_schedule.to_csv("DSX_Upcoming_Opponents.csv", index=False)
+                        edited_schedule.to_csv("team_schedule.csv", index=False)
                         
                         # Git commands
-                        os.system("git add DSX_Upcoming_Opponents.csv")
-                        os.system('git commit -m "Update schedule from dashboard"')
+                        os.system("git add team_schedule.csv")
+                        os.system('git commit -m "Update team schedule from dashboard"')
                         result = os.system("git push")
                         
                         if result == 0:
@@ -4141,27 +4411,36 @@ elif page == "⚙️ Data Manager":
             
             st.markdown("---")
             
-            # Preview upcoming games
-            with st.expander("👀 Preview - Games in Quick Select"):
-                st.write("**These games will appear in the dropdown:**")
-                for _, game in edited_schedule.iterrows():
-                    date_str = game['Date'] if isinstance(game['Date'], str) else game['Date'].strftime('%b %d')
-                    st.write(f"• {date_str} - {game['Opponent']} @ {game['Location']} ({game.get('GameTime', 'TBD')})")
+            # Preview upcoming events
+            with st.expander("👀 Preview - Upcoming Events"):
+                st.write("**Next 5 events:**")
+                upcoming = edited_schedule[edited_schedule['Status'].isin(['Upcoming', 'Confirmed'])].head(5)
+                for _, event in upcoming.iterrows():
+                    event_type_icon = "⚽" if event['EventType'] == 'Game' else "🏃"
+                    opponent_text = event['Opponent'] if event['Opponent'] else "Practice"
+                    st.write(f"{event_type_icon} {event['Date']} @ {event['Time']} - {opponent_text} @ {event['Location']}")
         
         except FileNotFoundError:
-            st.error("DSX_Upcoming_Opponents.csv not found")
-            st.info("Creating default schedule file...")
+            st.error("team_schedule.csv not found")
+            st.info("Creating default enhanced schedule file...")
             default_schedule = pd.DataFrame({
-                'Date': ['2025-10-18'],
-                'Opponent': ['Example Team'],
-                'Location': ['John Ankeney Soccer Complex'],
-                'Tournament': ['MVYSA Fall 2025'],
-                'GameTime': ['11:20 AM'],
-                'Status': ['Upcoming'],
-                'Notes': ['Edit or delete this example']
+                'EventID': [1, 2],
+                'EventType': ['Game', 'Practice'],
+                'Date': ['2025-10-18', '2025-10-16'],
+                'Time': ['11:20 AM', '6:00 PM'],
+                'Opponent': ['Example Team', ''],
+                'Location': ['John Ankeney Soccer Complex', 'John Ankeney Soccer Complex'],
+                'FieldNumber': ['Field 3', 'Field 1'],
+                'ArrivalTime': ['11:00 AM', '5:45 PM'],
+                'UniformColor': ['Blue Jerseys', 'Practice Gear'],
+                'Tournament': ['MVYSA Fall 2025', ''],
+                'HomeAway': ['Away', 'Home'],
+                'Status': ['Upcoming', 'Upcoming'],
+                'Notes': ['Edit or delete this example', 'Regular practice'],
+                'OpponentStrengthIndex': ['', '']
             })
-            default_schedule.to_csv("DSX_Upcoming_Opponents.csv", index=False)
-            st.success("✅ Created default DSX_Upcoming_Opponents.csv - Refresh page to edit!")
+            default_schedule.to_csv("team_schedule.csv", index=False)
+            st.success("✅ Created default team_schedule.csv - Refresh page to edit!")
     
     with tab7:
         st.subheader("📥 Download Data Files")
