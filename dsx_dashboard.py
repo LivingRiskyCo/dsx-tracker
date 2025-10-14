@@ -381,8 +381,11 @@ if page == "🎯 What's Next":
                         st.subheader("🔮 Score Prediction")
                         
                         # Simple prediction based on average goals
-                        pred_dsx_goals = max(0, dsx_gf_avg + (si_diff * 0.05))
-                        pred_opp_goals = max(0, opp_gf if opp_gf else dsx_ga_avg - (si_diff * 0.05))
+                        # More balanced prediction formula
+                        # DSX gets bonus for being stronger, opponent gets penalty for being weaker
+                        # But don't make weak teams completely scoreless
+                        pred_dsx_goals = max(0.5, dsx_gf_avg + (si_diff * 0.02))
+                        pred_opp_goals = max(0.5, opp_gf if opp_gf else dsx_ga_avg - (si_diff * 0.02))
                         
                         pred_dsx_low = max(0, pred_dsx_goals - 1.5)
                         pred_dsx_high = pred_dsx_goals + 1.5
@@ -2795,8 +2798,11 @@ elif page == "🎮 Game Predictions":
                 # Calculate prediction
                 si_diff = dsx_si - opp_si
                 
-                pred_dsx_goals = max(0, dsx_gf_avg + (si_diff * 0.05))
-                pred_opp_goals = max(0, opp_gf - (si_diff * 0.05))
+                # More balanced prediction formula
+                # DSX gets bonus for being stronger, opponent gets penalty for being weaker
+                # But don't make weak teams completely scoreless
+                pred_dsx_goals = max(0.5, dsx_gf_avg + (si_diff * 0.02))
+                pred_opp_goals = max(0.5, opp_gf - (si_diff * 0.02))
                 
                 st.subheader("📊 Predicted Score")
                 st.write(f"### DSX: {pred_dsx_goals:.1f}")
