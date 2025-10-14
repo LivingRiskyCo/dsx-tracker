@@ -3617,129 +3617,136 @@ elif page == "📋 Full Analysis":
     
     st.markdown("---")
     
-    # Matchup Analysis
+    # Matchup Analysis - DYNAMIC
     st.header("🎯 Matchup Analysis by Division Rank")
+    st.info("💡 **Dynamic analysis based on latest division data across all tracked leagues**")
     
-    # Should Beat
-    st.subheader("✅ Teams DSX Should Beat")
+    # Load all division data
+    all_divs = load_division_data()
+    dsx_si = dsx_stats['StrengthIndex']
     
-    with st.expander("**Columbus Force SC** (Rank 6, SI: 16.9)", expanded=True):
-        col1, col2 = st.columns(2)
-        with col1:
-            st.metric("DSX Advantage", "+18.7 SI points")
-            st.metric("Their Record", "1-1-7")
-        with col2:
-            st.markdown("""
-            **Strategy:**
-            - DSX should dominate if playing tight defense
-            - They struggle offensively (1.56 GF/game)
-            - Worst defense in division (6.11 GA/game)
-            """)
+    # Calculate strength differences
+    all_divs['SI_Diff'] = dsx_si - all_divs['StrengthIndex']
     
-    with st.expander("**Johnstown FC** (Rank 7, SI: 3.0)"):
-        col1, col2 = st.columns(2)
-        with col1:
-            st.metric("DSX Advantage", "+32.6 SI points")
-            st.metric("Their Record", "0-0-1")
-        with col2:
-            st.markdown("""
-            **Strategy:**
-            - Overwhelming favorite
-            - Limited data (only 1 game)
-            - Lost their only game 0-4
-            """)
+    # Categorize teams
+    should_beat = all_divs[all_divs['SI_Diff'] > 10].sort_values('StrengthIndex', ascending=False)
+    competitive = all_divs[(all_divs['SI_Diff'] >= -10) & (all_divs['SI_Diff'] <= 10)].sort_values('StrengthIndex', ascending=False)
+    tough_matchups = all_divs[all_divs['SI_Diff'] < -10].sort_values('StrengthIndex', ascending=False)
     
-    # Competitive
-    st.subheader("🟡 Competitive Matchups (Toss-Ups)")
+    # Teams DSX Should Beat
+    st.subheader(f"✅ Teams DSX Should Beat ({len(should_beat)} teams)")
     
-    with st.expander("**Sporting Columbus** (Rank 3, SI: 43.8)"):
-        col1, col2 = st.columns(2)
-        with col1:
-            st.metric("Strength Gap", "8.2 points", delta="Slight disadvantage")
-            st.metric("Their Record", "3-0-4")
-        with col2:
-            st.markdown("""
-            **Analysis:**
-            - True toss-up game, comes down to execution
-            - Low-scoring style (2.14 GF, 2.57 GA/game)
-            - DSX's offensive firepower could overwhelm them
-            """)
+    if len(should_beat) > 0:
+        for idx, (_, team) in enumerate(should_beat.iterrows()):
+            expanded = (idx == 0)  # Expand first one
+            with st.expander(f"**{team['Team']}** (SI: {team['StrengthIndex']:.1f}, {team.get('League/Division', 'N/A')})", expanded=expanded):
+                col1, col2 = st.columns(2)
+                with col1:
+                    st.metric("DSX Advantage", f"+{team['SI_Diff']:.1f} SI points")
+                    if pd.notna(team.get('W')) and pd.notna(team.get('L')) and pd.notna(team.get('D')):
+                        st.metric("Their Record", f"{int(team['W'])}-{int(team['L'])}-{int(team['D'])}")
+                    st.metric("Their PPG", f"{team.get('PPG', 0):.2f}")
+                with col2:
+                    st.markdown(f"""
+                    **Strategy:**
+                    - DSX is **{team['SI_Diff']:.1f} points stronger** - target win
+                    - They average **{team.get('PPG', 0):.2f} PPG** across {int(team.get('GP', 0))} games
+                    - Focus on controlling possession and creating chances
+                    """)
+    else:
+        st.warning("No teams found where DSX has a significant advantage.")
     
-    with st.expander("**Delaware Knights** (Rank 4, SI: 43.4)"):
-        col1, col2 = st.columns(2)
-        with col1:
-            st.metric("Strength Gap", "7.8 points", delta="Slight disadvantage")
-            st.metric("Their Record", "3-0-4")
-        with col2:
-            st.markdown("""
-            **Analysis:**
-            - High-scoring style (4.86 GF, 4.57 GA/game)
-            - Expect a track meet - no draws in their record
-            - Matches DSX's offensive style
-            """)
+    # Competitive Matchups
+    st.subheader(f"🟡 Competitive Matchups ({len(competitive)} teams)")
+    
+    if len(competitive) > 0:
+        for idx, (_, team) in enumerate(competitive.iterrows()):
+            with st.expander(f"**{team['Team']}** (SI: {team['StrengthIndex']:.1f}, {team.get('League/Division', 'N/A')})"):
+                col1, col2 = st.columns(2)
+                with col1:
+                    diff_label = "DSX Advantage" if team['SI_Diff'] > 0 else "Opponent Advantage"
+                    st.metric(diff_label, f"{team['SI_Diff']:+.1f} SI points")
+                    if pd.notna(team.get('W')) and pd.notna(team.get('L')) and pd.notna(team.get('D')):
+                        st.metric("Their Record", f"{int(team['W'])}-{int(team['L'])}-{int(team['D'])}")
+                    st.metric("Their PPG", f"{team.get('PPG', 0):.2f}")
+                with col2:
+                    st.markdown(f"""
+                    **Analysis:**
+                    - **Evenly matched** - game could go either way
+                    - They average **{team.get('PPG', 0):.2f} PPG** across {int(team.get('GP', 0))} games
+                    - Execution and game plan will determine outcome
+                    """)
+    else:
+        st.warning("No evenly matched teams found.")
     
     # Tough Matchups
-    st.subheader("🔴 Tough Matchups (Underdogs)")
+    st.subheader(f"🔴 Tough Matchups ({len(tough_matchups)} teams)")
     
-    with st.expander("**Polaris SC** (Rank 2, SI: 61.0)"):
-        col1, col2 = st.columns(2)
-        with col1:
-            st.metric("DSX Disadvantage", "-25.4 SI points")
-            st.metric("Their Record", "4-1-2")
-        with col2:
-            st.markdown("""
-            **Strategy:**
-            - Explosive offense (4.14 GF/game)
-            - Solid defense (3.29 GA/game)
-            - Focus on defense, look for counter-attacks
-            """)
-    
-    with st.expander("**Blast FC** (Rank 1, SI: 73.5) ⭐"):
-        col1, col2 = st.columns(2)
-        with col1:
-            st.metric("DSX Disadvantage", "-37.9 SI points")
-            st.metric("Their Record", "6-2-1")
-        with col2:
-            st.markdown("""
-            **Strategy:**
-            - Division champions - dominant defense
-            - Only 1.89 goals against/game (best in division)
-            - Need perfect game to have a chance
-            """)
+    if len(tough_matchups) > 0:
+        for idx, (_, team) in enumerate(tough_matchups.iterrows()):
+            with st.expander(f"**{team['Team']}** (SI: {team['StrengthIndex']:.1f}, {team.get('League/Division', 'N/A')})"):
+                col1, col2 = st.columns(2)
+                with col1:
+                    st.metric("DSX Disadvantage", f"{team['SI_Diff']:.1f} SI points")
+                    if pd.notna(team.get('W')) and pd.notna(team.get('L')) and pd.notna(team.get('D')):
+                        st.metric("Their Record", f"{int(team['W'])}-{int(team['L'])}-{int(team['D'])}")
+                    st.metric("Their PPG", f"{team.get('PPG', 0):.2f}")
+                with col2:
+                    st.markdown(f"""
+                    **Strategy:**
+                    - Strong opponent - **{abs(team['SI_Diff']):.1f} points stronger**
+                    - They average **{team.get('PPG', 0):.2f} PPG** across {int(team.get('GP', 0))} games
+                    - Play disciplined defense and look for counter-attacks
+                    """)
+    else:
+        st.warning("No significantly stronger teams found.")
     
     st.markdown("---")
     
-    # How to Move Up
-    st.header("📈 How to Move Up in Rankings")
+    # How to Improve - DYNAMIC
+    st.header("📈 How DSX Can Improve")
+    st.info(f"💡 **Current DSX SI: {dsx_si:.1f}** - Analysis based on actual performance data")
     
     col1, col2 = st.columns(2)
     
     with col1:
-        st.subheader("🎯 Jump to 4th Place")
-        st.markdown("""
-        **Need:** +7.8 StrengthIndex points
+        st.subheader("🎯 Reach Mid-Tier Teams (SI 50+)")
+        target_si = 50.0
+        points_needed = target_si - dsx_si
+        
+        # Calculate scenarios
+        games_for_target = max(3, int(points_needed / 3))  # Rough estimate
+        
+        st.markdown(f"""
+        **Need:** +{points_needed:.1f} StrengthIndex points
         
         **Option A: Win Streak**
-        - Win next 3 games
-        - PPG: 1.00 → 1.40
-        - Result: +9.3 points ✅
+        - Win next {games_for_target} games
+        - Current PPG: {dsx_stats['PPG']:.2f}
+        - Target PPG: ~2.0
+        - Focus on consistency
         
         **Option B: Defensive Improvement**
-        - Allow only 2 goals/game (vs current 5)
-        - GD/GP: -0.92 → -0.42
-        - Combined with 2-1-1 record: +8.1 points ✅
+        - Current: {dsx_stats['GA_PG']:.2f} goals against/game
+        - Target: < 2.0 goals against/game
+        - Improve goal differential
+        - Pair with balanced record (W-L-D)
         """)
     
     with col2:
-        st.subheader("🎯 Reach Top 3")
-        st.markdown("""
-        **Need:** +16.0 StrengthIndex points total
+        st.subheader("🎯 Reach Top-Tier Teams (SI 70+)")
+        target_si_high = 70.0
+        points_needed_high = target_si_high - dsx_si
+        
+        st.markdown(f"""
+        **Need:** +{points_needed_high:.1f} StrengthIndex points total
         
         **Required:**
-        - 5-0-0 record over next 5 games
-        - PPG: 1.00 → 1.59 (+13.8 points)
-        - Tighten defense (<3 GA/game)
-        - Result: 3rd place possible ⭐
+        - Sustained winning streak (5+ games)
+        - Current PPG: {dsx_stats['PPG']:.2f} → Target: 2.5+
+        - Tighten defense (<2 GA/game)
+        - Build on offensive strength ({dsx_stats['GF_PG']:.2f} GF/game)
+        - Result: Compete with division leaders ⭐
         """)
     
     st.markdown("---")
