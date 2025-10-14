@@ -1594,6 +1594,9 @@ elif page == "📊 Team Analysis":
         # ONLY show teams with actual data (from division rankings)
         teams_with_data = df['Team'].tolist()
         
+        # Filter out NaN/float values and ensure strings only
+        teams_with_data = [t for t in teams_with_data if isinstance(t, str)]
+        
         # Ensure DSX is first if present
         dsx_teams = [t for t in teams_with_data if 'DSX' in t or 'Dublin' in t]
         other_teams = sorted([t for t in teams_with_data if t not in dsx_teams])
