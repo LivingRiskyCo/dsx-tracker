@@ -75,6 +75,12 @@ def main():
         "MVYSA B09-3 Division Rankings (BSA Celtic Division)"
     ))
     
+    # 2c. Add actual goals to MVYSA Division (from schedule data)
+    updates.append(run_script(
+        "update_mvysa_division_with_goals.py",
+        "MVYSA Division Goals (Calculate from BSA Celtic Schedules)"
+    ))
+    
     # 3. Update All Division Team Schedules
     updates.append(run_script(
         "fetch_division_schedules.py",
