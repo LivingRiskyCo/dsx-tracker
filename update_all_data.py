@@ -57,6 +57,12 @@ def main():
         "BSA Celtic Team Schedules (United & City)"
     ))
     
+    # 2b. Update MVYSA B09-3 Division Standings (BSA Celtic Division)
+    updates.append(run_script(
+        "fetch_mvysa_division.py",
+        "MVYSA B09-3 Division Rankings (BSA Celtic Division)"
+    ))
+    
     # 3. Update All Division Team Schedules
     updates.append(run_script(
         "fetch_division_schedules.py",

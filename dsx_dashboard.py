@@ -127,10 +127,10 @@ def load_division_data():
     
     # List of all division files to load
     division_files = [
-        "OCL_BU08_Stripes_Division_Rankings.csv",
-        "OCL_BU08_White_Division_Rankings.csv",
-        "OCL_BU08_Stars_Division_Rankings.csv",
-        "BSA_Celtic_Schedules.csv",
+        "OCL_BU08_Stripes_Division_Rankings.csv",  # 23 teams (Northeast, Northwest, Southeast)
+        "OCL_BU08_White_Division_Rankings.csv",    # Club Ohio West division
+        "OCL_BU08_Stars_Division_Rankings.csv",    # 5v5 division (optional)
+        "MVYSA_B09_3_Division_Rankings.csv",       # 6 teams (BSA Celtic division)
     ]
     
     for file in division_files:
