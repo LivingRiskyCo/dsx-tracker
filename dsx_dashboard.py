@@ -2844,9 +2844,10 @@ elif page == "🎮 Game Predictions":
         if "wins next game" in scenario:
             st.subheader("Impact of Next Win")
             
-            current_points = dsx_matches['Points'].sum()
-            current_gp = len(dsx_matches)
-            current_ppg = current_points / current_gp if current_gp > 0 else 0
+            # Use dsx_stats which is already calculated
+            current_gp = dsx_stats['GP']
+            current_ppg = dsx_stats['PPG']
+            current_points = int(current_ppg * current_gp)
             
             new_points = current_points + 3
             new_gp = current_gp + 1
@@ -2867,8 +2868,10 @@ elif page == "🎮 Game Predictions":
             
             remaining_games = len(upcoming) if not upcoming.empty else 3
             
-            current_points = dsx_matches['Points'].sum()
-            current_gp = len(dsx_matches)
+            # Use dsx_stats which is already calculated
+            current_gp = dsx_stats['GP']
+            current_ppg = dsx_stats['PPG']
+            current_points = int(current_ppg * current_gp)
             
             best_case_points = current_points + (remaining_games * 3)
             best_case_gp = current_gp + remaining_games
