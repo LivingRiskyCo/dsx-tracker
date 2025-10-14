@@ -52,11 +52,12 @@ def fetch_gotsport_division(event_id, group_id):
 
 
 def parse_gotsport_standings(soup, source_url):
-    """Parse standings from GotSport HTML"""
+    """Parse standings from GotSport HTML - handles multiple regional groups"""
     
-    # Try to find standings table
-    # GotSport often uses tables with specific classes or IDs
+    # Try to find ALL standings tables (Northeast, Northwest, Southeast)
     tables = soup.find_all('table')
+    
+    all_teams = []
     
     for table in tables:
         # Look for header row with standings columns
@@ -67,15 +68,16 @@ def parse_gotsport_standings(soup, source_url):
             headers = [th.get_text(strip=True) for th in header_row.find_all(['th', 'td'])]
             
             # Check if this looks like a standings table
-            if any(h.lower() in ['team', 'gp', 'pts', 'gf', 'ga', 'w', 'l', 'd'] for h in headers):
-                # This is likely the standings table
+            if any(h.lower() in ['team', 'gp', 'pts', 'gf', 'ga', 'w', 'l', 'd', 'mp'] for h in headers):
+                # This is likely a standings table
                 data = []
                 
                 for row in table.find_all('tr')[1:]:  # Skip header
                     cells = row.find_all('td')
                     if cells and len(cells) >= 3:
                         row_data = [cell.get_text(strip=True) for cell in cells]
-                        if row_data and any(row_data):  # Skip empty rows
+                        # Skip empty rows and rows that don't have numeric data
+                        if row_data and any(row_data) and len(row_data) > 5:
                             data.append(row_data)
                 
                 if data:
@@ -87,8 +89,13 @@ def parse_gotsport_standings(soup, source_url):
                         df = pd.DataFrame(data)
                         df.columns = [f'Col{i}' for i in range(len(df.columns))]
                     
-                    df['SourceURL'] = source_url
-                    return df
+                    all_teams.append(df)
+    
+    # Combine all tables into one DataFrame
+    if all_teams:
+        combined_df = pd.concat(all_teams, ignore_index=True)
+        combined_df['SourceURL'] = source_url
+        return combined_df
     
     return pd.DataFrame()
 
