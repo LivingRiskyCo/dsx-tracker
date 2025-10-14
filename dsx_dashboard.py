@@ -3334,9 +3334,10 @@ elif page == "🔍 Opponent Intel":
             st.write(f"**Offensive Performance:** {avg_gf:.2f} goals/game vs this opponent")
             st.write(f"**Defensive Performance:** {avg_ga:.2f} goals against/game vs this opponent")
             
-            # Compare to season average
-            season_avg_gf = 4.17  # From season stats
-            season_avg_ga = 5.08
+            # Compare to season average - DYNAMIC
+            dsx_stats = calculate_dsx_stats()
+            season_avg_gf = dsx_stats['GF_PG']
+            season_avg_ga = dsx_stats['GA_PG']
             
             if avg_gf > season_avg_gf:
                 st.write(f"⚽ DSX scores {avg_gf - season_avg_gf:.2f} MORE goals/game vs this opponent than season average")
