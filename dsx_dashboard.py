@@ -3227,8 +3227,9 @@ elif page == "🔍 Opponent Intel":
                 if preselected in opponent_names:
                     default_index = opponent_names.index(preselected)
                     st.success(f"🎯 **Pre-Selected from Schedule:** {preselected}")
-                # Clear after use
-                del st.session_state.selected_opponent
+                    # Clear after use
+                    if 'selected_opponent' in st.session_state:
+                        del st.session_state.selected_opponent
             else:
                 st.info("💡 Select a team to see detailed head-to-head analysis and performance trends.")
             
@@ -3401,8 +3402,9 @@ elif page == "🔍 Opponent Intel":
                 if preselected_upcoming in upcoming_names:
                     upcoming_default_index = upcoming_names.index(preselected_upcoming)
                     st.success(f"🎯 **Pre-Selected from Schedule:** {preselected_upcoming}")
-                # Clear after use
-                del st.session_state.selected_opponent
+                    # Clear after use
+                    if 'selected_opponent' in st.session_state:
+                        del st.session_state.selected_opponent
             
             # Opponent selector for upcoming
             upcoming_names = upcoming['Opponent'].tolist()
@@ -3439,7 +3441,7 @@ elif page == "🔍 Opponent Intel":
                         with col1:
                             st.metric("Games", len(completed))
                         with col2:
-                            st.metric("Record", f"{wins}-{draws}-{losses}")
+                            st.metric("Record", f"{wins}-{losses}-{draws}")
                         with col3:
                             st.metric("GF/Game", f"{completed['GF'].mean():.2f}")
                         with col4:
@@ -3461,11 +3463,13 @@ elif page == "🔍 Opponent Intel":
                         col1, col2 = st.columns(2)
                         
                         with col1:
+                            dsx_stats = calculate_dsx_stats()
                             st.metric("Opponent SI", f"{strength_index:.1f}")
-                            st.metric("DSX SI", "35.6")
+                            st.metric("DSX SI", f"{dsx_stats['StrengthIndex']:.1f}")
                         
                         with col2:
-                            si_diff = 35.6 - strength_index
+                            dsx_stats = calculate_dsx_stats()
+                            si_diff = dsx_stats['StrengthIndex'] - strength_index
                             if si_diff > 10:
                                 st.success("✅ DSX is stronger")
                                 st.write("**Target:** Win (3 points)")
