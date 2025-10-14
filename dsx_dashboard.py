@@ -209,7 +209,7 @@ with st.sidebar:
     
     page = st.radio(
         "Navigation",
-        ["🎯 What's Next", "🎮 Live Game Tracker", "📺 Watch Live Game", "🏆 Division Rankings", "📊 Team Analysis", "👥 Player Stats", "📅 Match History", "📝 Game Log", "🔍 Opponent Intel", "🎮 Game Predictions", "📊 Benchmarking", "📋 Full Analysis", "📖 Quick Start Guide", "⚙️ Data Manager"]
+        ["🎯 What's Next", "🎮 Live Game Tracker", "📺 Watch Live Game", "💬 Team Chat", "🏆 Division Rankings", "📊 Team Analysis", "👥 Player Stats", "📅 Match History", "📝 Game Log", "🔍 Opponent Intel", "🎮 Game Predictions", "📊 Benchmarking", "📋 Full Analysis", "📖 Quick Start Guide", "⚙️ Data Manager"]
     )
     
     st.markdown("---")
@@ -1186,6 +1186,176 @@ elif page == "📺 Watch Live Game":
         1. Use the **🎮 Live Game Tracker** page to record events
         2. This page automatically displays what you record
         3. Share the Streamlit app link with parents!
+        """)
+
+
+elif page == "💬 Team Chat":
+    st.title("💬 Team Chat")
+    
+    st.success("📱 **Real-Time Team Communication** - Messages update every 3 seconds!")
+    
+    # Import chat database
+    try:
+        from chat_db import ChatDatabase
+        db = ChatDatabase()
+    except Exception as e:
+        st.error(f"Could not load chat database: {str(e)}")
+        st.info("Make sure `chat_db.py` is in the same directory as `dsx_dashboard.py`")
+        st.stop()
+    
+    # Initialize session state for auto-refresh
+    if 'last_chat_refresh' not in st.session_state:
+        st.session_state.last_chat_refresh = time.time()
+    if 'chat_username' not in st.session_state:
+        st.session_state.chat_username = ""
+    
+    # Auto-refresh every 3 seconds
+    current_time = time.time()
+    if current_time - st.session_state.last_chat_refresh > 3:
+        st.session_state.last_chat_refresh = current_time
+        st.rerun()
+    
+    # Channel selection
+    channels = db.get_all_channels()
+    if 'selected_channel' not in st.session_state:
+        st.session_state.selected_channel = 'general'
+    
+    # Channel tabs
+    channel_tabs = st.tabs([f"#{row['name'].title()} ({db.get_message_count(row['name'])})" 
+                            for _, row in channels.iterrows()])
+    
+    for idx, (_, channel_row) in enumerate(channels.iterrows()):
+        with channel_tabs[idx]:
+            channel_name = channel_row['name']
+            channel_desc = channel_row['description']
+            
+            st.caption(f"💬 {channel_desc}")
+            st.markdown("---")
+            
+            # Get messages for this channel
+            messages = db.get_messages(channel_name, limit=50)
+            
+            if not messages.empty:
+                # Display pinned messages first
+                pinned_messages = messages[messages['pinned'] == 1]
+                if not pinned_messages.empty:
+                    st.subheader("📌 Pinned Messages")
+                    for _, msg in pinned_messages.iterrows():
+                        with st.container():
+                            col1, col2 = st.columns([4, 1])
+                            with col1:
+                                st.markdown(f"**{msg['username']}** · {msg['timestamp']}")
+                                st.write(msg['message'])
+                            with col2:
+                                if st.button("📌 Unpin", key=f"unpin_{msg['id']}"):
+                                    db.unpin_message(msg['id'])
+                                    st.rerun()
+                                if st.button("🗑️ Delete", key=f"del_pinned_{msg['id']}"):
+                                    db.delete_message(msg['id'])
+                                    st.rerun()
+                    st.markdown("---")
+                
+                # Display regular messages
+                st.subheader("💬 Recent Messages")
+                regular_messages = messages[messages['pinned'] == 0]
+                
+                if not regular_messages.empty:
+                    for _, msg in regular_messages.iterrows():
+                        with st.container():
+                            col1, col2 = st.columns([5, 1])
+                            with col1:
+                                st.markdown(f"**{msg['username']}** · {msg['timestamp']}")
+                                st.write(msg['message'])
+                            with col2:
+                                with st.popover("⋮"):
+                                    if st.button("📌 Pin", key=f"pin_{msg['id']}"):
+                                        db.pin_message(msg['id'])
+                                        st.rerun()
+                                    if st.button("🗑️ Delete", key=f"del_{msg['id']}"):
+                                        db.delete_message(msg['id'])
+                                        st.rerun()
+                            st.markdown("---")
+                else:
+                    st.info("No messages yet. Be the first to post!")
+            else:
+                st.info("No messages in this channel yet. Start the conversation!")
+            
+            # Post message section
+            st.markdown("---")
+            st.subheader("✏️ Post a Message")
+            
+            with st.form(key=f"post_form_{channel_name}"):
+                col1, col2 = st.columns([3, 1])
+                
+                with col1:
+                    username = st.text_input(
+                        "Your Name", 
+                        value=st.session_state.chat_username,
+                        placeholder="Coach John, Parent Sarah, etc.",
+                        key=f"username_{channel_name}"
+                    )
+                
+                with col2:
+                    st.write("")  # Spacer
+                    st.write("")  # Spacer
+                
+                message = st.text_area(
+                    "Message",
+                    placeholder="Type your message here...",
+                    height=100,
+                    key=f"message_{channel_name}"
+                )
+                
+                submit = st.form_submit_button("📤 Send Message", use_container_width=True, type="primary")
+                
+                if submit:
+                    if not username or not username.strip():
+                        st.error("Please enter your name!")
+                    elif not message or not message.strip():
+                        st.error("Please enter a message!")
+                    else:
+                        # Save username for next time
+                        st.session_state.chat_username = username.strip()
+                        
+                        # Post message
+                        db.post_message(username.strip(), message.strip(), channel_name)
+                        st.success("✅ Message posted!")
+                        time.sleep(0.5)
+                        st.rerun()
+    
+    # Auto-refresh notice
+    st.markdown("---")
+    st.caption("🔄 Messages auto-refresh every 3 seconds • Keep this page open to see new messages instantly!")
+    
+    # Add some helpful tips
+    with st.expander("💡 How to Use Team Chat"):
+        st.markdown("""
+        **Posting Messages:**
+        - Enter your name (it will be remembered)
+        - Type your message
+        - Click "Send Message"
+        
+        **Channels:**
+        - **General** - Team announcements and general discussion
+        - **Game Day** - Coordinate on game days
+        - **Schedule** - Schedule changes and updates
+        - **Carpools** - Find rides or offer carpools
+        - **Equipment** - Share equipment needs/offers
+        
+        **Pin Messages:**
+        - Click the ⋮ menu next to any message
+        - Click "📌 Pin" to pin important messages to the top
+        - Pinned messages stay visible for everyone
+        
+        **Delete Messages:**
+        - Click the ⋮ menu next to any message
+        - Click "🗑️ Delete" to remove a message
+        
+        **Tips:**
+        - Messages update automatically every 3 seconds
+        - Keep the page open to see new messages
+        - Use specific channels to keep conversations organized
+        - Pin important info (game times, field changes, etc.)
         """)
 
 
