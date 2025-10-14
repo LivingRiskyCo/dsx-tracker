@@ -3213,12 +3213,16 @@ elif page == "🔍 Opponent Intel":
                         
                         col1, col2 = st.columns(2)
                         
+                        # Get dynamic DSX stats
+                        dsx_stats = calculate_dsx_stats()
+                        dsx_si = dsx_stats['StrengthIndex']
+                        
                         with col1:
                             st.metric("Opponent SI", f"{team['StrengthIndex']:.1f}")
-                            st.metric("DSX SI", "35.6")
+                            st.metric("DSX SI", f"{dsx_si:.1f}")
                         
                         with col2:
-                            si_diff = 35.6 - team['StrengthIndex']
+                            si_diff = dsx_si - team['StrengthIndex']
                             if si_diff > 10:
                                 st.success("✅ DSX is stronger")
                             elif si_diff < -10:
@@ -3244,7 +3248,10 @@ elif page == "🔍 Opponent Intel":
 elif page == "📋 Full Analysis":
     st.title("📋 Complete Division Analysis")
     
-    st.info("This page displays the complete strategic analysis from DIVISION_ANALYSIS_SUMMARY.md")
+    st.info("This page displays your current season performance and strategic matchup analysis")
+    
+    # Get dynamic DSX stats
+    dsx_stats = calculate_dsx_stats()
     
     # Key insights at the top
     st.header("🎯 Executive Summary")
@@ -3253,18 +3260,18 @@ elif page == "📋 Full Analysis":
     
     with col1:
         st.subheader("✅ DSX Strengths")
-        st.markdown("""
-        - **4.17 goals/game** (3rd best offense!)
-        - **7 of 12 games** earned points (W or D)
-        - **Can beat anyone** - 11-0 win shows ceiling
+        st.markdown(f"""
+        - **{dsx_stats['GF_PG']:.2f} goals/game** - Offensive capability
+        - **{dsx_stats['W']} wins, {dsx_stats['D']} draws** in {dsx_stats['GP']} games
+        - **{dsx_stats['PPG']:.2f} PPG** - Points per game
         """)
     
     with col2:
-        st.subheader("⚠️ DSX Weaknesses")
-        st.markdown("""
-        - **5.08 goals against/game** (defensive issues)
-        - **Inconsistent** - Range from 11-0 to 0-13
-        - **Negative GD** - -0.92 per game
+        st.subheader("⚠️ Areas for Improvement")
+        st.markdown(f"""
+        - **{dsx_stats['GA_PG']:.2f} goals against/game** - Defensive focus
+        - **{dsx_stats['GD_PG']:.2f} goal diff/game** - Need to close gaps
+        - **{dsx_stats['L']} losses** - Learn from tough matches
         """)
     
     st.markdown("---")
@@ -3482,48 +3489,85 @@ elif page == "📖 Quick Start Guide":
     
     st.success("Welcome to the DSX Opponent Tracker! This page helps you get started.")
     
+    # Get dynamic DSX stats for display
+    dsx_stats = calculate_dsx_stats()
+    all_divisions_df = load_division_data()
+    
     # Quick wins
     st.header("🚀 Quick Wins (Do These First)")
     
     with st.expander("1️⃣ Check Your Division Position (30 seconds)", expanded=True):
-        st.markdown("""
+        st.markdown(f"""
         **Action:** Go to **🏆 Division Rankings** page
         
         **You'll see:**
-        - DSX rank: **5th of 7**
-        - Strength Index: **35.6**
-        - Teams above and below you
+        - DSX Strength Index: **{dsx_stats['StrengthIndex']:.1f}**
+        - Current Record: **{dsx_stats['Record']}** ({dsx_stats['GP']} games)
+        - Rank among teams you've played
         
-        **Insight:** You're mid-table, can beat 2 teams, competitive with 2 more.
+        **Insight:** Compare against {len(all_divisions_df)} teams from 4 divisions!
         """)
     
     with st.expander("2️⃣ Scout Your Next Opponent (2 minutes)"):
         st.markdown("""
-        **Action:** Go to **📊 Team Analysis** page
+        **Action:** Go to **🎯 What's Next** page
         
         **Steps:**
-        1. Select "Dublin DSX Orange" as Team 1
-        2. Select your opponent as Team 2
-        3. Read the matchup prediction
-        4. Check the radar chart
+        1. See your next 3 upcoming games
+        2. Review opponent Strength Index
+        3. Check win probability prediction
+        4. Read strategic recommendations
         
         **You'll learn:**
         - Who's favored to win
         - Expected goal differential
-        - Strengths/weaknesses comparison
+        - Key tactical focus areas
         """)
     
     with st.expander("3️⃣ Review Recent Performance (1 minute)"):
-        st.markdown("""
+        st.markdown(f"""
         **Action:** Go to **📅 Match History** page
         
         **You'll see:**
-        - All 12 DSX games this season
-        - 4-3-5 record (4W, 3D, 5L)
+        - All {dsx_stats['GP']} DSX games this season
+        - {dsx_stats['Record']} record ({dsx_stats['W']}W, {dsx_stats['D']}D, {dsx_stats['L']}L)
+        - {dsx_stats['GF_PG']:.2f} goals/game, {dsx_stats['GA_PG']:.2f} against/game
         - Goals over time chart
-        - Cumulative goal differential
         
         **Look for:** Trends - are you improving or declining?
+        """)
+    
+    with st.expander("4️⃣ Use Live Game Tracker (Game Day)"):
+        st.markdown("""
+        **Action:** Go to **🎮 Live Game Tracker** page on game day
+        
+        **Features:**
+        1. Record goals, assists, shots, saves in real-time
+        2. Track substitutions and player minutes
+        3. Auto-saves every action to CSV
+        4. Parents can watch on **📺 Watch Live Game** page
+        
+        **Benefits:**
+        - Never lose track of who scored
+        - Automatic stats updates
+        - Live feed for parents/team
+        """)
+    
+    with st.expander("5️⃣ Team Communication (Any Time)"):
+        st.markdown("""
+        **Action:** Go to **💬 Team Chat** page
+        
+        **Features:**
+        1. 5 channels: General, Game Day, Schedule, Carpools, Equipment
+        2. Auto-refreshes every 3 seconds
+        3. Pin important messages
+        4. Works on phones via Cloudflare Tunnel
+        
+        **Use for:**
+        - Game day coordination
+        - Schedule changes
+        - Carpool arrangements
+        - Equipment sharing
         """)
     
     st.markdown("---")
@@ -3571,23 +3615,23 @@ elif page == "📖 Quick Start Guide":
     col1, col2 = st.columns(2)
     
     with col1:
-        st.success("""
+        st.success(f"""
         **🟢 Good News**
         
-        - **3rd best offense** (4.17 GF/game)
-        - **Can beat anyone** on good days
-        - **Only +7.8 SI points** from 4th place
-        - **Very achievable** to move up
+        - **{dsx_stats['GF_PG']:.2f} GF/game** - Scoring capability
+        - **{dsx_stats['W']} wins** this season
+        - **SI {dsx_stats['StrengthIndex']:.1f}** - Competitive level
+        - **{len(all_divisions_df)} teams tracked** across 4 divisions
         """)
     
     with col2:
-        st.warning("""
+        st.warning(f"""
         **🟡 Areas to Improve**
         
-        - **Defense struggles** (5.08 GA/game)
-        - **Inconsistent** results (11-0 to 0-13)
-        - **Mid-table** currently (5th of 7)
-        - **Need consistency** to climb
+        - **{dsx_stats['GA_PG']:.2f} GA/game** - Defensive focus
+        - **{dsx_stats['L']} losses** - Learn & adapt
+        - **Consistency** - Minimize scoring variance
+        - **Goal differential** - Close the gap
         """)
     
     st.markdown("---")
@@ -3596,25 +3640,54 @@ elif page == "📖 Quick Start Guide":
     st.header("📱 Dashboard Pages Explained")
     
     pages_info = {
-        'Page': ['🏆 Division Rankings', '📊 Team Analysis', '📅 Match History', '🔍 Opponent Intel', '📋 Full Analysis', '📖 Quick Start Guide', '⚙️ Data Manager'],
+        'Page': [
+            '🏆 Division Rankings',
+            '📊 Team Analysis', 
+            '📅 Match History',
+            '🔍 Opponent Intel',
+            '🎯 What\'s Next',
+            '🎮 Game Predictions',
+            '📊 Benchmarking',
+            '⚽ Player Stats',
+            '📋 Game Log',
+            '🎮 Live Game Tracker',
+            '📺 Watch Live Game',
+            '💬 Team Chat',
+            '📋 Full Analysis',
+            '⚙️ Data Manager'
+        ],
         'Use For': [
-            'See where DSX ranks in division',
+            'See where DSX ranks vs opponents',
             'Compare any 2 teams head-to-head',
             'Review all DSX games & trends',
             'Scout specific opponents',
-            'Complete strategic analysis',
-            'Getting started (this page!)',
-            'Update data & export files'
+            'View next 3 games & predictions',
+            'Predict matchups vs any team',
+            'Radar chart comparisons',
+            'Individual player statistics',
+            'Per-game player contributions',
+            'Record live game events',
+            'Watch ongoing game (parents)',
+            'Team communication',
+            'Strategic season analysis',
+            'Edit data & update division info'
         ],
-        'Time': ['30 sec', '2 min', '2 min', '3 min', '5 min', '5 min', '1 min'],
+        'Time': ['30 sec', '2 min', '2 min', '3 min', '1 min', '2 min', '2 min', '2 min', '2 min', 'Game day', 'Any time', 'Any time', '5 min', '1 min'],
         'Best For': [
             'Quick status check',
             'Pre-game scouting',
             'Post-game review',
             'Opponent research',
+            'Weekly planning',
+            'What-if scenarios',
+            'Visual comparisons',
+            'Player development',
+            'Stats tracking',
+            'Coaches/managers',
+            'Parents/fans',
+            'Team coordination',
             'Strategy planning',
-            'First time users',
-            'Data refresh'
+            'Data maintenance'
         ]
     }
     
@@ -3642,9 +3715,10 @@ elif page == "📖 Quick Start Guide":
         ### Analysis Tips
         
         - **Focus on trends** not single games
-        - **Compare to division** not just opponents
-        - **Defense wins** - watch GA/game
-        - **Strength Index** is best overall metric
+        - **Update after every game** for accuracy
+        - **SI differences >10** = significant gap
+        - **Use Live Tracker** on game days
+        - **Check Team Chat** for updates
         """)
     
     st.markdown("---")
@@ -3652,22 +3726,24 @@ elif page == "📖 Quick Start Guide":
     # Quick Reference
     st.header("📊 Quick Reference Card")
     
-    st.info("""
+    st.info(f"""
     **DSX Current Stats:**
-    - **Rank:** 5th of 7
-    - **Record:** 4-3-5 (W-D-L)
-    - **Strength Index:** 35.6
-    - **Offense:** 4.17 GF/game (3rd best! ✅)
-    - **Defense:** 5.08 GA/game (needs work ⚠️)
-    - **Goal Diff:** -0.92/game
+    - **Record:** {dsx_stats['Record']} (W-D-L)
+    - **Games Played:** {dsx_stats['GP']}
+    - **Strength Index:** {dsx_stats['StrengthIndex']:.1f}
+    - **Offense:** {dsx_stats['GF_PG']:.2f} GF/game
+    - **Defense:** {dsx_stats['GA_PG']:.2f} GA/game
+    - **Goal Diff:** {dsx_stats['GD_PG']:.2f}/game
+    - **PPG:** {dsx_stats['PPG']:.2f}
     
-    **To Move Up:**
-    - **4th Place:** Win next 3 games OR tighten defense
-    - **3rd Place:** 5-game winning streak + defensive improvement
+    **Division Coverage:**
+    - **{len(all_divisions_df)} teams** tracked across 4 divisions
+    - OCL BU08 Stripes, White, Stars + MVYSA B09-3
     
-    **Upcoming:**
-    - **Oct 18:** BSA Celtic 18B United (winnable)
-    - **Oct 19:** BSA Celtic 18B City (favorable)
+    **Quick Access:**
+    - Live Game Tracker for game days
+    - Team Chat for coordination
+    - Data Manager to update stats
     """)
 
 
