@@ -675,16 +675,56 @@ elif page == "📅 Team Schedule":
                         with action_col1:
                             if event_type == 'Game':
                                 if st.button("🎮 Start Live Tracker", key=f"track_{event_id}", use_container_width=True):
-                                    st.info("Would redirect to Live Game Tracker with pre-filled data")
+                                    # Pre-fill Live Game Tracker data in session state
+                                    st.session_state.prefill_game_data = {
+                                        'date': event['Date'].strftime('%Y-%m-%d'),
+                                        'opponent': event['Opponent'],
+                                        'location': event['Location'],
+                                        'tournament': event.get('Tournament', ''),
+                                        'field': event.get('FieldNumber', ''),
+                                        'uniform': event.get('UniformColor', '')
+                                    }
+                                    st.success(f"✅ Game data ready! Go to **🎮 Live Game Tracker** to start recording.")
+                                    st.info("💡 **Tip:** Use the sidebar to navigate to Live Game Tracker. Your game details will be pre-filled!")
                         
                         with action_col2:
                             if st.button("📝 View Details", key=f"detail_{event_id}", use_container_width=True):
-                                st.info("Would show full event details")
+                                # Show detailed event info
+                                st.markdown("---")
+                                st.markdown("#### 📋 Complete Event Details")
+                                
+                                detail_col1, detail_col2 = st.columns(2)
+                                
+                                with detail_col1:
+                                    st.write(f"**📅 Date:** {event['Date'].strftime('%A, %B %d, %Y')}")
+                                    st.write(f"**🕐 Game Time:** {event['Time']}")
+                                    st.write(f"**⏰ Arrival Time:** {event.get('ArrivalTime', 'TBD')}")
+                                    st.write(f"**📍 Location:** {event['Location']}")
+                                    st.write(f"**🏟️ Field Number:** {event.get('FieldNumber', 'TBD')}")
+                                
+                                with detail_col2:
+                                    st.write(f"**👕 Uniform:** {event.get('UniformColor', 'TBD')}")
+                                    st.write(f"**🏠 Home/Away:** {event.get('HomeAway', 'TBD')}")
+                                    st.write(f"**🏆 Tournament:** {event.get('Tournament', 'N/A')}")
+                                    st.write(f"**📊 Status:** {event['Status']}")
+                                    
+                                    if event_type == 'Game' and pd.notna(event.get('OpponentStrengthIndex')) and event.get('OpponentStrengthIndex') != '':
+                                        dsx_stats = calculate_dsx_stats()
+                                        st.write(f"**⚡ Opponent SI:** {event.get('OpponentStrengthIndex'):.1f}")
+                                        st.write(f"**⚡ DSX SI:** {dsx_stats['StrengthIndex']:.1f}")
+                                
+                                if event.get('Notes'):
+                                    st.write(f"**📝 Notes:** {event['Notes']}")
+                                
+                                st.markdown("---")
                         
                         with action_col3:
                             if event_type == 'Game' and event.get('Opponent'):
                                 if st.button("🔍 Opponent Intel", key=f"intel_{event_id}", use_container_width=True):
-                                    st.info(f"Would redirect to Opponent Intel for {event['Opponent']}")
+                                    # Store opponent for Opponent Intel page
+                                    st.session_state.selected_opponent = event['Opponent']
+                                    st.success(f"✅ Opponent selected: **{event['Opponent']}**")
+                                    st.info("💡 **Go to 🔍 Opponent Intel** page to see full scouting report!")
                         
                         with action_col4:
                             location_query = event['Location'].replace(' ', '+')
@@ -848,6 +888,24 @@ elif page == "🎮 Live Game Tracker":
         default_opponent = ""
         default_location = ""
         default_tournament = "MVYSA Fall 2025"
+        
+        # Check if data was pre-filled from Team Schedule
+        if 'prefill_game_data' in st.session_state:
+            prefill = st.session_state.prefill_game_data
+            st.success("🎯 **Game Pre-Selected from Schedule!**")
+            st.info(f"**{prefill.get('opponent')}** on **{prefill.get('date')}** @ **{prefill.get('location')}**")
+            
+            # Use prefilled data as defaults
+            try:
+                default_date = datetime.strptime(prefill.get('date'), '%Y-%m-%d').date()
+            except:
+                pass
+            default_opponent = prefill.get('opponent', '')
+            default_location = prefill.get('location', '')
+            default_tournament = prefill.get('tournament', 'MVYSA Fall 2025')
+            
+            # Clear prefill data after using it
+            del st.session_state.prefill_game_data
         
         # Quick select from upcoming matches - NEW APPROACH: Skip manual form!
         if has_upcoming and not upcoming_matches.empty:
@@ -3160,13 +3218,26 @@ elif page == "🔍 Opponent Intel":
             dsx_matches = pd.read_csv("DSX_Matches_Fall2025.csv")
             
             st.success(f"Loaded {len(actual_opponents)} opponents that DSX has played")
-            st.info("💡 Select a team to see detailed head-to-head analysis and performance trends.")
+            
+            # Check if opponent was pre-selected from Team Schedule
+            default_index = 0
+            if 'selected_opponent' in st.session_state:
+                preselected = st.session_state.selected_opponent
+                opponent_names = actual_opponents['Opponent'].tolist()
+                if preselected in opponent_names:
+                    default_index = opponent_names.index(preselected)
+                    st.success(f"🎯 **Pre-Selected from Schedule:** {preselected}")
+                # Clear after use
+                del st.session_state.selected_opponent
+            else:
+                st.info("💡 Select a team to see detailed head-to-head analysis and performance trends.")
             
             # Opponent selector - show teams DSX actually played
             opponent_names = actual_opponents['Opponent'].tolist()
             selected_opp = st.selectbox(
                 "Select Opponent", 
                 opponent_names,
+                index=default_index,
                 help="Choose an opponent to see head-to-head analysis"
             )
             
@@ -3322,11 +3393,23 @@ elif page == "🔍 Opponent Intel":
             
             st.markdown("---")
             
+            # Check if opponent was pre-selected from Team Schedule
+            upcoming_default_index = 0
+            if 'selected_opponent' in st.session_state:
+                preselected_upcoming = st.session_state.selected_opponent
+                upcoming_names = upcoming['Opponent'].tolist()
+                if preselected_upcoming in upcoming_names:
+                    upcoming_default_index = upcoming_names.index(preselected_upcoming)
+                    st.success(f"🎯 **Pre-Selected from Schedule:** {preselected_upcoming}")
+                # Clear after use
+                del st.session_state.selected_opponent
+            
             # Opponent selector for upcoming
             upcoming_names = upcoming['Opponent'].tolist()
             selected_upcoming = st.selectbox(
                 "Select Upcoming Opponent to Scout", 
                 upcoming_names,
+                index=upcoming_default_index,
                 help="Choose an opponent to see scouting report"
             )
             
