@@ -4442,6 +4442,82 @@ elif page == "⚙️ Data Manager":
             default_schedule.to_csv("team_schedule.csv", index=False)
             st.success("✅ Created default team_schedule.csv - Refresh page to edit!")
     
+    with tab6:
+        st.subheader("⚽ Edit Position Names")
+        st.write("Customize position names to match your coach's terminology")
+        st.info("💡 **These positions will be used in Live Game Tracker when setting up lineup!**")
+        
+        try:
+            positions = pd.read_csv("position_config.csv", index_col=False)
+            
+            # Reset index to ensure no extra columns
+            positions = positions.reset_index(drop=True)
+            
+            # Editable dataframe
+            edited_positions = st.data_editor(
+                positions,
+                num_rows="dynamic",
+                use_container_width=True,
+                hide_index=True,
+                column_config={
+                    "PositionName": st.column_config.TextColumn("Position Name (e.g. Center Midfielder)", required=True, width="large"),
+                    "Abbreviation": st.column_config.TextColumn("Abbreviation (e.g. CM)", required=True, width="small"),
+                    "SortOrder": st.column_config.NumberColumn("Display Order", min_value=1, help="Lower numbers appear first in dropdowns"),
+                }
+            )
+            
+            st.caption("""
+            **Common positions for 7v7 (U8):**
+            - Goalkeeper (GK)
+            - Center Back (CB), Right Back (RB), Left Back (LB)
+            - Center Midfielder (CM), Right Midfielder (RM), Left Midfielder (LM)
+            - Striker (ST), Forward (FW)
+            - Right Winger (RW), Left Winger (LW)
+            """)
+            
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                if st.button("💾 Save Locally", type="secondary", key="save_positions_local"):
+                    # Sort by SortOrder before saving
+                    edited_positions = edited_positions.sort_values('SortOrder')
+                    edited_positions.to_csv("position_config.csv", index=False)
+                    st.success("✅ Saved! Positions will update in Live Game Tracker.")
+            
+            with col2:
+                if st.button("🚀 Save & Push to GitHub", type="primary", key="push_positions"):
+                    try:
+                        # Sort by SortOrder before saving
+                        edited_positions = edited_positions.sort_values('SortOrder')
+                        edited_positions.to_csv("position_config.csv", index=False)
+                        
+                        # Git commands
+                        os.system("git add position_config.csv")
+                        os.system('git commit -m "Update position names from dashboard"')
+                        result = os.system("git push")
+                        
+                        if result == 0:
+                            st.success("✅ Pushed to GitHub successfully!")
+                            st.balloons()
+                        else:
+                            st.error("❌ Git push failed - check credentials")
+                    except Exception as e:
+                        st.error(f"Error: {e}")
+            
+            with col3:
+                if st.button("↩️ Reset", key="reset_positions"):
+                    st.rerun()
+        
+        except FileNotFoundError:
+            st.error("position_config.csv not found")
+            st.info("Creating default positions file...")
+            default_positions = pd.DataFrame({
+                'PositionName': ['Goalkeeper', 'Center Back', 'Right Back', 'Left Back', 'Center Midfielder', 'Right Winger', 'Left Winger', 'Striker'],
+                'Abbreviation': ['GK', 'CB', 'RB', 'LB', 'CM', 'RW', 'LW', 'ST'],
+                'SortOrder': [1, 2, 3, 4, 5, 6, 7, 8]
+            })
+            default_positions.to_csv("position_config.csv", index=False)
+            st.success("✅ Created default position_config.csv - Refresh page to edit!")
+    
     with tab7:
         st.subheader("📥 Download Data Files")
         
