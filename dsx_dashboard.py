@@ -1955,10 +1955,26 @@ elif page == "🏆 Division Rankings":
         if not opponent_df.empty:
             for idx, row in opponent_df.iterrows():
                 gp = row['GP'] if row['GP'] > 0 else 1
-                opponent_df.at[idx, 'GF_PG'] = row['GF'] / gp if 'GF' in row else 0
-                opponent_df.at[idx, 'GA_PG'] = row['GA'] / gp if 'GA' in row else 0
-                opponent_df.at[idx, 'GD_PG'] = row['GD'] / gp if 'GD' in row else 0
+                # Safely get GF/GA/GD, defaulting to 0 if missing or NaN
+                gf = pd.to_numeric(row.get('GF', 0), errors='coerce')
+                gf = gf if pd.notna(gf) else 0
+                ga = pd.to_numeric(row.get('GA', 0), errors='coerce')
+                ga = ga if pd.notna(ga) else 0
+                gd = pd.to_numeric(row.get('GD', 0), errors='coerce')
+                gd = gd if pd.notna(gd) else 0
+                
+                opponent_df.at[idx, 'GF_PG'] = gf / gp
+                opponent_df.at[idx, 'GA_PG'] = ga / gp
+                opponent_df.at[idx, 'GD_PG'] = gd / gp
                 opponent_df.at[idx, 'IsDSX'] = False
+            
+            # Ensure GF, GA, GD columns exist and have proper values
+            if 'GF' not in opponent_df.columns:
+                opponent_df['GF'] = opponent_df['GF_PG'] * opponent_df['GP']
+            if 'GA' not in opponent_df.columns:
+                opponent_df['GA'] = opponent_df['GA_PG'] * opponent_df['GP']
+            if 'GD' not in opponent_df.columns:
+                opponent_df['GD'] = opponent_df['GD_PG'] * opponent_df['GP']
             
             # Combine DSX with opponents
             combined_df = pd.concat([dsx_row, opponent_df], ignore_index=True)
