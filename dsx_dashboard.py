@@ -151,6 +151,92 @@ def load_division_data():
     return pd.DataFrame()
 
 
+@st.cache_data(ttl=300)  # Cache for 5 minutes (more frequent updates for match data)
+def calculate_dsx_stats():
+    """Calculate DSX statistics dynamically from match data"""
+    try:
+        dsx_matches = pd.read_csv("DSX_Matches_Fall2025.csv", index_col=False).reset_index(drop=True)
+        
+        # Check if Result or Outcome column exists
+        result_col = 'Result' if 'Result' in dsx_matches.columns else 'Outcome'
+        
+        completed = dsx_matches[dsx_matches[result_col].notna()].copy()
+        
+        if len(completed) > 0:
+            dsx_gp = len(completed)
+            dsx_w = len(completed[completed[result_col] == 'W'])
+            dsx_d = len(completed[completed[result_col] == 'D'])
+            dsx_l = len(completed[completed[result_col] == 'L'])
+            dsx_gf = pd.to_numeric(completed['GF'], errors='coerce').fillna(0).sum()
+            dsx_ga = pd.to_numeric(completed['GA'], errors='coerce').fillna(0).sum()
+            dsx_gd = dsx_gf - dsx_ga
+            dsx_pts = (dsx_w * 3) + dsx_d
+            dsx_ppg = dsx_pts / dsx_gp if dsx_gp > 0 else 0
+            dsx_gf_pg = dsx_gf / dsx_gp if dsx_gp > 0 else 0
+            dsx_ga_pg = dsx_ga / dsx_gp if dsx_gp > 0 else 0
+            dsx_gd_pg = dsx_gd / dsx_gp if dsx_gp > 0 else 0
+            
+            # Calculate DSX Strength Index
+            ppg_norm = max(0.0, min(3.0, dsx_ppg)) / 3.0 * 100.0
+            gdpg_norm = (max(-5.0, min(5.0, dsx_gd_pg)) + 5.0) / 10.0 * 100.0
+            dsx_strength = round(0.7 * ppg_norm + 0.3 * gdpg_norm, 1)
+            
+            return {
+                'Team': 'Dublin DSX Orange 2018 Boys',
+                'GP': dsx_gp,
+                'W': dsx_w,
+                'D': dsx_d,
+                'L': dsx_l,
+                'Record': f"{dsx_w}-{dsx_d}-{dsx_l}",
+                'GF': dsx_gf,
+                'GA': dsx_ga,
+                'GD': dsx_gd,
+                'Pts': dsx_pts,
+                'PPG': dsx_ppg,
+                'GF_PG': dsx_gf_pg,
+                'GA_PG': dsx_ga_pg,
+                'GD_PG': dsx_gd_pg,
+                'StrengthIndex': dsx_strength
+            }
+        else:
+            return {
+                'Team': 'Dublin DSX Orange 2018 Boys',
+                'GP': 0,
+                'W': 0,
+                'D': 0,
+                'L': 0,
+                'Record': '0-0-0',
+                'GF': 0,
+                'GA': 0,
+                'GD': 0,
+                'Pts': 0,
+                'PPG': 0,
+                'GF_PG': 0,
+                'GA_PG': 0,
+                'GD_PG': 0,
+                'StrengthIndex': 0
+            }
+    except Exception as e:
+        st.error(f"Error calculating DSX stats: {str(e)}")
+        return {
+            'Team': 'Dublin DSX Orange 2018 Boys',
+            'GP': 0,
+            'W': 0,
+            'D': 0,
+            'L': 0,
+            'Record': '0-0-0',
+            'GF': 0,
+            'GA': 0,
+            'GD': 0,
+            'Pts': 0,
+            'PPG': 0,
+            'GF_PG': 0,
+            'GA_PG': 0,
+            'GD_PG': 0,
+            'StrengthIndex': 0
+        }
+
+
 @st.cache_data(ttl=3600)
 def load_dsx_matches():
     """Load DSX match history"""
@@ -231,21 +317,14 @@ if page == "🎯 What's Next":
         dsx_matches = pd.read_csv("DSX_Matches_Fall2025.csv")
         
         # Load division data for predictions
-        try:
-            white_div = pd.read_csv("OCL_BU08_White_Division_Rankings.csv")
-        except:
-            white_div = pd.DataFrame()
+        all_divisions_df = load_division_data()
         
-        try:
-            bsa_schedules = pd.read_csv("BSA_Celtic_Schedules.csv")
-        except:
-            bsa_schedules = pd.DataFrame()
-        
-        # DSX season stats
-        dsx_si = 35.6
-        dsx_gf_avg = 4.17
-        dsx_ga_avg = 5.08
-        dsx_gd_avg = -0.92
+        # Calculate DSX stats dynamically
+        dsx_stats = calculate_dsx_stats()
+        dsx_si = dsx_stats['StrengthIndex']
+        dsx_gf_avg = dsx_stats['GF_PG']
+        dsx_ga_avg = dsx_stats['GA_PG']
+        dsx_gd_avg = dsx_stats['GD_PG']
         
         st.header("📅 Next 3 Games")
         st.markdown("---")
@@ -269,38 +348,18 @@ if page == "🎯 What's Next":
                 with col2:
                     st.subheader("🎯 Match Prediction")
                     
-                    # Get opponent stats
+                    # Get opponent stats from consolidated division data
                     opp_si = None
                     opp_gf = None
                     opp_ga = None
                     
-                    if "BSA Celtic" in opponent and not bsa_schedules.empty:
-                        team_matches = bsa_schedules[bsa_schedules['OpponentTeam'] == opponent]
-                        completed = team_matches[team_matches['GF'] != ''].copy()
-                        
-                        if len(completed) > 0:
-                            completed['GF'] = pd.to_numeric(completed['GF'])
-                            completed['GA'] = pd.to_numeric(completed['GA'])
-                            
-                            gp = len(completed)
-                            wins = (completed['GF'] > completed['GA']).sum()
-                            draws = (completed['GF'] == completed['GA']).sum()
-                            ppg = (wins * 3 + draws) / gp if gp > 0 else 0
-                            gd_per_game = (completed['GF'].sum() - completed['GA'].sum()) / gp if gp > 0 else 0
-                            
-                            ppg_norm = max(0.0, min(3.0, ppg)) / 3.0 * 100.0
-                            gd_norm = (max(-5.0, min(5.0, gd_per_game)) + 5.0) / 10.0 * 100.0
-                            opp_si = 0.7 * ppg_norm + 0.3 * gd_norm
-                            opp_gf = completed['GF'].mean()
-                            opp_ga = completed['GA'].mean()
-                    
-                    elif "Club Ohio West" in opponent and not white_div.empty:
-                        club_ohio = white_div[white_div['Team'].str.contains("Club Ohio West", case=False)]
-                        if not club_ohio.empty:
-                            team = club_ohio.iloc[0]
+                    if not all_divisions_df.empty:
+                        opp_data = all_divisions_df[all_divisions_df['Team'] == opponent]
+                        if not opp_data.empty:
+                            team = opp_data.iloc[0]
                             opp_si = team['StrengthIndex']
-                            opp_gf = team['GF']
-                            opp_ga = team['GA']
+                            opp_gf = team.get('GF', 0)
+                            opp_ga = team.get('GA', 0)
                     
                     if opp_si is not None:
                         # Display opponent strength
@@ -2304,14 +2363,13 @@ elif page == "🎮 Game Predictions":
     # Load data
     try:
         upcoming = pd.read_csv("DSX_Upcoming_Opponents.csv")
-        stripes_div = pd.read_csv("OCL_BU08_Stripes_Division_Rankings.csv")
-        white_div = pd.read_csv("OCL_BU08_White_Division_Rankings.csv")
-        dsx_matches = pd.read_csv("DSX_Matches_Fall2025.csv")
+        all_divisions_df = load_division_data()
         
-        # DSX stats
-        dsx_si = 35.6
-        dsx_gf_avg = 4.17
-        dsx_ga_avg = 5.08
+        # Calculate DSX stats dynamically
+        dsx_stats = calculate_dsx_stats()
+        dsx_si = dsx_stats['StrengthIndex']
+        dsx_gf_avg = dsx_stats['GF_PG']
+        dsx_ga_avg = dsx_stats['GA_PG']
         
         # Prediction Calculator
         st.header("🔮 Match Predictor")
@@ -2321,12 +2379,11 @@ elif page == "🎮 Game Predictions":
         with col1:
             st.subheader("Select Opponent")
             
-            # Get all division teams
-            all_teams = []
-            if not stripes_div.empty:
-                all_teams.extend(stripes_div['Team'].tolist())
-            if not white_div.empty:
-                all_teams.extend(white_div['Team'].tolist())
+            # Get all teams from combined division data
+            if not all_divisions_df.empty:
+                all_teams = sorted(all_divisions_df['Team'].dropna().unique().tolist())
+            else:
+                all_teams = []
             
             # Add upcoming opponents
             if not upcoming.empty:
@@ -2336,28 +2393,20 @@ elif page == "🎮 Game Predictions":
             
             selected_opponent = st.selectbox("Choose opponent", all_teams)
             
-            # Get opponent stats
+            # Get opponent stats from consolidated division data
             opp_si = None
             opp_gf = None
             opp_ga = None
             
-            # Check stripes
-            if not stripes_div.empty:
-                opp_data = stripes_div[stripes_div['Team'] == selected_opponent]
+            if not all_divisions_df.empty:
+                opp_data = all_divisions_df[all_divisions_df['Team'] == selected_opponent]
                 if not opp_data.empty:
                     opp_si = opp_data.iloc[0]['StrengthIndex']
-                    opp_gf = opp_data.iloc[0]['GF']
-                    opp_ga = opp_data.iloc[0]['GA']
-            
-            # Check white
-            if opp_si is None and not white_div.empty:
-                opp_data = white_div[white_div['Team'] == selected_opponent]
-                if not opp_data.empty:
-                    opp_si = opp_data.iloc[0]['StrengthIndex']
-                    opp_gf = opp_data.iloc[0]['GF']
-                    opp_ga = opp_data.iloc[0]['GA']
+                    opp_gf = opp_data.iloc[0].get('GF', 0)
+                    opp_ga = opp_data.iloc[0].get('GA', 0)
             
             if opp_si is None:
+                st.warning("No division data found for this opponent. Enter stats manually:")
                 opp_si = st.number_input("Opponent Strength Index", min_value=0.0, max_value=100.0, value=50.0)
                 opp_gf = st.number_input("Opponent Goals/Game", min_value=0.0, max_value=10.0, value=3.0)
                 opp_ga = st.number_input("Opponent Goals Against/Game", min_value=0.0, max_value=10.0, value=3.0)
