@@ -648,6 +648,84 @@ if page == "🎯 What's Next":
         if gd_variance > 5:
             insights.append("📊 **Inconsistent Results:** Wide range of scores - focus on consistency")
         
+        # Win/Loss streaks
+        if len(dsx_matches) >= 3:
+            recent_results = dsx_matches.tail(3)['Points'].tolist()
+            if recent_results == [3, 3, 3]:
+                insights.append("🏆 **Perfect Streak:** 3 wins in a row - keep the momentum!")
+            elif recent_results == [0, 0, 0]:
+                insights.append("😤 **Bounce Back Time:** 3 losses in a row - time to dig deep")
+            elif recent_results.count(3) >= 2:
+                insights.append("💪 **Strong Form:** Multiple wins in last 3 games")
+        
+        # Goal scoring trends
+        if len(dsx_matches) >= 3:
+            recent_gf = dsx_matches.tail(3)['GF'].mean()
+            if recent_gf > dsx_gf_avg + 1:
+                insights.append("🚀 **Scoring Surge:** " + f"{recent_gf:.1f} goals/game in last 3 (up from {dsx_gf_avg:.1f})")
+            elif recent_gf < dsx_gf_avg - 1:
+                insights.append("🎯 **Scoring Slump:** " + f"{recent_gf:.1f} goals/game in last 3 (down from {dsx_gf_avg:.1f})")
+        
+        # Defensive trends
+        if len(dsx_matches) >= 3:
+            recent_ga = dsx_matches.tail(3)['GA'].mean()
+            if recent_ga < dsx_ga_avg - 1:
+                insights.append("🛡️ **Defensive Improvement:** " + f"{recent_ga:.1f} goals allowed in last 3 (down from {dsx_ga_avg:.1f})")
+            elif recent_ga > dsx_ga_avg + 1:
+                insights.append("⚠️ **Defensive Concerns:** " + f"{recent_ga:.1f} goals allowed in last 3 (up from {dsx_ga_avg:.1f})")
+        
+        # Home vs Away performance
+        if 'HomeAway' in dsx_matches.columns:
+            home_matches = dsx_matches[dsx_matches['HomeAway'] == 'Home']
+            away_matches = dsx_matches[dsx_matches['HomeAway'] == 'Away']
+            
+            if len(home_matches) >= 2 and len(away_matches) >= 2:
+                home_ppg = home_matches['Points'].mean()
+                away_ppg = away_matches['Points'].mean()
+                
+                if home_ppg > away_ppg + 0.5:
+                    insights.append("🏠 **Home Field Advantage:** " + f"{home_ppg:.1f} PPG at home vs {away_ppg:.1f} away")
+                elif away_ppg > home_ppg + 0.5:
+                    insights.append("✈️ **Road Warriors:** " + f"{away_ppg:.1f} PPG away vs {home_ppg:.1f} at home")
+        
+        # Tournament performance
+        if 'Tournament' in dsx_matches.columns:
+            tournament_performance = dsx_matches.groupby('Tournament')['Points'].mean()
+            best_tournament = tournament_performance.idxmax()
+            best_ppg = tournament_performance.max()
+            
+            if len(tournament_performance) > 1 and best_ppg > dsx_matches['Points'].mean() + 0.5:
+                insights.append("🏆 **Tournament Specialist:** " + f"{best_ppg:.1f} PPG in {best_tournament} (your best league)")
+        
+        # Comeback ability
+        comeback_wins = dsx_matches[(dsx_matches['Points'] == 3) & (dsx_matches['GF'] < dsx_matches['GA'])]
+        if len(comeback_wins) > 0:
+            insights.append("💪 **Comeback Kings:** " + f"{len(comeback_wins)} comeback wins this season - never give up!")
+        
+        # Blowout wins
+        blowout_wins = dsx_matches[(dsx_matches['Points'] == 3) & (dsx_matches['GoalDiff'] >= 3)]
+        if len(blowout_wins) > 0:
+            insights.append("💥 **Blowout Specialists:** " + f"{len(blowout_wins)} wins by 3+ goals - when you're on, you're ON!")
+        
+        # Close games
+        close_games = dsx_matches[abs(dsx_matches['GoalDiff']) <= 1]
+        if len(close_games) >= 3:
+            close_win_pct = len(close_games[close_games['Points'] == 3]) / len(close_games) * 100
+            if close_win_pct >= 60:
+                insights.append("🎯 **Clutch Performers:** " + f"{close_win_pct:.0f}% win rate in close games - ice in your veins!")
+            elif close_win_pct <= 30:
+                insights.append("😰 **Close Game Struggles:** " + f"{close_win_pct:.0f}% win rate in close games - work on finishing")
+        
+        # Goal difference trends
+        if len(dsx_matches) >= 5:
+            first_half_gd = dsx_matches.head(len(dsx_matches)//2)['GoalDiff'].mean()
+            second_half_gd = dsx_matches.tail(len(dsx_matches)//2)['GoalDiff'].mean()
+            
+            if second_half_gd > first_half_gd + 1:
+                insights.append("📈 **Improving Form:** " + f"{second_half_gd:.1f} avg goal diff recently (up from {first_half_gd:.1f})")
+            elif second_half_gd < first_half_gd - 1:
+                insights.append("📉 **Form Dip:** " + f"{second_half_gd:.1f} avg goal diff recently (down from {first_half_gd:.1f})")
+        
         for insight in insights:
             st.write(insight)
         
