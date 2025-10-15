@@ -4688,7 +4688,9 @@ elif page == "⚽ Lineup Builder":
             for player in benched_players:
                 if st.button(f"📤 {player}", key=f"bench_{player}", use_container_width=True):
                     # Add to bench
-                    if player not in st.session_state.lineup['subs']:
+                    if player not in st.session_state.lineup.get('subs', []):
+                        if 'subs' not in st.session_state.lineup:
+                            st.session_state.lineup['subs'] = []
                         st.session_state.lineup['subs'].append(player)
                     st.rerun()
         else:
@@ -4774,7 +4776,7 @@ elif page == "⚽ Lineup Builder":
                 if st.button(f"⚽ {player_str}", key=f"field_{player.PlayerNumber}", use_container_width=True):
                     # Find empty position
                     for pos in ['GK', 'D1', 'D2', 'M1', 'M2', 'M3', 'F1', 'F2']:
-                        if st.session_state.lineup[pos] is None:
+                        if st.session_state.lineup.get(pos) is None:
                             st.session_state.lineup[pos] = player_str
                             break
                     st.rerun()
@@ -4798,8 +4800,9 @@ elif page == "⚽ Lineup Builder":
     
     with col2:
         st.markdown("**Substitutes:**")
-        if st.session_state.lineup['subs']:
-            for i, sub in enumerate(st.session_state.lineup['subs']):
+        subs = st.session_state.lineup.get('subs', [])
+        if subs:
+            for i, sub in enumerate(subs):
                 if st.button(f"❌ {sub}", key=f"remove_sub_{i}"):
                     st.session_state.lineup['subs'].remove(sub)
                     st.rerun()
@@ -4827,7 +4830,7 @@ elif page == "⚽ Lineup Builder":
                         'Status': 'Starting'
                     })
             
-            for sub in st.session_state.lineup['subs']:
+            for sub in st.session_state.lineup.get('subs', []):
                 lineup_data.append({
                     'Position': 'SUB',
                     'Player': sub,
@@ -4851,11 +4854,13 @@ elif page == "⚽ Lineup Builder":
                 # Load saved lineup
                 for _, row in saved_lineup.iterrows():
                     if row['Status'] == 'Starting':
-                        for pos in st.session_state.lineup:
-                            if st.session_state.lineup[pos] is None:
+                        for pos in ['GK', 'D1', 'D2', 'M1', 'M2', 'M3', 'F1', 'F2']:
+                            if st.session_state.lineup.get(pos) is None:
                                 st.session_state.lineup[pos] = row['Player']
                                 break
                     else:
+                        if 'subs' not in st.session_state.lineup:
+                            st.session_state.lineup['subs'] = []
                         st.session_state.lineup['subs'].append(row['Player'])
                 
                 st.success("✅ Lineup loaded!")
