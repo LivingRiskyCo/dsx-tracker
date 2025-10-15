@@ -126,51 +126,59 @@
 
 ---
 
-## 🚧 In Progress (High Value - Days 2-3)
+## ✅ Completed (High Value - Days 2-3)
 
-### Phase 4: Enhanced Calendar View
-**Status:** NOT STARTED
-**Estimated Time:** 4 hours
+### Phase 4: Enhanced Calendar View ✅
+**Status:** COMPLETE
+**Time:** 4 hours
 
-**What needs to be done:**
-- Implement visual mini-calendar using Python calendar module
-- Month navigation (Previous/Next buttons)
-- Color-coded events (Blue=Games, Purple=Practices)
+**What was implemented:**
+- Visual mini-calendar using Python calendar module
+- Month navigation (Previous/Next buttons with session state)
+- Color-coded events: 🔵 Blue = Games, 🟣 Purple = Practices
 - Click on date to view event details
-- Highlight today's date
-- Show event count per day
+- Event count per day display
+- Full event details with location, uniform, arrival time
+- Mobile-optimized layout
 
-**File to modify:** `dsx_dashboard.py` (around line 540, Calendar View section)
+**File modified:** `dsx_dashboard.py` (lines 867-950)
 
 ---
 
-### Phase 4: Week View Enhancement
-**Status:** NOT STARTED
-**Estimated Time:** 3 hours
+### Phase 4: Week View Enhancement ✅
+**Status:** COMPLETE
+**Time:** 3 hours
 
-**What needs to be done:**
-- Implement horizontal week view (7 days)
+**What was implemented:**
+- Horizontal week view (7 days)
 - Week navigation (Previous/Next Week buttons)
-- Show all events per day with times
-- Compact card design for mobile
-- Swipe-friendly layout
+- Expandable day cards with event counts
+- All events per day with times and details
+- Availability summaries (✅❌❓ counts)
+- Mobile-friendly compact design
 
-**File to modify:** `dsx_dashboard.py` (around line 540, Week View section)
+**File modified:** `dsx_dashboard.py` (lines 952-1008)
 
 ---
 
-### Phase 5: TeamSnap Import UI
-**Status:** NOT STARTED
-**Estimated Time:** 2 hours
+### Phase 5: TeamSnap Import UI ✅
+**Status:** COMPLETE
+**Time:** 2 hours
 
-**What needs to be done:**
-- Add file uploader to Data Manager Schedule tab
-- Preview uploaded TeamSnap CSV
-- Import & Merge button
-- Call existing `import_teamsnap_schedule.py` logic
+**What was implemented:**
+- File uploader in Data Manager Schedule tab
+- CSV preview with first 10 rows
+- Intelligent column mapping:
+  - Date detection: 'Date', 'Game Date', 'Event Date', 'Start Date'
+  - Time detection: 'Time', 'Start Time', 'Game Time', 'Event Time'
+  - Location detection: 'Location', 'Venue', 'Field', 'Address', 'Facility'
+  - Opponent detection: 'Opponent', 'Away Team', 'Home Team', 'Team', 'vs'
+- Game vs Practice detection based on opponent presence
+- Import & Merge functionality
 - Success confirmation and page refresh
+- Error handling with helpful tips
 
-**File to modify:** `dsx_dashboard.py` (around line 4400, Data Manager Schedule tab)
+**File modified:** `dsx_dashboard.py` (lines 4925-5027)
 
 ---
 
@@ -205,30 +213,29 @@
 
 ## 📊 Summary
 
-**Completed:** 5 major features (Phases 2, 3, 6, 7)
-**Time Spent:** ~11 hours
-**Remaining (High Value):** 3 features (~9 hours)
+**Completed:** 8 major features (Phases 2, 3, 4, 5, 6, 7)
+**Time Spent:** ~18 hours
 **Remaining (Nice to Have):** 2 features (~12 hours)
 
-**Total Progress:** ~35% complete (by time estimate)
+**Total Progress:** ~60% complete (by time estimate)
 **Quick Wins:** 100% complete ✅
-**High Value Features:** 33% complete
+**High Value Features:** 100% complete ✅
 
 ---
 
 ## 🎯 Next Steps
 
-**Recommended Order:**
+**Completed Order:**
 1. ✅ ~~Enhanced shot tracking~~ DONE
 2. ✅ ~~Goalkeeper stats~~ DONE
 3. ✅ ~~Mobile UI polish~~ DONE
 4. ✅ ~~Coach availability buttons~~ DONE
 5. ✅ ~~Parent availability page~~ DONE
-6. **NEXT:** Enhanced calendar view (4 hours)
-7. **NEXT:** Week view (3 hours)
-8. **NEXT:** TeamSnap import UI (2 hours)
-9. Later: Drag-drop lineup builder (8 hours)
-10. Later: Live substitutions (4 hours)
+6. ✅ ~~Enhanced calendar view~~ DONE
+7. ✅ ~~Week view~~ DONE
+8. ✅ ~~TeamSnap import UI~~ DONE
+9. **OPTIONAL:** Drag-drop lineup builder (8 hours)
+10. **OPTIONAL:** Live substitutions (4 hours)
 
 ---
 
