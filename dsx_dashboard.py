@@ -116,6 +116,50 @@ st.markdown("""
     a {
         color: #4DA6FF !important;
     }
+    
+    /* Mobile optimizations */
+    @media (max-width: 768px) {
+        /* Larger tap targets for game day */
+        .stButton button {
+            min-height: 60px !important;
+            font-size: 18px !important;
+            padding: 12px !important;
+        }
+        
+        /* Compact timer display */
+        [data-testid="metric-container"] {
+            padding: 8px !important;
+        }
+        
+        /* Hide keyboard on dropdowns - prevents iOS zoom */
+        select {
+            font-size: 16px !important;
+        }
+        
+        /* Scrollable event log */
+        .event-log {
+            max-height: 200px;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+        
+        /* Goalkeeper section spacing */
+        .gk-actions {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 2px solid #e0e0e0;
+        }
+        
+        /* Radio buttons - larger for mobile */
+        .stRadio > div {
+            gap: 12px !important;
+        }
+        
+        .stRadio label {
+            padding: 10px !important;
+            font-size: 16px !important;
+        }
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -661,16 +705,81 @@ elif page == "📅 Team Schedule":
                             
                             with response_col1:
                                 if st.button("✅ Available", key=f"avail_{event_id}", use_container_width=True):
-                                    st.success("Marked as available!")
-                                    # In a real app, this would update the CSV
+                                    # Update schedule_availability.csv
+                                    try:
+                                        availability_df = pd.read_csv("schedule_availability.csv")
+                                        coach_player_num = 0  # Coach = PlayerNumber 0
+                                        mask = (availability_df['EventID'] == event_id) & (availability_df['PlayerNumber'] == coach_player_num)
+                                        if mask.any():
+                                            availability_df.loc[mask, 'Status'] = 'Available'
+                                            availability_df.loc[mask, 'ResponseTime'] = datetime.now()
+                                        else:
+                                            new_row = pd.DataFrame([{
+                                                'EventID': event_id,
+                                                'PlayerNumber': coach_player_num,
+                                                'PlayerName': 'Coach',
+                                                'Status': 'Available',
+                                                'Notes': '',
+                                                'ResponseTime': datetime.now()
+                                            }])
+                                            availability_df = pd.concat([availability_df, new_row], ignore_index=True)
+                                        availability_df.to_csv("schedule_availability.csv", index=False)
+                                        st.success("✅ Marked as available!")
+                                        st.rerun()
+                                    except Exception as e:
+                                        st.error(f"Error updating availability: {e}")
                             
                             with response_col2:
                                 if st.button("❌ Can't Make It", key=f"unavail_{event_id}", use_container_width=True):
-                                    st.error("Marked as unavailable")
+                                    # Update schedule_availability.csv
+                                    try:
+                                        availability_df = pd.read_csv("schedule_availability.csv")
+                                        coach_player_num = 0  # Coach = PlayerNumber 0
+                                        mask = (availability_df['EventID'] == event_id) & (availability_df['PlayerNumber'] == coach_player_num)
+                                        if mask.any():
+                                            availability_df.loc[mask, 'Status'] = 'Not Available'
+                                            availability_df.loc[mask, 'ResponseTime'] = datetime.now()
+                                        else:
+                                            new_row = pd.DataFrame([{
+                                                'EventID': event_id,
+                                                'PlayerNumber': coach_player_num,
+                                                'PlayerName': 'Coach',
+                                                'Status': 'Not Available',
+                                                'Notes': '',
+                                                'ResponseTime': datetime.now()
+                                            }])
+                                            availability_df = pd.concat([availability_df, new_row], ignore_index=True)
+                                        availability_df.to_csv("schedule_availability.csv", index=False)
+                                        st.error("❌ Marked as unavailable")
+                                        st.rerun()
+                                    except Exception as e:
+                                        st.error(f"Error updating availability: {e}")
                             
                             with response_col3:
                                 if st.button("❓ Maybe", key=f"maybe_{event_id}", use_container_width=True):
-                                    st.warning("Marked as maybe")
+                                    # Update schedule_availability.csv
+                                    try:
+                                        availability_df = pd.read_csv("schedule_availability.csv")
+                                        coach_player_num = 0  # Coach = PlayerNumber 0
+                                        mask = (availability_df['EventID'] == event_id) & (availability_df['PlayerNumber'] == coach_player_num)
+                                        if mask.any():
+                                            availability_df.loc[mask, 'Status'] = 'Maybe'
+                                            availability_df.loc[mask, 'ResponseTime'] = datetime.now()
+                                        else:
+                                            new_row = pd.DataFrame([{
+                                                'EventID': event_id,
+                                                'PlayerNumber': coach_player_num,
+                                                'PlayerName': 'Coach',
+                                                'Status': 'Maybe',
+                                                'Notes': '',
+                                                'ResponseTime': datetime.now()
+                                            }])
+                                            availability_df = pd.concat([availability_df, new_row], ignore_index=True)
+                                        availability_df.to_csv("schedule_availability.csv", index=False)
+                                        st.warning("❓ Marked as maybe")
+                                        st.rerun()
+                                    except Exception as e:
+                                        st.error(f"Error updating availability: {e}")
                         
                         st.markdown("---")
                         
@@ -1247,6 +1356,31 @@ elif page == "🎮 Live Game Tracker":
                     st.session_state.timer_running = False
                 st.rerun()
         
+        # Goalkeeper Actions Section
+        st.markdown("---")
+        st.markdown("### 🧤 Goalkeeper Actions")
+        gk_col1, gk_col2, gk_col3, gk_col4 = st.columns(4)
+        
+        with gk_col1:
+            if st.button("✋ CATCH", use_container_width=True, key="catch_btn"):
+                st.session_state.show_catch_dialog = True
+                st.rerun()
+        
+        with gk_col2:
+            if st.button("👊 PUNCH", use_container_width=True, key="punch_btn"):
+                st.session_state.show_punch_dialog = True
+                st.rerun()
+        
+        with gk_col3:
+            if st.button("🦶 DISTRIBUTION", use_container_width=True, key="dist_btn"):
+                st.session_state.show_dist_dialog = True
+                st.rerun()
+        
+        with gk_col4:
+            if st.button("🧹 CLEARANCE", use_container_width=True, key="clear_btn"):
+                st.session_state.show_clear_dialog = True
+                st.rerun()
+        
         # Dialogs (simplified for embedding)
         if 'show_goal_dialog' in st.session_state and st.session_state.show_goal_dialog:
             with st.form("goal_form"):
@@ -1278,12 +1412,34 @@ elif page == "🎮 Live Game Tracker":
                 on_field_players = roster_tracker[roster_tracker['PlayerNumber'].isin(st.session_state.on_field)]
                 shooter = st.selectbox("Who took the shot?", [f"#{int(row['PlayerNumber'])} {row['PlayerName']}" 
                                                                for _, row in on_field_players.iterrows()])
+                
+                # Shot outcome
+                st.write("**Outcome:**")
+                shot_outcome = st.radio("outcome", 
+                    ["⚽ On Target", "❌ Off Target", "🛡️ Blocked"], 
+                    horizontal=True, label_visibility="collapsed")
+                
+                # Shot type
+                st.write("**Type:**")
+                shot_type = st.radio("type", 
+                    ["👟 Right Foot", "👟 Left Foot", "🤕 Header"], 
+                    horizontal=True, label_visibility="collapsed")
+                
+                # Shot location
+                st.write("**Location:**")
+                shot_location = st.radio("location", 
+                    ["⬆️ Top", "⬇️ Bottom", "⬅️ Left", "➡️ Right", "🎯 Center"], 
+                    horizontal=True, label_visibility="collapsed")
+                
                 notes = st.text_input("Notes (optional)")
                 col1, col2 = st.columns(2)
                 with col1:
                     if st.form_submit_button("✅ RECORD", use_container_width=True, type="primary"):
                         player_name = shooter.split(' ', 1)[1]
-                        add_event_tracker('SHOT', player=player_name, notes=notes)
+                        shot_details = f"{shot_outcome} | {shot_type} | {shot_location}"
+                        if notes:
+                            shot_details += f" | {notes}"
+                        add_event_tracker('SHOT', player=player_name, notes=shot_details)
                         save_live_game_state()
                         st.session_state.show_shot_dialog = False
                         st.rerun()
@@ -1299,12 +1455,28 @@ elif page == "🎮 Live Game Tracker":
                 on_field_players = roster_tracker[roster_tracker['PlayerNumber'].isin(st.session_state.on_field)]
                 keeper = st.selectbox("Who made the save?", [f"#{int(row['PlayerNumber'])} {row['PlayerName']}" 
                                                               for _, row in on_field_players.iterrows()])
+                
+                # Save type
+                st.write("**Save Type:**")
+                save_type = st.radio("save_type", 
+                    ["🤿 Dive", "🧍 Standing", "⚡ Reflex", "✋ Tip Over"], 
+                    horizontal=True, label_visibility="collapsed")
+                
+                # Shot location (where shot came from)
+                st.write("**Shot From:**")
+                shot_from = st.radio("shot_from", 
+                    ["⬆️ Top", "⬇️ Bottom", "⬅️ Left", "➡️ Right", "🎯 Center"], 
+                    horizontal=True, label_visibility="collapsed")
+                
                 notes = st.text_input("Notes (optional)")
                 col1, col2 = st.columns(2)
                 with col1:
                     if st.form_submit_button("✅ RECORD", use_container_width=True, type="primary"):
                         player_name = keeper.split(' ', 1)[1]
-                        add_event_tracker('SAVE', player=player_name, notes=notes)
+                        save_details = f"{save_type} | Shot from {shot_from}"
+                        if notes:
+                            save_details += f" | {notes}"
+                        add_event_tracker('SAVE', player=player_name, notes=save_details)
                         save_live_game_state()
                         st.session_state.show_save_dialog = False
                         st.rerun()
@@ -1350,6 +1522,136 @@ elif page == "🎮 Live Game Tracker":
                         st.session_state.show_sub_dialog = False
                         st.rerun()
         
+        # Catch dialog
+        if 'show_catch_dialog' in st.session_state and st.session_state.show_catch_dialog:
+            with st.form("catch_form"):
+                st.subheader("✋ GOALKEEPER CATCH")
+                on_field_players = roster_tracker[roster_tracker['PlayerNumber'].isin(st.session_state.on_field)]
+                keeper = st.selectbox("Who caught it?", [f"#{int(row['PlayerNumber'])} {row['PlayerName']}" 
+                                                          for _, row in on_field_players.iterrows()])
+                
+                # Catch type
+                st.write("**Catch Type:**")
+                catch_type = st.radio("catch_type", 
+                    ["🌐 Cross", "⚠️ Corner", "⚡ Through Ball", "🎯 Shot"], 
+                    horizontal=True, label_visibility="collapsed")
+                
+                notes = st.text_input("Notes (optional)")
+                col1, col2 = st.columns(2)
+                with col1:
+                    if st.form_submit_button("✅ RECORD", use_container_width=True, type="primary"):
+                        player_name = keeper.split(' ', 1)[1]
+                        catch_details = f"{catch_type}"
+                        if notes:
+                            catch_details += f" | {notes}"
+                        add_event_tracker('CATCH', player=player_name, notes=catch_details)
+                        save_live_game_state()
+                        st.session_state.show_catch_dialog = False
+                        st.rerun()
+                with col2:
+                    if st.form_submit_button("❌ Cancel", use_container_width=True):
+                        st.session_state.show_catch_dialog = False
+                        st.rerun()
+        
+        # Punch dialog
+        if 'show_punch_dialog' in st.session_state and st.session_state.show_punch_dialog:
+            with st.form("punch_form"):
+                st.subheader("👊 GOALKEEPER PUNCH")
+                on_field_players = roster_tracker[roster_tracker['PlayerNumber'].isin(st.session_state.on_field)]
+                keeper = st.selectbox("Who punched it?", [f"#{int(row['PlayerNumber'])} {row['PlayerName']}" 
+                                                           for _, row in on_field_players.iterrows()])
+                
+                # Punch type
+                st.write("**Punch Type:**")
+                punch_type = st.radio("punch_type", 
+                    ["⚠️ Corner", "🌐 Cross", "⚽ Free Kick"], 
+                    horizontal=True, label_visibility="collapsed")
+                
+                notes = st.text_input("Notes (optional)")
+                col1, col2 = st.columns(2)
+                with col1:
+                    if st.form_submit_button("✅ RECORD", use_container_width=True, type="primary"):
+                        player_name = keeper.split(' ', 1)[1]
+                        punch_details = f"{punch_type}"
+                        if notes:
+                            punch_details += f" | {notes}"
+                        add_event_tracker('PUNCH', player=player_name, notes=punch_details)
+                        save_live_game_state()
+                        st.session_state.show_punch_dialog = False
+                        st.rerun()
+                with col2:
+                    if st.form_submit_button("❌ Cancel", use_container_width=True):
+                        st.session_state.show_punch_dialog = False
+                        st.rerun()
+        
+        # Distribution dialog
+        if 'show_dist_dialog' in st.session_state and st.session_state.show_dist_dialog:
+            with st.form("dist_form"):
+                st.subheader("🦶 GOALKEEPER DISTRIBUTION")
+                on_field_players = roster_tracker[roster_tracker['PlayerNumber'].isin(st.session_state.on_field)]
+                keeper = st.selectbox("Who distributed?", [f"#{int(row['PlayerNumber'])} {row['PlayerName']}" 
+                                                            for _, row in on_field_players.iterrows()])
+                
+                # Distribution type
+                st.write("**Distribution Type:**")
+                dist_type = st.radio("dist_type", 
+                    ["🥅 Goal Kick", "🤾 Throw", "🦶 Punt", "⚽ Roll Out"], 
+                    horizontal=True, label_visibility="collapsed")
+                
+                # Target area
+                st.write("**Target Area:**")
+                target = st.radio("target", 
+                    ["⬅️ Left", "➡️ Right", "🎯 Center", "🚀 Long"], 
+                    horizontal=True, label_visibility="collapsed")
+                
+                notes = st.text_input("Notes (optional)")
+                col1, col2 = st.columns(2)
+                with col1:
+                    if st.form_submit_button("✅ RECORD", use_container_width=True, type="primary"):
+                        player_name = keeper.split(' ', 1)[1]
+                        dist_details = f"{dist_type} to {target}"
+                        if notes:
+                            dist_details += f" | {notes}"
+                        add_event_tracker('DISTRIBUTION', player=player_name, notes=dist_details)
+                        save_live_game_state()
+                        st.session_state.show_dist_dialog = False
+                        st.rerun()
+                with col2:
+                    if st.form_submit_button("❌ Cancel", use_container_width=True):
+                        st.session_state.show_dist_dialog = False
+                        st.rerun()
+        
+        # Clearance dialog
+        if 'show_clear_dialog' in st.session_state and st.session_state.show_clear_dialog:
+            with st.form("clear_form"):
+                st.subheader("🧹 GOALKEEPER CLEARANCE")
+                on_field_players = roster_tracker[roster_tracker['PlayerNumber'].isin(st.session_state.on_field)]
+                keeper = st.selectbox("Who cleared it?", [f"#{int(row['PlayerNumber'])} {row['PlayerName']}" 
+                                                           for _, row in on_field_players.iterrows()])
+                
+                # Clearance type
+                st.write("**Clearance Type:**")
+                clear_type = st.radio("clear_type", 
+                    ["🦶 Kick", "👊 Punch", "✋ Catch & Clear", "🤾 Throw"], 
+                    horizontal=True, label_visibility="collapsed")
+                
+                notes = st.text_input("Notes (optional)")
+                col1, col2 = st.columns(2)
+                with col1:
+                    if st.form_submit_button("✅ RECORD", use_container_width=True, type="primary"):
+                        player_name = keeper.split(' ', 1)[1]
+                        clear_details = f"{clear_type}"
+                        if notes:
+                            clear_details += f" | {notes}"
+                        add_event_tracker('CLEARANCE', player=player_name, notes=clear_details)
+                        save_live_game_state()
+                        st.session_state.show_clear_dialog = False
+                        st.rerun()
+                with col2:
+                    if st.form_submit_button("❌ Cancel", use_container_width=True):
+                        st.session_state.show_clear_dialog = False
+                        st.rerun()
+        
         st.markdown("---")
         
         # Live Feed
@@ -1361,7 +1663,8 @@ elif page == "🎮 Live Game Tracker":
                 for event in st.session_state.events[:20]:
                     icon = {'DSX_GOAL': '⚽', 'OPP_GOAL': '🥅', 'SHOT': '🎯', 'SAVE': '🧤', 
                             'CORNER': '⚠️', 'SUBSTITUTION': '🔄', 'HALF_TIME': '⏰', 
-                            'TIMEOUT': '🚨', 'NOTE': '📝'}.get(event['type'], '📝')
+                            'TIMEOUT': '🚨', 'NOTE': '📝', 'CATCH': '✋', 'PUNCH': '👊',
+                            'DISTRIBUTION': '🦶', 'CLEARANCE': '🧹'}.get(event['type'], '📝')
                     event_text = f"{icon} {event['timestamp']} - "
                     if event['type'] == 'DSX_GOAL':
                         event_text += f"GOAL! {event['player']}"
