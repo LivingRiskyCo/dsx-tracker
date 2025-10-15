@@ -410,15 +410,41 @@ if page == "🎯 What's Next":
                             opp_ga = team.get('GA', 0) / opp_gp  # Goals against per game
                     
                     if opp_si is not None:
-                        # Display opponent strength
+                        # Enhanced Strength Index display
+                        st.markdown("---")
+                        st.subheader("⚡ Strength Index Analysis")
+                        
+                        # Create a more prominent SI display
                         col_a, col_b, col_c = st.columns(3)
+                        
                         with col_a:
-                            st.metric("Opponent SI", f"{opp_si:.1f}")
+                            st.markdown("### 🏆 DSX Orange")
+                            st.markdown(f"**Strength Index: {dsx_si:.1f}**")
+                            st.caption(f"Goals/Game: {dsx_gf_avg:.1f}")
+                            st.caption(f"Goals Against: {dsx_ga_avg:.1f}")
+                        
                         with col_b:
-                            st.metric("DSX SI", f"{dsx_si:.1f}")
+                            st.markdown("### ⚔️ " + opponent)
+                            st.markdown(f"**Strength Index: {opp_si:.1f}**")
+                            if opp_gf is not None:
+                                st.caption(f"Goals/Game: {opp_gf:.1f}")
+                            if opp_ga is not None:
+                                st.caption(f"Goals Against: {opp_ga:.1f}")
+                        
                         with col_c:
                             si_diff = dsx_si - opp_si
-                            st.metric("Advantage", f"{si_diff:+.1f}", delta_color="normal")
+                            if si_diff > 0:
+                                st.markdown("### 🎯 DSX Advantage")
+                                st.markdown(f"**+{si_diff:.1f} Points**")
+                                st.success("✅ We're Stronger")
+                            elif si_diff < 0:
+                                st.markdown("### ⚠️ Opponent Advantage")
+                                st.markdown(f"**{si_diff:.1f} Points**")
+                                st.warning("⚠️ They're Stronger")
+                            else:
+                                st.markdown("### ⚖️ Even Match")
+                                st.markdown("**0.0 Points**")
+                                st.info("🤝 Dead Even")
                         
                         # Predicted score
                         st.markdown("---")
@@ -459,26 +485,30 @@ if page == "🎯 What's Next":
                             confidence_color = "🔴"
                             confidence_style = "error"
                         
-                        # Display predictions with range and confidence
+                        # Enhanced score prediction display
                         col1, col2 = st.columns(2)
                         
                         with col1:
-                            st.write(f"**DSX:** {dsx_prediction} goals")
-                            st.caption(f"(range: {pred_dsx_low:.1f}-{pred_dsx_high:.1f})")
+                            st.markdown("### 🏆 DSX Orange")
+                            st.markdown(f"## **{dsx_prediction} Goals**")
+                            st.caption(f"Range: {pred_dsx_low:.1f} - {pred_dsx_high:.1f}")
                         
                         with col2:
-                            st.write(f"**{opponent}:** {opp_prediction} goals")
-                            st.caption(f"(range: {pred_opp_low:.1f}-{pred_opp_high:.1f})")
+                            st.markdown("### ⚔️ " + opponent)
+                            st.markdown(f"## **{opp_prediction} Goals**")
+                            st.caption(f"Range: {pred_opp_low:.1f} - {pred_opp_high:.1f}")
                         
-                        # Final score prediction with confidence color
+                        # Final score prediction with confidence color - much larger
+                        st.markdown("---")
                         if confidence_style == "success":
-                            st.success(f"**Final: DSX {dsx_prediction}-{opp_prediction} {opponent}**")
+                            st.markdown(f"# 🎯 **Final Score: DSX {dsx_prediction}-{opp_prediction} {opponent}**")
+                            st.success(f"**{confidence_color} Confidence: {confidence}** (range: {avg_range:.1f} goals)")
                         elif confidence_style == "warning":
-                            st.warning(f"**Final: DSX {dsx_prediction}-{opp_prediction} {opponent}**")
+                            st.markdown(f"# 🎯 **Final Score: DSX {dsx_prediction}-{opp_prediction} {opponent}**")
+                            st.warning(f"**{confidence_color} Confidence: {confidence}** (range: {avg_range:.1f} goals)")
                         else:
-                            st.error(f"**Final: DSX {dsx_prediction}-{opp_prediction} {opponent}**")
-                        
-                        st.write(f"{confidence_color} **Confidence: {confidence}** (range: {avg_range:.1f} goals)")
+                            st.markdown(f"# 🎯 **Final Score: DSX {dsx_prediction}-{opp_prediction} {opponent}**")
+                            st.error(f"**{confidence_color} Confidence: {confidence}** (range: {avg_range:.1f} goals)")
                         
                         # Win probability
                         st.markdown("---")
@@ -3262,19 +3292,45 @@ elif page == "🎮 Game Predictions":
             st.subheader("Prediction")
             
             if opp_si is not None:
-                # Display comparison
-                col_a, col_b = st.columns(2)
-                with col_a:
-                    st.metric("DSX SI", f"{dsx_si:.1f}")
-                    st.metric("DSX GF/Game", f"{dsx_gf_avg:.2f}")
-                with col_b:
-                    st.metric("Opponent SI", f"{opp_si:.1f}")
-                    st.metric("Opp GF/Game", f"{opp_gf:.2f}")
-                
+                # Enhanced Strength Index display
                 st.markdown("---")
+                st.subheader("⚡ Strength Index Analysis")
+                
+                # Create a more prominent SI display
+                col_a, col_b, col_c = st.columns(3)
+                
+                with col_a:
+                    st.markdown("### 🏆 DSX Orange")
+                    st.markdown(f"**Strength Index: {dsx_si:.1f}**")
+                    st.caption(f"Goals/Game: {dsx_gf_avg:.1f}")
+                    st.caption(f"Goals Against: {dsx_ga_avg:.1f}")
+                
+                with col_b:
+                    st.markdown("### ⚔️ " + selected_opponent)
+                    st.markdown(f"**Strength Index: {opp_si:.1f}**")
+                    if opp_gf is not None:
+                        st.caption(f"Goals/Game: {opp_gf:.1f}")
+                    if opp_ga is not None:
+                        st.caption(f"Goals Against: {opp_ga:.1f}")
+                
+                with col_c:
+                    si_diff = dsx_si - opp_si
+                    if si_diff > 0:
+                        st.markdown("### 🎯 DSX Advantage")
+                        st.markdown(f"**+{si_diff:.1f} Points**")
+                        st.success("✅ We're Stronger")
+                    elif si_diff < 0:
+                        st.markdown("### ⚠️ Opponent Advantage")
+                        st.markdown(f"**{si_diff:.1f} Points**")
+                        st.warning("⚠️ They're Stronger")
+                    else:
+                        st.markdown("### ⚖️ Even Match")
+                        st.markdown("**0.0 Points**")
+                        st.info("🤝 Dead Even")
                 
                 # Calculate prediction
-                si_diff = dsx_si - opp_si
+                st.markdown("---")
+                st.subheader("🔮 Score Prediction")
                 
                 # More balanced prediction formula
                 # DSX gets bonus for being stronger, opponent gets penalty for being weaker
@@ -3282,9 +3338,58 @@ elif page == "🎮 Game Predictions":
                 pred_dsx_goals = max(0.5, dsx_gf_avg + (si_diff * 0.02))
                 pred_opp_goals = max(0.5, opp_gf - (si_diff * 0.02))
                 
-                st.subheader("📊 Predicted Score")
-                st.write(f"### DSX: {pred_dsx_goals:.1f}")
-                st.write(f"### {selected_opponent}: {pred_opp_goals:.1f}")
+                # Calculate ranges for confidence assessment
+                pred_dsx_low = max(0, pred_dsx_goals - 1.5)
+                pred_dsx_high = pred_dsx_goals + 1.5
+                pred_opp_low = max(0, pred_opp_goals - 1.5)
+                pred_opp_high = pred_opp_goals + 1.5
+                
+                # Calculate single score predictions (rounded to realistic values)
+                dsx_prediction = round(pred_dsx_goals)
+                opp_prediction = round(pred_opp_goals)
+                
+                # Calculate confidence based on range tightness
+                dsx_range = pred_dsx_high - pred_dsx_low
+                opp_range = pred_opp_high - pred_opp_low
+                avg_range = (dsx_range + opp_range) / 2
+                
+                if avg_range <= 2.0:
+                    confidence = "High"
+                    confidence_color = "🟢"
+                    confidence_style = "success"
+                elif avg_range <= 3.0:
+                    confidence = "Medium"
+                    confidence_color = "🟡"
+                    confidence_style = "warning"
+                else:
+                    confidence = "Low"
+                    confidence_color = "🔴"
+                    confidence_style = "error"
+                
+                # Enhanced score prediction display
+                col1, col2 = st.columns(2)
+                
+                with col1:
+                    st.markdown("### 🏆 DSX Orange")
+                    st.markdown(f"## **{dsx_prediction} Goals**")
+                    st.caption(f"Range: {pred_dsx_low:.1f} - {pred_dsx_high:.1f}")
+                
+                with col2:
+                    st.markdown("### ⚔️ " + selected_opponent)
+                    st.markdown(f"## **{opp_prediction} Goals**")
+                    st.caption(f"Range: {pred_opp_low:.1f} - {pred_opp_high:.1f}")
+                
+                # Final score prediction with confidence color - much larger
+                st.markdown("---")
+                if confidence_style == "success":
+                    st.markdown(f"# 🎯 **Final Score: DSX {dsx_prediction}-{opp_prediction} {selected_opponent}**")
+                    st.success(f"**{confidence_color} Confidence: {confidence}** (range: {avg_range:.1f} goals)")
+                elif confidence_style == "warning":
+                    st.markdown(f"# 🎯 **Final Score: DSX {dsx_prediction}-{opp_prediction} {selected_opponent}**")
+                    st.warning(f"**{confidence_color} Confidence: {confidence}** (range: {avg_range:.1f} goals)")
+                else:
+                    st.markdown(f"# 🎯 **Final Score: DSX {dsx_prediction}-{opp_prediction} {selected_opponent}**")
+                    st.error(f"**{confidence_color} Confidence: {confidence}** (range: {avg_range:.1f} goals)")
                 
                 # Win probability
                 if si_diff > 15:
