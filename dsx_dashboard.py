@@ -461,15 +461,20 @@ if page == "🎯 What's Next":
                         pred_dsx_goals = max(0.5, dsx_gf_avg + si_impact)
                         pred_opp_goals = max(0.5, (opp_gf if opp_gf else dsx_ga_avg) - si_impact)
                         
+                        # Track if we swapped the predictions
+                        swapped = False
+                        
                         # Ensure the stronger team actually scores more goals
                         if si_diff < -5:  # Opponent is significantly stronger
                             if pred_dsx_goals >= pred_opp_goals:
                                 # Swap the predictions so stronger team scores more
                                 pred_dsx_goals, pred_opp_goals = pred_opp_goals, pred_dsx_goals
+                                swapped = True
                         elif si_diff > 5:  # We are significantly stronger
                             if pred_opp_goals >= pred_dsx_goals:
                                 # Swap the predictions so stronger team scores more
                                 pred_dsx_goals, pred_opp_goals = pred_opp_goals, pred_dsx_goals
+                                swapped = True
                         
                         # Calculate ranges for confidence assessment
                         pred_dsx_low = max(0, pred_dsx_goals - 1.5)
@@ -524,22 +529,41 @@ if page == "🎯 What's Next":
                             st.markdown(f"### 🎯 **Final Score: DSX {dsx_prediction}-{opp_prediction} {opponent}**")
                             st.error(f"**{confidence_color} Confidence: {confidence}** (range: {avg_range:.1f} goals)")
                         
-                        # Win probability
+                        # Win probability based on final predicted score
                         st.markdown("---")
-                        if si_diff > 10:
-                            win_prob = 65
-                            draw_prob = 25
-                            loss_prob = 10
-                            st.success(f"✅ **Win Probability: {win_prob}%**")
-                        elif si_diff < -10:
-                            win_prob = 25
-                            draw_prob = 30
-                            loss_prob = 45
-                            st.error(f"⚠️ **Win Probability: {win_prob}%**")
+                        
+                        # Calculate win probability based on actual predicted score
+                        if pred_dsx_goals > pred_opp_goals:
+                            # We're predicted to win
+                            goal_diff = pred_dsx_goals - pred_opp_goals
+                            if goal_diff >= 2:
+                                win_prob = 75
+                                draw_prob = 15
+                                loss_prob = 10
+                                st.success(f"✅ **Win Probability: {win_prob}%**")
+                            else:
+                                win_prob = 60
+                                draw_prob = 25
+                                loss_prob = 15
+                                st.success(f"✅ **Win Probability: {win_prob}%**")
+                        elif pred_dsx_goals < pred_opp_goals:
+                            # We're predicted to lose
+                            goal_diff = pred_opp_goals - pred_dsx_goals
+                            if goal_diff >= 2:
+                                win_prob = 15
+                                draw_prob = 20
+                                loss_prob = 65
+                                st.error(f"⚠️ **Win Probability: {win_prob}%**")
+                            else:
+                                win_prob = 25
+                                draw_prob = 30
+                                loss_prob = 45
+                                st.error(f"⚠️ **Win Probability: {win_prob}%**")
                         else:
-                            win_prob = 40
-                            draw_prob = 30
-                            loss_prob = 30
+                            # Predicted draw
+                            win_prob = 35
+                            draw_prob = 40
+                            loss_prob = 25
                             st.info(f"⚖️ **Win Probability: {win_prob}%**")
                         
                         st.write(f"Draw: {draw_prob}% | Loss: {loss_prob}%")
@@ -3357,15 +3381,20 @@ elif page == "🎮 Game Predictions":
                 pred_dsx_goals = max(0.5, dsx_gf_avg + si_impact)
                 pred_opp_goals = max(0.5, (opp_gf if opp_gf else dsx_ga_avg) - si_impact)
                 
+                # Track if we swapped the predictions
+                swapped = False
+                
                 # Ensure the stronger team actually scores more goals
                 if si_diff < -5:  # Opponent is significantly stronger
                     if pred_dsx_goals >= pred_opp_goals:
                         # Swap the predictions so stronger team scores more
                         pred_dsx_goals, pred_opp_goals = pred_opp_goals, pred_dsx_goals
+                        swapped = True
                 elif si_diff > 5:  # We are significantly stronger
                     if pred_opp_goals >= pred_dsx_goals:
                         # Swap the predictions so stronger team scores more
                         pred_dsx_goals, pred_opp_goals = pred_opp_goals, pred_dsx_goals
+                        swapped = True
                 
                 # Calculate ranges for confidence assessment
                 pred_dsx_low = max(0, pred_dsx_goals - 1.5)
@@ -3420,27 +3449,34 @@ elif page == "🎮 Game Predictions":
                     st.markdown(f"### 🎯 **Final Score: DSX {dsx_prediction}-{opp_prediction} {selected_opponent}**")
                     st.error(f"**{confidence_color} Confidence: {confidence}** (range: {avg_range:.1f} goals)")
                 
-                # Win probability
-                if si_diff > 15:
-                    win_prob = 70
-                    draw_prob = 20
-                    loss_prob = 10
-                elif si_diff > 5:
-                    win_prob = 55
-                    draw_prob = 25
-                    loss_prob = 20
-                elif si_diff > -5:
-                    win_prob = 40
-                    draw_prob = 30
-                    loss_prob = 30
-                elif si_diff > -15:
-                    win_prob = 25
-                    draw_prob = 25
-                    loss_prob = 50
+                # Win probability based on final predicted score
+                if pred_dsx_goals > pred_opp_goals:
+                    # We're predicted to win
+                    goal_diff = pred_dsx_goals - pred_opp_goals
+                    if goal_diff >= 2:
+                        win_prob = 75
+                        draw_prob = 15
+                        loss_prob = 10
+                    else:
+                        win_prob = 60
+                        draw_prob = 25
+                        loss_prob = 15
+                elif pred_dsx_goals < pred_opp_goals:
+                    # We're predicted to lose
+                    goal_diff = pred_opp_goals - pred_dsx_goals
+                    if goal_diff >= 2:
+                        win_prob = 15
+                        draw_prob = 20
+                        loss_prob = 65
+                    else:
+                        win_prob = 25
+                        draw_prob = 30
+                        loss_prob = 45
                 else:
-                    win_prob = 15
-                    draw_prob = 20
-                    loss_prob = 65
+                    # Predicted draw
+                    win_prob = 35
+                    draw_prob = 40
+                    loss_prob = 25
                 
                 st.markdown("---")
                 st.subheader("📈 Outcome Probability")
