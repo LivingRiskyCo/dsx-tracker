@@ -538,10 +538,10 @@ if page == "🎯 What's Next":
                         # Win probability based on final predicted score
                         st.markdown("---")
                         
-                        # Calculate win probability based on actual predicted score
-                        if pred_dsx_goals > pred_opp_goals:
+                        # Calculate win probability using rounded final score shown to user
+                        if dsx_prediction > opp_prediction:
                             # We're predicted to win
-                            goal_diff = pred_dsx_goals - pred_opp_goals
+                            goal_diff = dsx_prediction - opp_prediction
                             if goal_diff >= 2:
                                 win_prob = 75
                                 draw_prob = 15
@@ -552,9 +552,9 @@ if page == "🎯 What's Next":
                                 draw_prob = 25
                                 loss_prob = 15
                                 st.success(f"✅ **Win Probability: {win_prob}%**")
-                        elif pred_dsx_goals < pred_opp_goals:
+                        elif dsx_prediction < opp_prediction:
                             # We're predicted to lose
-                            goal_diff = pred_opp_goals - pred_dsx_goals
+                            goal_diff = opp_prediction - dsx_prediction
                             if goal_diff >= 2:
                                 win_prob = 15
                                 draw_prob = 20
@@ -3539,10 +3539,10 @@ elif page == "🎮 Game Predictions":
                     st.markdown(f"### 🎯 **Final Score: DSX {dsx_prediction}-{opp_prediction} {selected_opponent}**")
                     st.error(f"**{confidence_color} Confidence: {confidence}** (range: {avg_range:.1f} goals)")
                 
-                # Win probability based on final predicted score
-                if pred_dsx_goals > pred_opp_goals:
+                # Win probability based on rounded final predicted score
+                if dsx_prediction > opp_prediction:
                     # We're predicted to win
-                    goal_diff = pred_dsx_goals - pred_opp_goals
+                    goal_diff = dsx_prediction - opp_prediction
                     if goal_diff >= 2:
                         win_prob = 75
                         draw_prob = 15
@@ -3551,9 +3551,9 @@ elif page == "🎮 Game Predictions":
                         win_prob = 60
                         draw_prob = 25
                         loss_prob = 15
-                elif pred_dsx_goals < pred_opp_goals:
+                elif dsx_prediction < opp_prediction:
                     # We're predicted to lose
-                    goal_diff = pred_opp_goals - pred_dsx_goals
+                    goal_diff = opp_prediction - dsx_prediction
                     if goal_diff >= 2:
                         win_prob = 15
                         draw_prob = 20
