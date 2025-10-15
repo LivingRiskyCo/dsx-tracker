@@ -450,12 +450,13 @@ if page == "🎯 What's Next":
                         st.markdown("---")
                         st.subheader("🔮 Score Prediction")
                         
-                        # Simple prediction based on average goals
-                        # More balanced prediction formula
-                        # DSX gets bonus for being stronger, opponent gets penalty for being weaker
-                        # But don't make weak teams completely scoreless
-                        pred_dsx_goals = max(0.5, dsx_gf_avg + (si_diff * 0.02))
-                        pred_opp_goals = max(0.5, opp_gf if opp_gf else dsx_ga_avg - (si_diff * 0.02))
+                        # Improved prediction logic that properly accounts for strength differences
+                        # When opponent is stronger (negative si_diff), they should score more, we should score less
+                        # When we're stronger (positive si_diff), we should score more, they should score less
+                        
+                        # Base predictions on each team's offensive capability
+                        pred_dsx_goals = max(0.5, dsx_gf_avg + (si_diff * 0.05))  # Increased impact
+                        pred_opp_goals = max(0.5, (opp_gf if opp_gf else dsx_ga_avg) - (si_diff * 0.05))  # Increased impact
                         
                         # Calculate ranges for confidence assessment
                         pred_dsx_low = max(0, pred_dsx_goals - 1.5)
@@ -498,16 +499,16 @@ if page == "🎯 What's Next":
                             st.markdown(f"## **{opp_prediction} Goals**")
                             st.caption(f"Range: {pred_opp_low:.1f} - {pred_opp_high:.1f}")
                         
-                        # Final score prediction with confidence color - much larger
+                        # Final score prediction with confidence color - better sized
                         st.markdown("---")
                         if confidence_style == "success":
-                            st.markdown(f"# 🎯 **Final Score: DSX {dsx_prediction}-{opp_prediction} {opponent}**")
+                            st.markdown(f"### 🎯 **Final Score: DSX {dsx_prediction}-{opp_prediction} {opponent}**")
                             st.success(f"**{confidence_color} Confidence: {confidence}** (range: {avg_range:.1f} goals)")
                         elif confidence_style == "warning":
-                            st.markdown(f"# 🎯 **Final Score: DSX {dsx_prediction}-{opp_prediction} {opponent}**")
+                            st.markdown(f"### 🎯 **Final Score: DSX {dsx_prediction}-{opp_prediction} {opponent}**")
                             st.warning(f"**{confidence_color} Confidence: {confidence}** (range: {avg_range:.1f} goals)")
                         else:
-                            st.markdown(f"# 🎯 **Final Score: DSX {dsx_prediction}-{opp_prediction} {opponent}**")
+                            st.markdown(f"### 🎯 **Final Score: DSX {dsx_prediction}-{opp_prediction} {opponent}**")
                             st.error(f"**{confidence_color} Confidence: {confidence}** (range: {avg_range:.1f} goals)")
                         
                         # Win probability
@@ -3332,11 +3333,13 @@ elif page == "🎮 Game Predictions":
                 st.markdown("---")
                 st.subheader("🔮 Score Prediction")
                 
-                # More balanced prediction formula
-                # DSX gets bonus for being stronger, opponent gets penalty for being weaker
-                # But don't make weak teams completely scoreless
-                pred_dsx_goals = max(0.5, dsx_gf_avg + (si_diff * 0.02))
-                pred_opp_goals = max(0.5, opp_gf - (si_diff * 0.02))
+                # Improved prediction logic that properly accounts for strength differences
+                # When opponent is stronger (negative si_diff), they should score more, we should score less
+                # When we're stronger (positive si_diff), we should score more, they should score less
+                
+                # Base predictions on each team's offensive capability
+                pred_dsx_goals = max(0.5, dsx_gf_avg + (si_diff * 0.05))  # Increased impact
+                pred_opp_goals = max(0.5, (opp_gf if opp_gf else dsx_ga_avg) - (si_diff * 0.05))  # Increased impact
                 
                 # Calculate ranges for confidence assessment
                 pred_dsx_low = max(0, pred_dsx_goals - 1.5)
@@ -3379,16 +3382,16 @@ elif page == "🎮 Game Predictions":
                     st.markdown(f"## **{opp_prediction} Goals**")
                     st.caption(f"Range: {pred_opp_low:.1f} - {pred_opp_high:.1f}")
                 
-                # Final score prediction with confidence color - much larger
+                # Final score prediction with confidence color - better sized
                 st.markdown("---")
                 if confidence_style == "success":
-                    st.markdown(f"# 🎯 **Final Score: DSX {dsx_prediction}-{opp_prediction} {selected_opponent}**")
+                    st.markdown(f"### 🎯 **Final Score: DSX {dsx_prediction}-{opp_prediction} {selected_opponent}**")
                     st.success(f"**{confidence_color} Confidence: {confidence}** (range: {avg_range:.1f} goals)")
                 elif confidence_style == "warning":
-                    st.markdown(f"# 🎯 **Final Score: DSX {dsx_prediction}-{opp_prediction} {selected_opponent}**")
+                    st.markdown(f"### 🎯 **Final Score: DSX {dsx_prediction}-{opp_prediction} {selected_opponent}**")
                     st.warning(f"**{confidence_color} Confidence: {confidence}** (range: {avg_range:.1f} goals)")
                 else:
-                    st.markdown(f"# 🎯 **Final Score: DSX {dsx_prediction}-{opp_prediction} {selected_opponent}**")
+                    st.markdown(f"### 🎯 **Final Score: DSX {dsx_prediction}-{opp_prediction} {selected_opponent}**")
                     st.error(f"**{confidence_color} Confidence: {confidence}** (range: {avg_range:.1f} goals)")
                 
                 # Win probability
