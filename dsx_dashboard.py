@@ -455,8 +455,21 @@ if page == "🎯 What's Next":
                         # When we're stronger (positive si_diff), we should score more, they should score less
                         
                         # Base predictions on each team's offensive capability
-                        pred_dsx_goals = max(0.5, dsx_gf_avg + (si_diff * 0.05))  # Increased impact
-                        pred_opp_goals = max(0.5, (opp_gf if opp_gf else dsx_ga_avg) - (si_diff * 0.05))  # Increased impact
+                        # Use more aggressive SI impact for realistic predictions
+                        si_impact = si_diff * 0.08  # Even stronger impact
+                        
+                        pred_dsx_goals = max(0.5, dsx_gf_avg + si_impact)
+                        pred_opp_goals = max(0.5, (opp_gf if opp_gf else dsx_ga_avg) - si_impact)
+                        
+                        # Ensure the stronger team actually scores more goals
+                        if si_diff < -5:  # Opponent is significantly stronger
+                            if pred_dsx_goals >= pred_opp_goals:
+                                # Swap the predictions so stronger team scores more
+                                pred_dsx_goals, pred_opp_goals = pred_opp_goals, pred_dsx_goals
+                        elif si_diff > 5:  # We are significantly stronger
+                            if pred_opp_goals >= pred_dsx_goals:
+                                # Swap the predictions so stronger team scores more
+                                pred_dsx_goals, pred_opp_goals = pred_opp_goals, pred_dsx_goals
                         
                         # Calculate ranges for confidence assessment
                         pred_dsx_low = max(0, pred_dsx_goals - 1.5)
@@ -3338,8 +3351,21 @@ elif page == "🎮 Game Predictions":
                 # When we're stronger (positive si_diff), we should score more, they should score less
                 
                 # Base predictions on each team's offensive capability
-                pred_dsx_goals = max(0.5, dsx_gf_avg + (si_diff * 0.05))  # Increased impact
-                pred_opp_goals = max(0.5, (opp_gf if opp_gf else dsx_ga_avg) - (si_diff * 0.05))  # Increased impact
+                # Use more aggressive SI impact for realistic predictions
+                si_impact = si_diff * 0.08  # Even stronger impact
+                
+                pred_dsx_goals = max(0.5, dsx_gf_avg + si_impact)
+                pred_opp_goals = max(0.5, (opp_gf if opp_gf else dsx_ga_avg) - si_impact)
+                
+                # Ensure the stronger team actually scores more goals
+                if si_diff < -5:  # Opponent is significantly stronger
+                    if pred_dsx_goals >= pred_opp_goals:
+                        # Swap the predictions so stronger team scores more
+                        pred_dsx_goals, pred_opp_goals = pred_opp_goals, pred_dsx_goals
+                elif si_diff > 5:  # We are significantly stronger
+                    if pred_opp_goals >= pred_dsx_goals:
+                        # Swap the predictions so stronger team scores more
+                        pred_dsx_goals, pred_opp_goals = pred_opp_goals, pred_dsx_goals
                 
                 # Calculate ranges for confidence assessment
                 pred_dsx_low = max(0, pred_dsx_goals - 1.5)
