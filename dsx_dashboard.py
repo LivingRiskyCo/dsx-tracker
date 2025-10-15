@@ -4699,28 +4699,83 @@ elif page == "⚽ Lineup Builder":
     with col2:
         st.markdown("### ⚽ Field Positions")
         
-        # Create field layout
+        # Create soccer field with lines and player positions
         st.markdown("""
         <div style="
             background: #4CAF50; 
             border: 3px solid #2E7D32; 
             border-radius: 10px; 
-            padding: 20px; 
+            padding: 0; 
             margin: 10px 0;
             position: relative;
-            height: 300px;
+            height: 400px;
+            overflow: hidden;
         ">
+            <!-- Soccer field lines -->
+            <div style="
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                border: 3px solid white;
+            "></div>
+            
+            <!-- Center line -->
+            <div style="
+                position: absolute;
+                top: 50%;
+                left: 0;
+                right: 0;
+                height: 3px;
+                background: white;
+            "></div>
+            
+            <!-- Center circle -->
+            <div style="
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                width: 80px;
+                height: 80px;
+                border: 3px solid white;
+                border-radius: 50%;
+                transform: translate(-50%, -50%);
+            "></div>
+            
+            <!-- Goal areas -->
+            <div style="
+                position: absolute;
+                top: 10px;
+                left: 20px;
+                width: 60px;
+                height: 80px;
+                border: 3px solid white;
+            "></div>
+            <div style="
+                position: absolute;
+                bottom: 10px;
+                right: 20px;
+                width: 60px;
+                height: 80px;
+                border: 3px solid white;
+            "></div>
+            
+            <!-- Player positions -->
+            <div id="player-positions" style="position: relative; width: 100%; height: 100%;">
+            </div>
+        </div>
         """, unsafe_allow_html=True)
         
         # Field positions in a 2-2-2 formation (matching lineup structure)
         positions_layout = {
-            'GK': (50, 90),  # Goalkeeper
-            'D1': (30, 70), 'D2': (70, 70),  # Defenders
-            'M1': (30, 50), 'M2': (70, 50),  # Midfielders
-            'F1': (40, 20), 'F2': (60, 20)  # Forwards
+            'GK': (50, 85),  # Goalkeeper
+            'D1': (25, 70), 'D2': (75, 70),  # Defenders
+            'M1': (25, 50), 'M2': (75, 50),  # Midfielders
+            'F1': (40, 25), 'F2': (60, 25)  # Forwards
         }
         
-        # Display current lineup
+        # Display current lineup ON the field
         for pos, (x, y) in positions_layout.items():
             player = st.session_state.lineup.get(pos)
             if player:
@@ -4731,11 +4786,14 @@ elif page == "⚽ Lineup Builder":
                     top: {y}%; 
                     background: #FF9800; 
                     color: white; 
-                    padding: 5px 10px; 
-                    border-radius: 5px; 
-                    font-size: 12px;
+                    padding: 8px 12px; 
+                    border-radius: 8px; 
+                    font-size: 11px;
                     text-align: center;
-                    min-width: 60px;
+                    min-width: 70px;
+                    font-weight: bold;
+                    box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+                    z-index: 10;
                 ">
                     {player}
                 </div>
@@ -4746,20 +4804,19 @@ elif page == "⚽ Lineup Builder":
                     position: absolute; 
                     left: {x}%; 
                     top: {y}%; 
-                    background: rgba(255,255,255,0.3); 
-                    color: #666; 
-                    padding: 5px 10px; 
-                    border-radius: 5px; 
-                    font-size: 12px;
+                    background: rgba(255,255,255,0.2); 
+                    color: #333; 
+                    padding: 8px 12px; 
+                    border-radius: 8px; 
+                    font-size: 11px;
                     text-align: center;
-                    min-width: 60px;
-                    border: 2px dashed #999;
+                    min-width: 70px;
+                    border: 2px dashed rgba(255,255,255,0.5);
+                    font-weight: bold;
                 ">
                     {pos}
                 </div>
                 """, unsafe_allow_html=True)
-        
-        st.markdown("</div>", unsafe_allow_html=True)
     
     with col3:
         st.markdown("### 📋 Available Players")
