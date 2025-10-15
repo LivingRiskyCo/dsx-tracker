@@ -4697,233 +4697,139 @@ elif page == "⚽ Lineup Builder":
             st.info("All players are on the field!")
     
     with col2:
-        st.markdown("### ⚽ Field Positions")
+        st.markdown("### ⚽ Starting Lineup")
+        st.markdown("**Select your starting 6 players**")
         
-        # Create soccer field with lines and player positions
-        st.markdown("""
-        <div style="
-            background: #4CAF50; 
-            border: 3px solid #2E7D32; 
-            border-radius: 10px; 
-            padding: 0; 
-            margin: 10px 0;
-            position: relative;
-            height: 400px;
-            overflow: hidden;
-        ">
-            <!-- Soccer field lines -->
-            <div style="
-                position: absolute;
-                top: 0;
-                left: 0;
-                right: 0;
-                bottom: 0;
-                border: 3px solid white;
-            "></div>
-            
-            <!-- Center line -->
-            <div style="
-                position: absolute;
-                top: 50%;
-                left: 0;
-                right: 0;
-                height: 3px;
-                background: white;
-            "></div>
-            
-            <!-- Center circle -->
-            <div style="
-                position: absolute;
-                top: 50%;
-                left: 50%;
-                width: 80px;
-                height: 80px;
-                border: 3px solid white;
-                border-radius: 50%;
-                transform: translate(-50%, -50%);
-            "></div>
-            
-            <!-- Goal areas -->
-            <div style="
-                position: absolute;
-                top: 10px;
-                left: 20px;
-                width: 60px;
-                height: 80px;
-                border: 3px solid white;
-            "></div>
-            <div style="
-                position: absolute;
-                bottom: 10px;
-                right: 20px;
-                width: 60px;
-                height: 80px;
-                border: 3px solid white;
-            "></div>
-            
-            <!-- Player positions -->
-            <div id="player-positions" style="position: relative; width: 100%; height: 100%;">
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
+        # Formation selector
+        formation = st.selectbox(
+            "Formation:",
+            ["2-2-2 (Recommended)", "2-3-1", "3-2-1", "1-3-2"],
+            help="Choose your team formation"
+        )
         
-        # Field positions in a 2-2-2 formation (matching lineup structure)
-        positions_layout = {
-            'GK': (50, 85),  # Goalkeeper
-            'D1': (25, 70), 'D2': (75, 70),  # Defenders
-            'M1': (25, 50), 'M2': (75, 50),  # Midfielders
-            'F1': (40, 25), 'F2': (60, 25)  # Forwards
-        }
+        st.markdown("---")
         
-        # Display current lineup ON the field
-        for pos, (x, y) in positions_layout.items():
-            player = st.session_state.lineup.get(pos)
-            if player:
-                st.markdown(f"""
-                <div style="
-                    position: absolute; 
-                    left: {x}%; 
-                    top: {y}%; 
-                    background: #FF9800; 
-                    color: white; 
-                    padding: 8px 12px; 
-                    border-radius: 8px; 
-                    font-size: 11px;
-                    text-align: center;
-                    min-width: 70px;
-                    font-weight: bold;
-                    box-shadow: 0 2px 4px rgba(0,0,0,0.3);
-                    z-index: 10;
-                ">
-                    {player}
-                </div>
-                """, unsafe_allow_html=True)
+        # Get available players (not already selected)
+        selected_players = [p for p in st.session_state.lineup.values() if p and p != "Empty"]
+        available_players = [p for p in roster_df['PlayerName'].tolist() if p not in selected_players]
+        
+        # Position assignments based on formation
+        if "2-2-2" in formation:
+            positions = ["GK", "D1", "D2", "M1", "M2", "F1", "F2"]
+            position_names = ["Goalkeeper", "Defender 1", "Defender 2", "Midfielder 1", "Midfielder 2", "Forward 1", "Forward 2"]
+        elif "2-3-1" in formation:
+            positions = ["GK", "D1", "D2", "M1", "M2", "M3", "F1"]
+            position_names = ["Goalkeeper", "Defender 1", "Defender 2", "Midfielder 1", "Midfielder 2", "Midfielder 3", "Forward 1"]
+        elif "3-2-1" in formation:
+            positions = ["GK", "D1", "D2", "D3", "M1", "M2", "F1"]
+            position_names = ["Goalkeeper", "Defender 1", "Defender 2", "Defender 3", "Midfielder 1", "Midfielder 2", "Forward 1"]
+        else:  # 1-3-2
+            positions = ["GK", "D1", "M1", "M2", "M3", "F1", "F2"]
+            position_names = ["Goalkeeper", "Defender 1", "Midfielder 1", "Midfielder 2", "Midfielder 3", "Forward 1", "Forward 2"]
+        
+        # Create lineup form
+        lineup_form = {}
+        for i, (pos, pos_name) in enumerate(zip(positions, position_names)):
+            # Get current player for this position
+            current_player = st.session_state.lineup.get(pos, "Empty")
+            
+            # Create options list
+            options = ["Select Player..."] + available_players
+            if current_player and current_player != "Empty":
+                options = [current_player] + [p for p in available_players if p != current_player]
+            
+            # Player selector
+            selected = st.selectbox(
+                f"{pos_name} ({pos})",
+                options,
+                key=f"lineup_{pos}",
+                help=f"Select player for {pos_name}"
+            )
+            
+            if selected and selected != "Select Player...":
+                lineup_form[pos] = selected
             else:
-                st.markdown(f"""
-                <div style="
-                    position: absolute; 
-                    left: {x}%; 
-                    top: {y}%; 
-                    background: rgba(255,255,255,0.2); 
-                    color: #333; 
-                    padding: 8px 12px; 
-                    border-radius: 8px; 
-                    font-size: 11px;
-                    text-align: center;
-                    min-width: 70px;
-                    border: 2px dashed rgba(255,255,255,0.5);
-                    font-weight: bold;
-                ">
-                    {pos}
-                </div>
-                """, unsafe_allow_html=True)
+                lineup_form[pos] = "Empty"
+        
+        # Update session state
+        if st.button("✅ Update Lineup", type="primary", use_container_width=True):
+            for pos, player in lineup_form.items():
+                st.session_state.lineup[pos] = player
+            st.success("Lineup updated!")
+            st.rerun()
+        
+        # Display current lineup summary
+        st.markdown("---")
+        st.markdown("**Current Lineup:**")
+        for pos, player in st.session_state.lineup.items():
+            if player and player != "Empty":
+                st.write(f"**{pos}:** {player}")
+            else:
+                st.write(f"**{pos}:** *Empty*")
     
     with col3:
         st.markdown("### 📋 Available Players")
-        st.markdown("**Click to add to field**")
+        st.markdown("**Players not in starting lineup**")
         
         # Show available players
-        for player in roster.itertuples():
-            player_str = f"#{player.PlayerNumber} {player.PlayerName}"
+        selected_players = [p for p in st.session_state.lineup.values() if p and p != "Empty"]
+        
+        if not selected_players:
+            st.info("No players selected yet. Use the lineup form to select your starting 6.")
+        else:
+            st.markdown(f"**{len(selected_players)}/6 players selected**")
+        
+        st.markdown("---")
+        st.markdown("**All Players:**")
+        
+        for idx, row in roster_df.iterrows():
+            player_name = row['PlayerName']
+            player_number = row['PlayerNumber']
             
             # Check if player is already on field
-            on_field = any(player_str == p for p in st.session_state.lineup.values() if p is not None)
+            is_on_field = player_name in selected_players
             
-            if not on_field:
-                if st.button(f"⚽ {player_str}", key=f"field_{player.PlayerNumber}", use_container_width=True):
-                    # Find empty position
-                    for pos in ['GK', 'D1', 'D2', 'M1', 'M2', 'F1', 'F2']:
-                        if st.session_state.lineup.get(pos) is None:
-                            st.session_state.lineup[pos] = player_str
-                            break
-                    st.rerun()
-    
-    # Lineup management
-    st.markdown("---")
-    st.subheader("📊 Current Lineup")
-    
-    col1, col2, col3 = st.columns(3)
-    
-    with col1:
-        st.markdown("**Starting 6:**")
-        for pos in ['GK', 'D1', 'D2', 'M1', 'M2', 'F1', 'F2']:
-            player = st.session_state.lineup.get(pos, "Empty")
-            if player != "Empty":
-                if st.button(f"❌ {player}", key=f"remove_{pos}"):
-                    st.session_state.lineup[pos] = None
-                    st.rerun()
+            if is_on_field:
+                st.write(f"✅ **#{player_number} {player_name}** - *In Lineup*")
             else:
-                st.write(f"{pos}: {player}")
-    
-    with col2:
-        st.markdown("**Substitutes:**")
-        subs = st.session_state.lineup.get('subs', [])
-        if subs:
-            for i, sub in enumerate(subs):
-                if st.button(f"❌ {sub}", key=f"remove_sub_{i}"):
-                    st.session_state.lineup['subs'].remove(sub)
-                    st.rerun()
-        else:
-            st.write("No substitutes")
-    
-    with col3:
+                st.write(f"⚪ #{player_number} {player_name}")
+        
+        st.markdown("---")
         st.markdown("**Quick Actions:**")
-        if st.button("🔄 Clear All", use_container_width=True):
-            st.session_state.lineup = {
-                'GK': None, 'D1': None, 'D2': None,
-                'M1': None, 'M2': None,
-                'F1': None, 'F2': None, 'subs': []
-            }
-            st.rerun()
         
-        if st.button("💾 Save Lineup", use_container_width=True):
-            # Save lineup to CSV
-            lineup_data = []
-            for pos, player in st.session_state.lineup.items():
-                if pos != 'subs' and player:
-                    lineup_data.append({
-                        'Position': pos,
-                        'Player': player,
-                        'Status': 'Starting'
-                    })
-            
-            for sub in st.session_state.lineup.get('subs', []):
-                lineup_data.append({
-                    'Position': 'SUB',
-                    'Player': sub,
-                    'Status': 'Substitute'
-                })
-            
-            lineup_df = pd.DataFrame(lineup_data)
-            lineup_df.to_csv("current_lineup.csv", index=False)
-            st.success("✅ Lineup saved!")
-        
-        if st.button("📂 Load Lineup", use_container_width=True):
-            try:
-                saved_lineup = pd.read_csv("current_lineup.csv")
-                # Reset lineup
-                st.session_state.lineup = {
-                    'GK': None, 'D1': None, 'D2': None,
-                    'M1': None, 'M2': None,
-                    'F1': None, 'F2': None, 'subs': []
-                }
-                
-                # Load saved lineup
-                for _, row in saved_lineup.iterrows():
-                    if row['Status'] == 'Starting':
-                        for pos in ['GK', 'D1', 'D2', 'M1', 'M2', 'F1', 'F2']:
-                            if st.session_state.lineup.get(pos) is None:
-                                st.session_state.lineup[pos] = row['Player']
-                                break
-                    else:
-                        if 'subs' not in st.session_state.lineup:
-                            st.session_state.lineup['subs'] = []
-                        st.session_state.lineup['subs'].append(row['Player'])
-                
-                st.success("✅ Lineup loaded!")
+        col_a, col_b = st.columns(2)
+        with col_a:
+            if st.button("🔄 Reset Lineup", use_container_width=True):
+                for pos in st.session_state.lineup:
+                    if pos != 'subs':
+                        st.session_state.lineup[pos] = "Empty"
+                st.session_state.lineup['subs'] = []
+                st.success("Lineup reset!")
                 st.rerun()
-            except FileNotFoundError:
-                st.warning("No saved lineup found.")
+        
+        with col_b:
+            if st.button("💾 Save Lineup", use_container_width=True):
+                # Save to CSV
+                lineup_data = []
+                for pos, player in st.session_state.lineup.items():
+                    if pos != 'subs':
+                        lineup_data.append({
+                            'Position': pos,
+                            'Player': player if player != "Empty" else "",
+                            'Status': 'Starting' if player != "Empty" else 'Empty'
+                        })
+                
+                # Add substitutes
+                for sub in st.session_state.lineup.get('subs', []):
+                    lineup_data.append({
+                        'Position': 'SUB',
+                        'Player': sub,
+                        'Status': 'Substitute'
+                    })
+                
+                lineup_df = pd.DataFrame(lineup_data)
+                lineup_df.to_csv("current_lineup.csv", index=False)
+                st.success("Lineup saved to current_lineup.csv!")
 
 
 elif page == "📖 Quick Start Guide":
