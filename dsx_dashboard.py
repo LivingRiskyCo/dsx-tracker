@@ -2403,16 +2403,16 @@ elif page == "🏆 Division Rankings":
             gdpg_norm = (max(-5.0, min(5.0, dsx_gd_pg)) + 5.0) / 10.0 * 100.0
             dsx_strength = round(0.7 * ppg_norm + 0.3 * gdpg_norm, 1)
             
-            # Create DSX row
+            # Create DSX row (use per-game averages to match other teams)
             dsx_row = pd.DataFrame([{
                 'Team': 'DSX Orange 2018',
                 'GP': dsx_gp,
                 'W': dsx_w,
                 'D': dsx_d,
                 'L': dsx_l,
-                'GF': dsx_gf,
-                'GA': dsx_ga,
-                'GD': dsx_gd,
+                'GF': round(dsx_gf_pg, 2),  # Per-game average (not total)
+                'GA': round(dsx_ga_pg, 2),  # Per-game average (not total)
+                'GD': round(dsx_gd_pg, 2),  # Per-game average (not total)
                 'Pts': dsx_pts,
                 'PPG': dsx_ppg,
                 'GF_PG': dsx_gf_pg,
