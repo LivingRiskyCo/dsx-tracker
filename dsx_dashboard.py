@@ -340,7 +340,7 @@ with st.sidebar:
     
     page = st.radio(
         "Navigation",
-        ["🎯 What's Next", "📅 Team Schedule", "🎮 Live Game Tracker", "📺 Watch Live Game", "💬 Team Chat", "🏆 Division Rankings", "📊 Team Analysis", "👥 Player Stats", "📅 Match History", "📝 Game Log", "🔍 Opponent Intel", "🎮 Game Predictions", "📊 Benchmarking", "📋 Full Analysis", "⚽ Lineup Builder", "📖 Quick Start Guide", "⚙️ Data Manager"]
+        ["🎯 What's Next", "📅 Team Schedule", "🎮 Live Game Tracker", "📺 Watch Live Game", "💬 Team Chat", "🏆 Division Rankings", "📊 Team Analysis", "👥 Player Stats", "📅 Match History", "📝 Game Log", "🔍 Opponent Intel", "🎮 Game Predictions", "📊 Benchmarking", "📋 Full Analysis", "📖 Quick Start Guide", "⚙️ Data Manager"]
     )
     
     st.markdown("---")
@@ -1453,49 +1453,91 @@ elif page == "🎮 Live Game Tracker":
         except:
             position_names = ["Goalkeeper", "Center Back", "Right Back", "Left Back", "Center Midfielder", "Right Winger", "Left Winger", "Striker"]
         
-        # STARTING LINEUP SELECTION
-        st.subheader("👥 Select Starting 7 (with Positions)")
-        st.info("💡 **Tip:** Select player AND their position for each spot. You can customize position names in Data Manager.")
+        # ENHANCED LINEUP SELECTION WITH FORMATIONS
+        st.subheader("👥 Select Starting Lineup")
+        st.info("💡 **Choose your formation and select players for each position!**")
         
         if not roster_tracker.empty:
-            # Use 4 columns for better mobile display
-            selected_starters = []
-            selected_positions = {}
-            
-            # Create a more compact, aligned layout
-            for i in range(7):
-                col1, col2 = st.columns([1, 2])
-                
-                with col1:
-                    position = st.selectbox(
-                        f"Pos {i+1}",
-                        position_names,
-                        key=f"pos_{i}",
-                        index=i if i < len(position_names) else 0,
-                        label_visibility="collapsed"
-                    )
-                
-                with col2:
-                    player_options = ["Select player..."] + [
-                        f"#{int(row['PlayerNumber'])} {row['PlayerName']}" 
-                        for _, row in roster_tracker.iterrows()
-                        if int(row['PlayerNumber']) not in selected_starters
-                    ]
-                    selected = st.selectbox(
-                        f"Player {i+1}",
-                        player_options,
-                        key=f"starter_{i}",
-                        label_visibility="collapsed",
-                        help=f"Select player for {position}"
-                    )
-                    if selected != "Select player...":
-                        player_num = int(selected.split('#')[1].split(' ')[0])
-                        selected_starters.append(player_num)
-                        selected_positions[player_num] = position
+            # Formation selector
+            formation = st.selectbox(
+                "Formation:",
+                ["2-2-2 (Recommended)", "2-3-1", "3-2-1", "1-3-2"],
+                help="Choose your team formation"
+            )
             
             st.markdown("---")
             
-            # Show bench prominently
+            # Position assignments based on formation
+            if "2-2-2" in formation:
+                positions = ["GK", "D1", "D2", "M1", "M2", "F1", "F2"]
+                position_names = ["Goalkeeper", "Defender 1", "Defender 2", "Midfielder 1", "Midfielder 2", "Forward 1", "Forward 2"]
+            elif "2-3-1" in formation:
+                positions = ["GK", "D1", "D2", "M1", "M2", "M3", "F1"]
+                position_names = ["Goalkeeper", "Defender 1", "Defender 2", "Midfielder 1", "Midfielder 2", "Midfielder 3", "Forward 1"]
+            elif "3-2-1" in formation:
+                positions = ["GK", "D1", "D2", "D3", "M1", "M2", "F1"]
+                position_names = ["Goalkeeper", "Defender 1", "Defender 2", "Defender 3", "Midfielder 1", "Midfielder 2", "Forward 1"]
+            else:  # 1-3-2
+                positions = ["GK", "D1", "M1", "M2", "M3", "F1", "F2"]
+                position_names = ["Goalkeeper", "Defender 1", "Midfielder 1", "Midfielder 2", "Midfielder 3", "Forward 1", "Forward 2"]
+            
+            # Initialize lineup session state
+            if 'lineup' not in st.session_state:
+                st.session_state.lineup = {pos: None for pos in positions}
+                st.session_state.lineup['subs'] = []
+            
+            # Get available players (not already selected)
+            selected_players = [p for p in st.session_state.lineup.values() if p and p != "Empty"]
+            available_players = [f"#{int(row['PlayerNumber'])} {row['PlayerName']}" for _, row in roster_tracker.iterrows() 
+                               if f"#{int(row['PlayerNumber'])} {row['PlayerName']}" not in selected_players]
+            
+            # Create lineup form
+            lineup_form = {}
+            selected_starters = []
+            
+            for i, (pos, pos_name) in enumerate(zip(positions, position_names)):
+                # Get current player for this position
+                current_player = st.session_state.lineup.get(pos, None)
+                
+                # Create options list
+                options = ["Select Player..."] + available_players
+                if current_player and current_player != "Empty":
+                    options = [current_player] + [p for p in available_players if p != current_player]
+                
+                # Player selector
+                selected = st.selectbox(
+                    f"{pos_name} ({pos})",
+                    options,
+                    key=f"lineup_{pos}",
+                    help=f"Select player for {pos_name}"
+                )
+                
+                if selected and selected != "Select Player...":
+                    lineup_form[pos] = selected
+                    player_num = int(selected.split('#')[1].split(' ')[0])
+                    selected_starters.append(player_num)
+                else:
+                    lineup_form[pos] = "Empty"
+            
+            # Update session state
+            if st.button("✅ Update Lineup", type="primary", use_container_width=True):
+                for pos, player in lineup_form.items():
+                    st.session_state.lineup[pos] = player
+                st.success("Lineup updated!")
+                st.rerun()
+            
+            # Display current lineup summary
+            st.markdown("---")
+            st.markdown("**Current Lineup:**")
+            for pos, player in st.session_state.lineup.items():
+                if pos != 'subs' and player and player != "Empty":
+                    st.write(f"**{pos}:** {player}")
+                elif pos != 'subs':
+                    st.write(f"**{pos}:** *Empty*")
+            
+            st.markdown("---")
+            
+            # Show bench players
             if len(selected_starters) > 0:
                 bench = roster_tracker[~roster_tracker['PlayerNumber'].isin(selected_starters)]
                 if not bench.empty:
@@ -1510,6 +1552,49 @@ elif page == "🎮 Live Game Tracker":
                     })
                     st.dataframe(bench_display, hide_index=True, use_container_width=True)
                     st.caption(f"**{len(bench)} players on bench** - Use 🔄 SUB button during game to make substitutions")
+            
+            st.markdown("---")
+            
+            # Quick actions
+            col_a, col_b, col_c = st.columns(3)
+            with col_a:
+                if st.button("💾 Save Lineup", use_container_width=True):
+                    # Save lineup to CSV
+                    lineup_data = []
+                    for pos, player in st.session_state.lineup.items():
+                        if pos != 'subs' and player and player != "Empty":
+                            lineup_data.append({
+                                'Position': pos,
+                                'Player': player,
+                                'Status': 'Starting'
+                            })
+                    
+                    lineup_df = pd.DataFrame(lineup_data)
+                    lineup_df.to_csv("current_lineup.csv", index=False)
+                    st.success("✅ Lineup saved!")
+            
+            with col_b:
+                if st.button("📂 Load Lineup", use_container_width=True):
+                    try:
+                        saved_lineup = pd.read_csv("current_lineup.csv")
+                        # Load lineup into session state
+                        for _, row in saved_lineup.iterrows():
+                            if row['Status'] == 'Starting':
+                                for pos in positions:
+                                    if st.session_state.lineup.get(pos) is None:
+                                        st.session_state.lineup[pos] = row['Player']
+                                        break
+                        st.success("✅ Lineup loaded! Refresh to see changes.")
+                    except FileNotFoundError:
+                        st.warning("No saved lineup found.")
+            
+            with col_c:
+                if st.button("🔄 Reset Lineup", use_container_width=True):
+                    for pos in positions:
+                        st.session_state.lineup[pos] = None
+                    st.session_state.lineup['subs'] = []
+                    st.success("Lineup reset!")
+                    st.rerun()
             
             st.markdown("---")
             
@@ -4632,204 +4717,6 @@ elif page == "📋 Full Analysis":
     }
     
     st.dataframe(pd.DataFrame(goals_data), use_container_width=True, hide_index=True)
-
-
-elif page == "⚽ Lineup Builder":
-    st.title("⚽ Drag-and-Drop Lineup Builder")
-    
-    st.info("🎯 **Build your starting 7 lineup by dragging players onto the field!** Perfect for setting up formations before games.")
-    
-    # Load roster and position data
-    try:
-        roster = pd.read_csv("roster.csv", index_col=False)
-        roster = roster.reset_index(drop=True)
-    except FileNotFoundError:
-        st.error("Roster data not found. Please add players in **⚙️ Data Manager**.")
-        st.stop()
-    
-    try:
-        positions = pd.read_csv("position_config.csv", index_col=False)
-        positions = positions.reset_index(drop=True)
-    except FileNotFoundError:
-        st.warning("Position configuration not found. Using default positions.")
-        positions = pd.DataFrame({
-            'PositionName': ['Goalkeeper', 'Defender', 'Midfielder', 'Forward'],
-            'Abbreviation': ['GK', 'D', 'M', 'F'],
-            'SortOrder': [1, 2, 3, 4]
-        })
-    
-    # Initialize session state for lineup
-    if 'lineup' not in st.session_state:
-        st.session_state.lineup = {
-            'GK': None,
-            'D1': None, 'D2': None,
-            'M1': None, 'M2': None,
-            'F1': None, 'F2': None,
-            'subs': []
-        }
-    
-    # Field layout with drag-and-drop zones
-    st.subheader("🏟️ Soccer Field Layout")
-    
-    # Create field visualization using columns
-    col1, col2, col3 = st.columns([1, 2, 1])
-    
-    with col1:
-        st.markdown("### 🏃‍♂️ Bench")
-        st.markdown("**Drag players here to bench them**")
-        
-        # Show benched players
-        benched_players = []
-        for player in roster.itertuples():
-            if player.PlayerName not in [p for p in st.session_state.lineup.values() if p is not None]:
-                benched_players.append(f"#{player.PlayerNumber} {player.PlayerName}")
-        
-        if benched_players:
-            for player in benched_players:
-                if st.button(f"📤 {player}", key=f"bench_{player}", use_container_width=True):
-                    # Add to bench
-                    if player not in st.session_state.lineup.get('subs', []):
-                        if 'subs' not in st.session_state.lineup:
-                            st.session_state.lineup['subs'] = []
-                        st.session_state.lineup['subs'].append(player)
-                    st.rerun()
-        else:
-            st.info("All players are on the field!")
-    
-    with col2:
-        st.markdown("### ⚽ Starting Lineup")
-        st.markdown("**Select your starting 6 players**")
-        
-        # Formation selector
-        formation = st.selectbox(
-            "Formation:",
-            ["2-2-2 (Recommended)", "2-3-1", "3-2-1", "1-3-2"],
-            help="Choose your team formation"
-        )
-        
-        st.markdown("---")
-        
-        # Get available players (not already selected)
-        selected_players = [p for p in st.session_state.lineup.values() if p and p != "Empty"]
-        available_players = [p for p in roster['PlayerName'].tolist() if p not in selected_players]
-        
-        # Position assignments based on formation
-        if "2-2-2" in formation:
-            positions = ["GK", "D1", "D2", "M1", "M2", "F1", "F2"]
-            position_names = ["Goalkeeper", "Defender 1", "Defender 2", "Midfielder 1", "Midfielder 2", "Forward 1", "Forward 2"]
-        elif "2-3-1" in formation:
-            positions = ["GK", "D1", "D2", "M1", "M2", "M3", "F1"]
-            position_names = ["Goalkeeper", "Defender 1", "Defender 2", "Midfielder 1", "Midfielder 2", "Midfielder 3", "Forward 1"]
-        elif "3-2-1" in formation:
-            positions = ["GK", "D1", "D2", "D3", "M1", "M2", "F1"]
-            position_names = ["Goalkeeper", "Defender 1", "Defender 2", "Defender 3", "Midfielder 1", "Midfielder 2", "Forward 1"]
-        else:  # 1-3-2
-            positions = ["GK", "D1", "M1", "M2", "M3", "F1", "F2"]
-            position_names = ["Goalkeeper", "Defender 1", "Midfielder 1", "Midfielder 2", "Midfielder 3", "Forward 1", "Forward 2"]
-        
-        # Create lineup form
-        lineup_form = {}
-        for i, (pos, pos_name) in enumerate(zip(positions, position_names)):
-            # Get current player for this position
-            current_player = st.session_state.lineup.get(pos, "Empty")
-            
-            # Create options list
-            options = ["Select Player..."] + available_players
-            if current_player and current_player != "Empty":
-                options = [current_player] + [p for p in available_players if p != current_player]
-            
-            # Player selector
-            selected = st.selectbox(
-                f"{pos_name} ({pos})",
-                options,
-                key=f"lineup_{pos}",
-                help=f"Select player for {pos_name}"
-            )
-            
-            if selected and selected != "Select Player...":
-                lineup_form[pos] = selected
-            else:
-                lineup_form[pos] = "Empty"
-        
-        # Update session state
-        if st.button("✅ Update Lineup", type="primary", use_container_width=True):
-            for pos, player in lineup_form.items():
-                st.session_state.lineup[pos] = player
-            st.success("Lineup updated!")
-            st.rerun()
-        
-        # Display current lineup summary
-        st.markdown("---")
-        st.markdown("**Current Lineup:**")
-        for pos, player in st.session_state.lineup.items():
-            if player and player != "Empty":
-                st.write(f"**{pos}:** {player}")
-            else:
-                st.write(f"**{pos}:** *Empty*")
-    
-    with col3:
-        st.markdown("### 📋 Available Players")
-        st.markdown("**Players not in starting lineup**")
-        
-        # Show available players
-        selected_players = [p for p in st.session_state.lineup.values() if p and p != "Empty"]
-        
-        if not selected_players:
-            st.info("No players selected yet. Use the lineup form to select your starting 6.")
-        else:
-            st.markdown(f"**{len(selected_players)}/6 players selected**")
-        
-        st.markdown("---")
-        st.markdown("**All Players:**")
-        
-        for idx, row in roster.iterrows():
-            player_name = row['PlayerName']
-            player_number = row['PlayerNumber']
-            
-            # Check if player is already on field
-            is_on_field = player_name in selected_players
-            
-            if is_on_field:
-                st.write(f"✅ **#{player_number} {player_name}** - *In Lineup*")
-            else:
-                st.write(f"⚪ #{player_number} {player_name}")
-        
-        st.markdown("---")
-        st.markdown("**Quick Actions:**")
-        
-        col_a, col_b = st.columns(2)
-        with col_a:
-            if st.button("🔄 Reset Lineup", use_container_width=True):
-                for pos in st.session_state.lineup:
-                    if pos != 'subs':
-                        st.session_state.lineup[pos] = "Empty"
-                st.session_state.lineup['subs'] = []
-                st.success("Lineup reset!")
-                st.rerun()
-        
-        with col_b:
-            if st.button("💾 Save Lineup", use_container_width=True):
-                # Save to CSV
-                lineup_data = []
-                for pos, player in st.session_state.lineup.items():
-                    if pos != 'subs':
-                        lineup_data.append({
-                            'Position': pos,
-                            'Player': player if player != "Empty" else "",
-                            'Status': 'Starting' if player != "Empty" else 'Empty'
-                        })
-                
-                # Add substitutes
-                for sub in st.session_state.lineup.get('subs', []):
-                    lineup_data.append({
-                        'Position': 'SUB',
-                        'Player': sub,
-                        'Status': 'Substitute'
-                    })
-                
-                lineup_df = pd.DataFrame(lineup_data)
-                lineup_df.to_csv("current_lineup.csv", index=False)
-                st.success("Lineup saved to current_lineup.csv!")
 
 
 elif page == "📖 Quick Start Guide":
