@@ -4711,7 +4711,7 @@ elif page == "⚽ Lineup Builder":
         
         # Get available players (not already selected)
         selected_players = [p for p in st.session_state.lineup.values() if p and p != "Empty"]
-        available_players = [p for p in roster_df['PlayerName'].tolist() if p not in selected_players]
+        available_players = [p for p in roster['PlayerName'].tolist() if p not in selected_players]
         
         # Position assignments based on formation
         if "2-2-2" in formation:
@@ -4782,7 +4782,7 @@ elif page == "⚽ Lineup Builder":
         st.markdown("---")
         st.markdown("**All Players:**")
         
-        for idx, row in roster_df.iterrows():
+        for idx, row in roster.iterrows():
             player_name = row['PlayerName']
             player_number = row['PlayerNumber']
             
