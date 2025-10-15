@@ -1493,7 +1493,6 @@ elif page == "🎮 Live Game Tracker":
             
             # Create lineup form
             lineup_form = {}
-            selected_starters = []
             
             for i, (pos, pos_name) in enumerate(zip(positions, position_names)):
                 # Get current player for this position
@@ -1514,10 +1513,19 @@ elif page == "🎮 Live Game Tracker":
                 
                 if selected and selected != "Select Player...":
                     lineup_form[pos] = selected
-                    player_num = int(selected.split('#')[1].split(' ')[0])
-                    selected_starters.append(player_num)
                 else:
                     lineup_form[pos] = "Empty"
+            
+            # Build selected_starters from session state (not form state)
+            selected_starters = []
+            for pos in positions:
+                player = st.session_state.lineup.get(pos)
+                if player and player != "Empty" and player != "Select Player...":
+                    try:
+                        player_num = int(player.split('#')[1].split(' ')[0])
+                        selected_starters.append(player_num)
+                    except:
+                        pass
             
             # Update session state
             if st.button("✅ Update Lineup", type="primary", use_container_width=True):
@@ -1597,6 +1605,10 @@ elif page == "🎮 Live Game Tracker":
                     st.rerun()
             
             st.markdown("---")
+            
+            # Debug info
+            st.markdown("---")
+            st.markdown(f"**Debug Info:** Selected {len(selected_starters)}/7 players: {selected_starters}")
             
             # Start game button
             if st.button("🚀 START GAME", type="primary", use_container_width=True):
