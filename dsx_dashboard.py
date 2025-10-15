@@ -431,13 +431,54 @@ if page == "🎯 What's Next":
                         pred_dsx_goals = max(0.5, dsx_gf_avg + (si_diff * 0.02))
                         pred_opp_goals = max(0.5, opp_gf if opp_gf else dsx_ga_avg - (si_diff * 0.02))
                         
+                        # Calculate ranges for confidence assessment
                         pred_dsx_low = max(0, pred_dsx_goals - 1.5)
                         pred_dsx_high = pred_dsx_goals + 1.5
                         pred_opp_low = max(0, pred_opp_goals - 1.5)
                         pred_opp_high = pred_opp_goals + 1.5
                         
-                        st.write(f"**DSX:** {pred_dsx_low:.1f} - {pred_dsx_high:.1f} goals")
-                        st.write(f"**{opponent}:** {pred_opp_low:.1f} - {pred_opp_high:.1f} goals")
+                        # Calculate single score predictions (rounded to realistic values)
+                        dsx_prediction = round(pred_dsx_goals)
+                        opp_prediction = round(pred_opp_goals)
+                        
+                        # Calculate confidence based on range tightness
+                        dsx_range = pred_dsx_high - pred_dsx_low
+                        opp_range = pred_opp_high - pred_opp_low
+                        avg_range = (dsx_range + opp_range) / 2
+                        
+                        if avg_range <= 2.0:
+                            confidence = "High"
+                            confidence_color = "🟢"
+                            confidence_style = "success"
+                        elif avg_range <= 3.0:
+                            confidence = "Medium"
+                            confidence_color = "🟡"
+                            confidence_style = "warning"
+                        else:
+                            confidence = "Low"
+                            confidence_color = "🔴"
+                            confidence_style = "error"
+                        
+                        # Display predictions with range and confidence
+                        col1, col2 = st.columns(2)
+                        
+                        with col1:
+                            st.write(f"**DSX:** {dsx_prediction} goals")
+                            st.caption(f"(range: {pred_dsx_low:.1f}-{pred_dsx_high:.1f})")
+                        
+                        with col2:
+                            st.write(f"**{opponent}:** {opp_prediction} goals")
+                            st.caption(f"(range: {pred_opp_low:.1f}-{pred_opp_high:.1f})")
+                        
+                        # Final score prediction with confidence color
+                        if confidence_style == "success":
+                            st.success(f"**Final: DSX {dsx_prediction}-{opp_prediction} {opponent}**")
+                        elif confidence_style == "warning":
+                            st.warning(f"**Final: DSX {dsx_prediction}-{opp_prediction} {opponent}**")
+                        else:
+                            st.error(f"**Final: DSX {dsx_prediction}-{opp_prediction} {opponent}**")
+                        
+                        st.write(f"{confidence_color} **Confidence: {confidence}** (range: {avg_range:.1f} goals)")
                         
                         # Win probability
                         st.markdown("---")
