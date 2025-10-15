@@ -470,11 +470,17 @@ if page == "🎯 What's Next":
                                 # Swap the predictions so stronger team scores more
                                 pred_dsx_goals, pred_opp_goals = pred_opp_goals, pred_dsx_goals
                                 swapped = True
+                            # If they're much stronger, give them at least 1 more goal
+                            elif pred_dsx_goals == pred_opp_goals and si_diff < -10:
+                                pred_opp_goals = pred_dsx_goals + 1
                         elif si_diff > 5:  # We are significantly stronger
                             if pred_opp_goals >= pred_dsx_goals:
                                 # Swap the predictions so stronger team scores more
                                 pred_dsx_goals, pred_opp_goals = pred_opp_goals, pred_dsx_goals
                                 swapped = True
+                            # If we're much stronger, give us at least 1 more goal
+                            elif pred_dsx_goals == pred_opp_goals and si_diff > 10:
+                                pred_dsx_goals = pred_opp_goals + 1
                         
                         # Calculate ranges for confidence assessment
                         pred_dsx_low = max(0, pred_dsx_goals - 1.5)
@@ -3390,11 +3396,17 @@ elif page == "🎮 Game Predictions":
                         # Swap the predictions so stronger team scores more
                         pred_dsx_goals, pred_opp_goals = pred_opp_goals, pred_dsx_goals
                         swapped = True
+                    # If they're much stronger, give them at least 1 more goal
+                    elif pred_dsx_goals == pred_opp_goals and si_diff < -10:
+                        pred_opp_goals = pred_dsx_goals + 1
                 elif si_diff > 5:  # We are significantly stronger
                     if pred_opp_goals >= pred_dsx_goals:
                         # Swap the predictions so stronger team scores more
                         pred_dsx_goals, pred_opp_goals = pred_opp_goals, pred_dsx_goals
                         swapped = True
+                    # If we're much stronger, give us at least 1 more goal
+                    elif pred_dsx_goals == pred_opp_goals and si_diff > 10:
+                        pred_dsx_goals = pred_opp_goals + 1
                 
                 # Calculate ranges for confidence assessment
                 pred_dsx_low = max(0, pred_dsx_goals - 1.5)
