@@ -866,12 +866,146 @@ elif page == "📅 Team Schedule":
         # CALENDAR VIEW
         elif view_mode == "📅 Calendar View":
             st.subheader("📅 Calendar View")
-            st.info("📅 Calendar view coming soon! For now, use List View or Week View.")
+            
+            # Initialize month/year in session state
+            if 'cal_month' not in st.session_state:
+                st.session_state.cal_month = datetime.now().month
+                st.session_state.cal_year = datetime.now().year
+            
+            # Month navigation
+            col1, col2, col3 = st.columns([1, 2, 1])
+            with col1:
+                if st.button("◀ Previous", key="prev_month", use_container_width=True):
+                    st.session_state.cal_month -= 1
+                    if st.session_state.cal_month < 1:
+                        st.session_state.cal_month = 12
+                        st.session_state.cal_year -= 1
+                    st.rerun()
+            with col2:
+                month_name = datetime(st.session_state.cal_year, st.session_state.cal_month, 1).strftime('%B %Y')
+                st.markdown(f"### {month_name}")
+            with col3:
+                if st.button("Next ▶", key="next_month", use_container_width=True):
+                    st.session_state.cal_month += 1
+                    if st.session_state.cal_month > 12:
+                        st.session_state.cal_month = 1
+                        st.session_state.cal_year += 1
+                    st.rerun()
+            
+            # Create calendar grid
+            import calendar
+            cal = calendar.monthcalendar(st.session_state.cal_year, st.session_state.cal_month)
+            
+            # Display calendar
+            st.markdown("---")
+            days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+            cols = st.columns(7)
+            for i, day in enumerate(days):
+                with cols[i]:
+                    st.markdown(f"**{day}**")
+            
+            # Display weeks
+            for week in cal:
+                cols = st.columns(7)
+                for i, day in enumerate(week):
+                    with cols[i]:
+                        if day == 0:
+                            st.write("")
+                        else:
+                            # Check if this day has events
+                            day_date = datetime(st.session_state.cal_year, st.session_state.cal_month, day)
+                            day_events = filtered[filtered['Date'].dt.date == day_date.date()]
+                            
+                            if not day_events.empty:
+                                # Color code based on event type
+                                game_count = len(day_events[day_events['EventType'] == 'Game'])
+                                practice_count = len(day_events[day_events['EventType'] == 'Practice'])
+                                
+                                if game_count > 0:
+                                    st.markdown(f"🔵 **{day}**")
+                                elif practice_count > 0:
+                                    st.markdown(f"🟣 **{day}**")
+                                
+                                # Show event details on click
+                                if st.button(f"View", key=f"day_{day}", use_container_width=True):
+                                    st.session_state.selected_date = day_date
+                            else:
+                                st.write(f"{day}")
+            
+            # Show events for selected date
+            if 'selected_date' in st.session_state:
+                st.markdown("---")
+                st.subheader(f"Events on {st.session_state.selected_date.strftime('%A, %B %d')}")
+                selected_events = filtered[filtered['Date'].dt.date == st.session_state.selected_date.date()]
+                if selected_events.empty:
+                    st.info("No events scheduled for this date")
+                else:
+                    for idx, event in selected_events.iterrows():
+                        icon = "⚽" if event['EventType'] == 'Game' else "🏃"
+                        st.write(f"{icon} **{event['Time']}** - {event['Opponent'] if event['Opponent'] else 'Practice'}")
+                        st.write(f"   📍 {event['Location']}")
+                        if event.get('UniformColor'):
+                            st.write(f"   👕 {event['UniformColor']}")
+                        if event.get('ArrivalTime'):
+                            st.write(f"   ⏰ Arrive: {event['ArrivalTime']}")
         
         # WEEK VIEW
         elif view_mode == "📆 Week View":
             st.subheader("📆 Week View")
-            st.info("📆 Week view coming soon! For now, use List View.")
+            
+            # Initialize week start in session state
+            if 'week_start' not in st.session_state:
+                today = datetime.now()
+                st.session_state.week_start = today - timedelta(days=today.weekday())
+            
+            # Week navigation
+            col1, col2, col3 = st.columns([1, 2, 1])
+            with col1:
+                if st.button("◀ Previous Week", key="prev_week", use_container_width=True):
+                    st.session_state.week_start -= timedelta(days=7)
+                    st.rerun()
+            with col2:
+                week_end = st.session_state.week_start + timedelta(days=6)
+                st.markdown(f"### {st.session_state.week_start.strftime('%b %d')} - {week_end.strftime('%b %d, %Y')}")
+            with col3:
+                if st.button("Next Week ▶", key="next_week", use_container_width=True):
+                    st.session_state.week_start += timedelta(days=7)
+                    st.rerun()
+            
+            st.markdown("---")
+            
+            # Display 7 days
+            for i in range(7):
+                day = st.session_state.week_start + timedelta(days=i)
+                day_events = filtered[filtered['Date'].dt.date == day.date()]
+                
+                if not day_events.empty or i == 0:  # Show at least first day
+                    with st.expander(f"{day.strftime('%A, %b %d')} ({len(day_events)} events)", 
+                                   expanded=(len(day_events) > 0)):
+                        if day_events.empty:
+                            st.info("No events scheduled")
+                        else:
+                            for idx, event in day_events.iterrows():
+                                icon = "⚽" if event['EventType'] == 'Game' else "🏃"
+                                st.write(f"{icon} **{event['Time']}** - {event['Opponent'] if event['Opponent'] else 'Practice'}")
+                                st.write(f"   📍 {event['Location']}")
+                                if event.get('UniformColor'):
+                                    st.write(f"   👕 {event['UniformColor']}")
+                                if event.get('ArrivalTime'):
+                                    st.write(f"   ⏰ Arrive: {event['ArrivalTime']}")
+                                
+                                # Quick availability summary for this event
+                                event_id = event['EventID']
+                                avail_data = availability[availability['EventID'] == event_id]
+                                available_count = len(avail_data[avail_data['Status'] == 'Available'])
+                                not_available_count = len(avail_data[avail_data['Status'] == 'Not Available'])
+                                maybe_count = len(avail_data[avail_data['Status'] == 'Maybe'])
+                                no_response_count = len(avail_data[avail_data['Status'] == 'No Response'])
+                                
+                                if available_count > 0 or not_available_count > 0 or maybe_count > 0:
+                                    st.write(f"   👥 **Availability:** ✅{available_count} ❌{not_available_count} ❓{maybe_count}")
+                                    if no_response_count > 0:
+                                        st.write(f"   ⚠️ {no_response_count} no response")
         
         st.markdown("---")
         
@@ -4785,6 +4919,112 @@ elif page == "⚙️ Data Manager":
             with col3:
                 if st.button("↩️ Reset", key="reset_schedule"):
                     st.rerun()
+            
+            st.markdown("---")
+            
+            # TeamSnap Import Section
+            st.subheader("📥 Import from TeamSnap")
+            st.info("💡 **Export your schedule from TeamSnap as CSV, then upload it here to merge with existing schedule.**")
+            
+            uploaded_file = st.file_uploader("Upload TeamSnap CSV Export", type=['csv'], key="teamsnap_upload")
+            
+            if uploaded_file:
+                try:
+                    # Preview uploaded data
+                    preview_df = pd.read_csv(uploaded_file)
+                    st.write("**Preview of uploaded schedule:**")
+                    st.dataframe(preview_df.head(10))
+                    
+                    col1, col2 = st.columns(2)
+                    with col1:
+                        if st.button("📥 Import & Merge", type="primary", use_container_width=True):
+                            # Call import logic from import_teamsnap_schedule.py
+                            try:
+                                # Read the uploaded file content
+                                uploaded_df = pd.read_csv(uploaded_file)
+                                
+                                # Basic mapping (simplified version of import_teamsnap_schedule.py logic)
+                                # This is a basic implementation - the full script has more sophisticated mapping
+                                new_events = []
+                                for idx, row in uploaded_df.iterrows():
+                                    # Try to detect if it's a game or practice based on common TeamSnap columns
+                                    event_type = "Game"  # Default to game
+                                    opponent = ""
+                                    
+                                    # Look for opponent in common TeamSnap column names
+                                    for col in ['Opponent', 'Away Team', 'Home Team', 'Team', 'vs']:
+                                        if col in uploaded_df.columns and pd.notna(row[col]):
+                                            opponent = str(row[col])
+                                            break
+                                    
+                                    # If no opponent found, might be a practice
+                                    if not opponent or opponent.lower() in ['practice', 'training', '']:
+                                        event_type = "Practice"
+                                        opponent = ""
+                                    
+                                    # Extract date
+                                    date_str = ""
+                                    for col in ['Date', 'Game Date', 'Event Date', 'Start Date']:
+                                        if col in uploaded_df.columns and pd.notna(row[col]):
+                                            date_str = str(row[col])
+                                            break
+                                    
+                                    # Extract time
+                                    time_str = ""
+                                    for col in ['Time', 'Start Time', 'Game Time', 'Event Time']:
+                                        if col in uploaded_df.columns and pd.notna(row[col]):
+                                            time_str = str(row[col])
+                                            break
+                                    
+                                    # Extract location
+                                    location = ""
+                                    for col in ['Location', 'Venue', 'Field', 'Address', 'Facility']:
+                                        if col in uploaded_df.columns and pd.notna(row[col]):
+                                            location = str(row[col])
+                                            break
+                                    
+                                    # Create new event
+                                    if date_str and time_str and location:
+                                        new_event = {
+                                            'EventID': len(edited_schedule) + len(new_events) + 1,
+                                            'EventType': event_type,
+                                            'Date': date_str,
+                                            'Time': time_str,
+                                            'Opponent': opponent,
+                                            'Location': location,
+                                            'FieldNumber': '',
+                                            'ArrivalTime': '',
+                                            'UniformColor': '',
+                                            'Tournament': 'Imported from TeamSnap',
+                                            'HomeAway': 'Away',
+                                            'Status': 'Upcoming',
+                                            'Notes': 'Imported from TeamSnap',
+                                            'OpponentStrengthIndex': ''
+                                        }
+                                        new_events.append(new_event)
+                                
+                                if new_events:
+                                    # Add new events to existing schedule
+                                    new_events_df = pd.DataFrame(new_events)
+                                    combined_schedule = pd.concat([edited_schedule, new_events_df], ignore_index=True)
+                                    
+                                    # Save combined schedule
+                                    combined_schedule.to_csv("team_schedule.csv", index=False)
+                                    st.success(f"✅ Imported {len(new_events)} events from TeamSnap!")
+                                    st.rerun()
+                                else:
+                                    st.warning("No valid events found in uploaded file. Check column names.")
+                                    
+                            except Exception as e:
+                                st.error(f"Import error: {e}")
+                                st.write("**Tip:** Make sure your TeamSnap CSV has columns like 'Date', 'Time', 'Location', and 'Opponent'")
+                    
+                    with col2:
+                        if st.button("❌ Cancel", use_container_width=True):
+                            st.rerun()
+                            
+                except Exception as e:
+                    st.error(f"Error reading file: {e}")
             
             st.markdown("---")
             
