@@ -2860,6 +2860,70 @@ elif page == "🏆 Division Rankings":
                 
                 st.markdown("---")
                 
+                # Tournament-specific results section
+                st.subheader("🏆 Tournament Results")
+                
+                # Check for Haunted Classic results
+                haunted_opponents = []
+                if not dsx_matches.empty:
+                    haunted_games = dsx_matches[dsx_matches['Tournament'] == '2025 Haunted Classic']
+                    if not haunted_games.empty:
+                        haunted_opponents = haunted_games['Opponent'].tolist()
+                        
+                        col1, col2, col3 = st.columns(3)
+                        
+                        with col1:
+                            st.markdown("### 🎃 2025 Haunted Classic")
+                            st.write("**DSX Performance:**")
+                            haunted_w = len(haunted_games[haunted_games['Outcome'] == 'W'])
+                            haunted_l = len(haunted_games[haunted_games['Outcome'] == 'L'])
+                            haunted_d = len(haunted_games[haunted_games['Outcome'] == 'D'])
+                            st.write(f"Record: {haunted_w}-{haunted_l}-{haunted_d}")
+                            
+                            haunted_gf = haunted_games['GF'].sum()
+                            haunted_ga = haunted_games['GA'].sum()
+                            st.write(f"Goals: {haunted_gf}-{haunted_ga}")
+                        
+                        with col2:
+                            st.markdown("### 🥇 Division Standings")
+                            # Show Haunted Classic division standings
+                            try:
+                                haunted_orange = pd.read_csv("Haunted_Classic_B08Orange_Division_Rankings.csv")
+                                dsx_in_division = haunted_orange[haunted_orange['Team'].str.contains('DSX', case=False)]
+                                if not dsx_in_division.empty:
+                                    dsx_rank = dsx_in_division.iloc[0]['Rank']
+                                    total_teams = len(haunted_orange)
+                                    st.write(f"**DSX Rank: #{int(dsx_rank)} of {total_teams}**")
+                                    st.write(f"Strength Index: {dsx_in_division.iloc[0]['StrengthIndex']:.1f}")
+                                else:
+                                    st.write("DSX not found in division data")
+                            except:
+                                st.write("Division data unavailable")
+                        
+                        with col3:
+                            st.markdown("### 🎯 Key Matchups")
+                            for idx, game in haunted_games.iterrows():
+                                opponent = game['Opponent']
+                                gf = game['GF']
+                                ga = game['GA']
+                                outcome = game['Outcome']
+                                date = game['Date']
+                                
+                                if outcome == 'W':
+                                    icon = "✅"
+                                    color = "success"
+                                elif outcome == 'D':
+                                    icon = "➖"
+                                    color = "info"
+                                else:
+                                    icon = "❌"
+                                    color = "error"
+                                
+                                st.write(f"{icon} **{date}**: {opponent}")
+                                st.write(f"   DSX {gf}-{ga} ({outcome})")
+                
+                st.markdown("---")
+                
                 # Rankings table
                 st.subheader("📊 Complete Rankings - DSX vs Opponents")
                 st.caption("Ranked by Points Per Game (PPG), then Strength Index")
