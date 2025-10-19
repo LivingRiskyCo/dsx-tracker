@@ -99,6 +99,12 @@ def main():
         "CU Fall Finale 2025 Tournament Data"
     ))
     
+    # 5b. Update Club Ohio Fall Classic Tournament Data
+    updates.append(run_script(
+        "fetch_club_ohio_fall_classic.py",
+        "Club Ohio Fall Classic 2025 Tournament Data"
+    ))
+    
     # 6. Update Common Opponent Analysis
     updates.append(run_script(
         "analyze_common_opponents.py",

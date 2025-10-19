@@ -179,6 +179,7 @@ def load_division_data():
         "Haunted_Classic_B08Orange_Division_Rankings.csv",  # 2025 Haunted Classic Orange division
         "Haunted_Classic_B08Black_Division_Rankings.csv",   # 2025 Haunted Classic Black division
         "CU_Fall_Finale_2025_Division_Rankings.csv",   # 2025 CU Fall Finale U8 Boys Platinum
+        "Club_Ohio_Fall_Classic_2025_Division_Rankings.csv",   # 2025 Club Ohio Fall Classic U09B Select III
     ]
     
     for file in division_files:
@@ -5941,7 +5942,7 @@ elif page == "⚙️ Data Manager":
     
     st.subheader("🔄 Update Data")
     
-    col1, col2, col3, col4 = st.columns(4)
+    col1, col2, col3, col4, col5 = st.columns(5)
     
     with col1:
         if st.button("Update Division", use_container_width=True):
@@ -5983,6 +5984,19 @@ elif page == "⚙️ Data Manager":
                     st.code(result.stderr)
     
     with col4:
+        if st.button("Update Club Ohio Fall Classic", use_container_width=True):
+            with st.spinner("Fetching Club Ohio Fall Classic..."):
+                import subprocess
+                result = subprocess.run(['python', 'fetch_club_ohio_fall_classic.py'], 
+                                      capture_output=True, text=True)
+                if result.returncode == 0:
+                    st.success("Club Ohio Fall Classic data updated!")
+                    refresh_data()
+                else:
+                    st.error("Error updating Club Ohio Fall Classic")
+                    st.code(result.stderr)
+    
+    with col5:
         if st.button("Update All", use_container_width=True):
             with st.spinner("Updating all data..."):
                 import subprocess
@@ -5995,6 +6009,8 @@ elif page == "⚙️ Data Manager":
                 subprocess.run(['python', 'fetch_bsa_celtic.py'])
                 # Update CU Fall Finale
                 subprocess.run(['python', 'fetch_cu_fall_finale.py'])
+                # Update Club Ohio Fall Classic
+                subprocess.run(['python', 'fetch_club_ohio_fall_classic.py'])
                 
                 st.success("All data updated!")
                 refresh_data()
