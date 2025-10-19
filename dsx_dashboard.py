@@ -3023,7 +3023,54 @@ elif page == "📊 Team Analysis":
         # ONLY show teams with actual data (from division rankings + DSX)
         teams_with_data = df['Team'].tolist()
         
-        # Filter out NaN/float values and ensure strings only
+        # Add all opponents DSX has played (even if not in divisions)
+        try:
+            matches = pd.read_csv("DSX_Matches_Fall2025.csv")
+            for opp in matches['Opponent'].dropna().unique():
+                if opp not in teams_with_data:
+                    # Create a basic opponent entry with limited data
+                    opp_matches = matches[matches['Opponent'] == opp]
+                    opp_w = len(opp_matches[opp_matches['Outcome'] == 'W'])
+                    opp_d = len(opp_matches[opp_matches['Outcome'] == 'D'])
+                    opp_l = len(opp_matches[opp_matches['Outcome'] == 'L'])
+                    opp_gf = opp_matches['GF'].sum()
+                    opp_ga = opp_matches['GA'].sum()
+                    opp_gd = opp_gf - opp_ga
+                    opp_pts = (opp_w * 3) + opp_d
+                    opp_gp = len(opp_matches)
+                    opp_ppg = opp_pts / opp_gp if opp_gp > 0 else 0
+                    opp_gf_pg = opp_gf / opp_gp if opp_gp > 0 else 0
+                    opp_ga_pg = opp_ga / opp_gp if opp_gp > 0 else 0
+                    opp_gd_pg = opp_gd / opp_gp if opp_gp > 0 else 0
+                    
+                    # Calculate basic strength index
+                    ppg_norm = max(0.0, min(3.0, opp_ppg)) / 3.0 * 100.0
+                    gdpg_norm = (max(-5.0, min(5.0, opp_gd_pg)) + 5.0) / 10.0 * 100.0
+                    opp_strength = round(0.7 * ppg_norm + 0.3 * gdpg_norm, 1)
+                    
+                    opp_row = pd.DataFrame([{
+                        'Team': opp,
+                        'Rank': 999,  # Not in tracked division
+                        'StrengthIndex': opp_strength,
+                        'W': opp_w,
+                        'L': opp_l,
+                        'D': opp_d,
+                        'GF': opp_gf_pg,
+                        'GA': opp_ga_pg,
+                        'GD': opp_gd_pg,
+                        'PPG': opp_ppg,
+                        'GP': opp_gp,
+                        'League/Division': 'DSX Opponent (Limited Data)',
+                        'SourceURL': 'DSX_Matches_Fall2025.csv'
+                    }])
+                    
+                    df = pd.concat([df, opp_row], ignore_index=True)
+                    teams_with_data.append(opp)
+        except:
+            pass
+        
+        # Update teams list after adding opponents
+        teams_with_data = df['Team'].tolist()
         teams_with_data = [t for t in teams_with_data if isinstance(t, str)]
         
         # Ensure DSX is first if present
@@ -3037,14 +3084,6 @@ elif page == "📊 Team Analysis":
             upcoming = pd.read_csv("DSX_Upcoming_Opponents.csv")
             for opp in upcoming['Opponent'].dropna().unique():
                 if opp not in teams_with_data:
-                    teams_without_data.append(opp)
-        except:
-            pass
-        
-        try:
-            matches = pd.read_csv("DSX_Matches_Fall2025.csv")
-            for opp in matches['Opponent'].dropna().unique():
-                if opp not in teams_with_data and opp not in teams_without_data:
                     teams_without_data.append(opp)
         except:
             pass
