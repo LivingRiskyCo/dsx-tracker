@@ -1,13 +1,10 @@
 EventID,EventType,Date,Time,Opponent,Location,FieldNumber,ArrivalTime,UniformColor,Tournament,HomeAway,Status,Notes,OpponentStrengthIndex
-1,Game,2025-10-18,11:20 AM,BSA Celtic 18B United,John Ankeney Soccer Complex,Field 3,11:00 AM,Blue Jerseys,MVYSA Fall 2025,Away,Upcoming,Game 1 of 2 on this day,
-2,Game,2025-10-18,3:05 PM,Club Ohio Club Ohio West 18B Academy II,John Ankeney Soccer Complex,Field 5,2:45 PM,White Jerseys,OCL BU08 White,Away,Upcoming,Game 2 of 2 on this day,
-3,Game,2025-10-19,10:05 AM,BSA Celtic 18B City,John Ankeney Soccer Complex,Field 2,9:45 AM,Blue Jerseys,MVYSA Fall 2025,Away,Upcoming,Single game,
+1,Game,2025-10-18,11:20 AM,BSA Celtic 18B United,John Ankeney Soccer Complex,ANK16,11:05 AM,Blue Jerseys,2025 Haunted Classic,Neutral,Completed,Won 2-0 - Pool Play Game 1,
+2,Game,2025-10-18,3:05 PM,Club Ohio West 18B Academy,John Ankeney Soccer Complex,ANK27,2:50 PM,White Jerseys,2025 Haunted Classic,Neutral,Completed,Lost 0-7 - Pool Play Game 2,
+3,Game,2025-10-19,10:05 AM,BSA Celtic 18B City,John Ankeney Soccer Complex,ANK29,9:50 AM,Blue Jerseys,2025 Haunted Classic,Neutral,Completed,Lost 1-2 - Pool Play Game 3,
 4,Game,2025-11-01,TBD,Club Ohio Fall Classic TBD,Hilliard,TBD,TBD,Blue Jerseys,Club Ohio Fall Classic,Neutral,Upcoming,Game 1 of 2 - Tournament placeholder,
 5,Game,2025-11-01,TBD,Club Ohio Fall Classic TBD,Hilliard,TBD,TBD,White Jerseys,Club Ohio Fall Classic,Neutral,Upcoming,Game 2 of 2 - Tournament placeholder,
 6,Game,2025-11-02,TBD,Club Ohio Fall Classic TBD,Hilliard,TBD,TBD,Blue Jerseys,Club Ohio Fall Classic,Neutral,Upcoming,Single tournament game,
 7,Practice,2025-10-16,6:00 PM,,John Ankeney Soccer Complex,Field 1,5:45 PM,Practice Gear,,Home,Upcoming,Regular practice,
 8,Practice,2025-10-23,6:00 PM,,John Ankeney Soccer Complex,Field 1,5:45 PM,Practice Gear,,Home,Upcoming,Regular practice,
-9,Game,2025-10-18,11:20 AM,BSA Celtic 18B United,John Ankeney Soccer Complex,ANK16,11:05 AM,Blue Jerseys,2025 Haunted Classic,Neutral,Completed,Pool Play Game 1 - Won 2-0,
-10,Game,2025-10-18,3:05 PM,Club Ohio West 18B Academy,John Ankeney Soccer Complex,ANK27,2:50 PM,White Jerseys,2025 Haunted Classic,Neutral,Completed,Pool Play Game 2 - Lost 0-7,
-11,Game,2025-10-19,10:05 AM,BSA Celtic 18B City,John Ankeney Soccer Complex,ANK29,9:50 AM,Blue Jerseys,2025 Haunted Classic,Neutral,Completed,Pool Play Game 3 - Lost 1-2,
 
