@@ -373,43 +373,138 @@ if page == "🎯 What's Next":
         dsx_ga_avg = dsx_stats['GA_PG']
         dsx_gd_avg = dsx_stats['GD_PG']
         
-        st.header("📅 Next 3 Games")
+        # Show recent completed games first
+        st.header("📊 Recent Results")
         st.markdown("---")
         
-        for idx, game in upcoming.head(3).iterrows():
-            opponent = game['Opponent']
-            game_date = game['Date']
-            location = game['Location']
-            league = game.get('Tournament', game.get('League', 'N/A'))
-            
-            with st.expander(f"**{game_date}**: {opponent} ({league})", expanded=(idx==0)):
-                col1, col2 = st.columns([2, 3])
+        # Get recent completed games from match history
+        recent_games = dsx_matches.tail(3)
+        
+        if not recent_games.empty:
+            for idx, game in recent_games.iterrows():
+                opponent = game['Opponent']
+                game_date = game['Date']
+                tournament = game['Tournament']
+                actual_gf = game['GF']
+                actual_ga = game['GA']
+                actual_outcome = game['Outcome']
                 
-                with col1:
-                    st.subheader("📍 Game Info")
-                    st.write(f"**Date:** {game_date}")
-                    st.write(f"**Location:** {location}")
-                    st.write(f"**League:** {league}")
-                    st.write(f"**Notes:** {game.get('Notes', 'N/A')}")
+                # Determine outcome color and icon
+                if actual_outcome == 'W':
+                    outcome_color = "success"
+                    outcome_icon = "✅"
+                    outcome_text = "WIN"
+                elif actual_outcome == 'D':
+                    outcome_color = "info"
+                    outcome_icon = "➖"
+                    outcome_text = "DRAW"
+                else:
+                    outcome_color = "error"
+                    outcome_icon = "❌"
+                    outcome_text = "LOSS"
                 
-                with col2:
-                    st.subheader("🎯 Match Prediction")
+                with st.expander(f"{outcome_icon} **{game_date}**: {opponent} - DSX {actual_gf}-{actual_ga} ({outcome_text})", expanded=(idx==0)):
+                    col1, col2 = st.columns([2, 3])
                     
-                    # Get opponent stats from consolidated division data
-                    opp_si = None
-                    opp_gf = None
-                    opp_ga = None
+                    with col1:
+                        st.subheader("📍 Game Info")
+                        st.write(f"**Date:** {game_date}")
+                        st.write(f"**Tournament:** {tournament}")
+                        st.write(f"**Result:** DSX {actual_gf}-{actual_ga}")
+                        st.write(f"**Outcome:** {outcome_text}")
                     
-                    if not all_divisions_df.empty:
-                        opp_data = all_divisions_df[all_divisions_df['Team'] == opponent]
-                        if not opp_data.empty:
-                            team = opp_data.iloc[0]
-                            opp_si = team['StrengthIndex']
-                            # Calculate per-game stats
-                            opp_gp = team.get('GP', 1)
-                            opp_gp = opp_gp if opp_gp > 0 else 1
-                            opp_gf = team.get('GF', 0) / opp_gp  # Goals per game
-                            opp_ga = team.get('GA', 0) / opp_gp  # Goals against per game
+                    with col2:
+                        st.subheader("📈 Performance Analysis")
+                        
+                        # Get opponent stats for analysis
+                        opp_si = None
+                        if not all_divisions_df.empty:
+                            opp_data = all_divisions_df[all_divisions_df['Team'] == opponent]
+                            if not opp_data.empty:
+                                opp_si = opp_data.iloc[0]['StrengthIndex']
+                        
+                        if opp_si is not None:
+                            si_diff = dsx_si - opp_si
+                            
+                            col_a, col_b, col_c = st.columns(3)
+                            
+                            with col_a:
+                                st.markdown("### 🏆 DSX Performance")
+                                st.markdown(f"**Strength Index: {dsx_si:.1f}**")
+                                st.caption(f"Goals: {actual_gf}")
+                                st.caption(f"Against: {actual_ga}")
+                            
+                            with col_b:
+                                st.markdown("### ⚔️ " + opponent)
+                                st.markdown(f"**Strength Index: {opp_si:.1f}**")
+                                st.caption(f"Expected Challenge")
+                            
+                            with col_c:
+                                if si_diff > 0:
+                                    st.markdown("### 🎯 DSX Advantage")
+                                    st.markdown(f"**+{si_diff:.1f} Points**")
+                                    if actual_outcome == 'W':
+                                        st.success("✅ Expected Win!")
+                                    else:
+                                        st.warning("⚠️ Upset Loss")
+                                elif si_diff < 0:
+                                    st.markdown("### ⚠️ Underdog")
+                                    st.markdown(f"**{si_diff:.1f} Points**")
+                                    if actual_outcome == 'W':
+                                        st.success("✅ Upset Win!")
+                                    else:
+                                        st.info("ℹ️ Expected Result")
+                                else:
+                                    st.markdown("### ⚖️ Even Match")
+                                    st.markdown("**0.0 Points**")
+                                    st.info("🤝 Fair Result")
+                        else:
+                            st.info("No division data available for opponent analysis")
+        
+        st.markdown("---")
+        
+        # Show upcoming games
+        st.header("📅 Upcoming Games")
+        st.markdown("---")
+        
+        # Filter to only upcoming games
+        upcoming_games = upcoming[upcoming['Status'] == 'Upcoming']
+        
+        if not upcoming_games.empty:
+            for idx, game in upcoming_games.head(3).iterrows():
+                opponent = game['Opponent']
+                game_date = game['Date']
+                location = game['Location']
+                league = game.get('Tournament', game.get('League', 'N/A'))
+                
+                with st.expander(f"**{game_date}**: {opponent} ({league})", expanded=(idx==0)):
+                    col1, col2 = st.columns([2, 3])
+                    
+                    with col1:
+                        st.subheader("📍 Game Info")
+                        st.write(f"**Date:** {game_date}")
+                        st.write(f"**Location:** {location}")
+                        st.write(f"**League:** {league}")
+                        st.write(f"**Notes:** {game.get('Notes', 'N/A')}")
+                    
+                    with col2:
+                        st.subheader("🎯 Match Prediction")
+                    
+                        # Get opponent stats from consolidated division data
+                        opp_si = None
+                        opp_gf = None
+                        opp_ga = None
+                        
+                        if not all_divisions_df.empty:
+                            opp_data = all_divisions_df[all_divisions_df['Team'] == opponent]
+                            if not opp_data.empty:
+                                team = opp_data.iloc[0]
+                                opp_si = team['StrengthIndex']
+                                # Calculate per-game stats
+                                opp_gp = team.get('GP', 1)
+                                opp_gp = opp_gp if opp_gp > 0 else 1
+                                opp_gf = team.get('GF', 0) / opp_gp  # Goals per game
+                                opp_ga = team.get('GA', 0) / opp_gp  # Goals against per game
                     
                     if opp_si is not None:
                         # Enhanced Strength Index display
