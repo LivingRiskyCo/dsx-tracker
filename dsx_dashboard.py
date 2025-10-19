@@ -3484,6 +3484,102 @@ elif page == "🎮 Game Predictions":
         dsx_gf_avg = dsx_stats['GF_PG']
         dsx_ga_avg = dsx_stats['GA_PG']
         
+        # Show actual results for completed games
+        st.header("📊 Recent Results vs Predictions")
+        
+        # Load match history to show actual results
+        try:
+            match_history = pd.read_csv("DSX_Matches_Fall2025.csv")
+            
+            # Show last 5 games with predictions vs actual results
+            recent_games = match_history.tail(5)
+            
+            if not recent_games.empty:
+                st.markdown("**Last 5 Games - Prediction vs Reality:**")
+                st.markdown("---")
+                
+                for idx, game in recent_games.iterrows():
+                    opponent = game['Opponent']
+                    actual_gf = game['GF']
+                    actual_ga = game['GA']
+                    actual_outcome = game['Outcome']
+                    game_date = game['Date']
+                    tournament = game['Tournament']
+                    
+                    # Get opponent stats for prediction
+                    opp_si = None
+                    opp_gf = None
+                    opp_ga = None
+                    
+                    if not all_divisions_df.empty:
+                        opp_data = all_divisions_df[all_divisions_df['Team'] == opponent]
+                        if not opp_data.empty:
+                            opp_si = opp_data.iloc[0]['StrengthIndex']
+                            opp_gp = opp_data.iloc[0].get('GP', 1)
+                            opp_gp = opp_gp if opp_gp > 0 else 1
+                            opp_gf = opp_data.iloc[0].get('GF', 0) / opp_gp
+                            opp_ga = opp_data.iloc[0].get('GA', 0) / opp_gp
+                    
+                    # Calculate what the prediction would have been
+                    if opp_si is not None:
+                        si_diff = dsx_si - opp_si
+                        si_impact = si_diff * 0.08
+                        pred_dsx_goals = max(0.5, dsx_gf_avg + si_impact)
+                        pred_opp_goals = max(0.5, (opp_gf if opp_gf else dsx_ga_avg) - si_impact)
+                        
+                        # Ensure stronger team scores more
+                        if si_diff < -5 and pred_dsx_goals >= pred_opp_goals:
+                            pred_dsx_goals, pred_opp_goals = pred_opp_goals, pred_dsx_goals
+                        elif si_diff > 5 and pred_opp_goals >= pred_dsx_goals:
+                            pred_dsx_goals, pred_opp_goals = pred_opp_goals, pred_dsx_goals
+                        
+                        pred_dsx = round(pred_dsx_goals)
+                        pred_opp = round(pred_opp_goals)
+                        
+                        # Determine if prediction was accurate
+                        pred_outcome = "W" if pred_dsx > pred_opp else ("D" if pred_dsx == pred_opp else "L")
+                        actual_outcome_clean = actual_outcome
+                        
+                        # Color coding for accuracy
+                        if pred_outcome == actual_outcome_clean:
+                            accuracy_color = "✅"
+                            accuracy_text = "CORRECT"
+                        else:
+                            accuracy_color = "❌"
+                            accuracy_text = "WRONG"
+                        
+                        # Display the comparison
+                        col1, col2, col3, col4 = st.columns([2, 1, 1, 1])
+                        
+                        with col1:
+                            st.write(f"**{game_date}** vs {opponent}")
+                            st.caption(f"{tournament}")
+                        
+                        with col2:
+                            st.write("**Predicted:**")
+                            st.write(f"DSX {pred_dsx}-{pred_opp}")
+                            st.caption(f"({pred_outcome})")
+                        
+                        with col3:
+                            st.write("**Actual:**")
+                            st.write(f"DSX {actual_gf}-{actual_ga}")
+                            st.caption(f"({actual_outcome_clean})")
+                        
+                        with col4:
+                            st.write("**Result:**")
+                            st.write(f"{accuracy_color} {accuracy_text}")
+                            if accuracy_color == "✅":
+                                st.success("Prediction Hit!")
+                            else:
+                                st.error("Prediction Miss")
+                        
+                        st.markdown("---")
+            else:
+                st.info("No recent games found to compare predictions.")
+                
+        except Exception as e:
+            st.warning(f"Could not load match history: {str(e)}")
+        
         # Prediction Calculator
         st.header("🔮 Match Predictor")
         
