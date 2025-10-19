@@ -178,6 +178,7 @@ def load_division_data():
         "MVYSA_B09_3_Division_Rankings.csv",          # 6 teams (BSA Celtic division)
         "Haunted_Classic_B08Orange_Division_Rankings.csv",  # 2025 Haunted Classic Orange division
         "Haunted_Classic_B08Black_Division_Rankings.csv",   # 2025 Haunted Classic Black division
+        "CU_Fall_Finale_2025_Division_Rankings.csv",   # 2025 CU Fall Finale U8 Boys Platinum
     ]
     
     for file in division_files:
