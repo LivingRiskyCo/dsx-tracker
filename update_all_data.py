@@ -93,7 +93,13 @@ def main():
         "Upcoming Opponent Analysis & Scouting Reports"
     ))
     
-    # 5. Update Common Opponent Analysis
+    # 5. Update CU Fall Finale Tournament Data
+    updates.append(run_script(
+        "fetch_cu_fall_finale.py",
+        "CU Fall Finale 2025 Tournament Data"
+    ))
+    
+    # 6. Update Common Opponent Analysis
     updates.append(run_script(
         "analyze_common_opponents.py",
         "Common Opponent Matrix & Comparisons"

@@ -5941,7 +5941,7 @@ elif page == "⚙️ Data Manager":
     
     st.subheader("🔄 Update Data")
     
-    col1, col2, col3 = st.columns(3)
+    col1, col2, col3, col4 = st.columns(4)
     
     with col1:
         if st.button("Update Division", use_container_width=True):
@@ -5970,6 +5970,19 @@ elif page == "⚙️ Data Manager":
                     st.code(result.stderr)
     
     with col3:
+        if st.button("Update CU Fall Finale", use_container_width=True):
+            with st.spinner("Fetching CU Fall Finale..."):
+                import subprocess
+                result = subprocess.run(['python', 'fetch_cu_fall_finale.py'], 
+                                      capture_output=True, text=True)
+                if result.returncode == 0:
+                    st.success("CU Fall Finale data updated!")
+                    refresh_data()
+                else:
+                    st.error("Error updating CU Fall Finale")
+                    st.code(result.stderr)
+    
+    with col4:
         if st.button("Update All", use_container_width=True):
             with st.spinner("Updating all data..."):
                 import subprocess
@@ -5980,6 +5993,8 @@ elif page == "⚙️ Data Manager":
                 subprocess.run(['python', 'fetch_division_schedules.py'])
                 # Update BSA Celtic
                 subprocess.run(['python', 'fetch_bsa_celtic.py'])
+                # Update CU Fall Finale
+                subprocess.run(['python', 'fetch_cu_fall_finale.py'])
                 
                 st.success("All data updated!")
                 refresh_data()
