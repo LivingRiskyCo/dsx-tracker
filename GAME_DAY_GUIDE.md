@@ -37,6 +37,11 @@
 - **🔄 Reset Timer** - Start current half over
 - **⏹️ End Game** - Finish and see summary
 
+### 🎯 **Real Soccer Timer**
+- **Continuous Clock** - Timer runs like real soccer (no auto-pause)
+- **Manual Pause** - Only for injuries or timeouts
+- **Visual Indicator** - Shows "Timer running" status
+
 ---
 
 ## 📱 Parent Live View
@@ -65,9 +70,10 @@ Example: `http://192.168.1.100:8502`
 ## 🎯 Pro Tips
 
 ### Fast Recording
-- ⏸️ **Pause during goals** - Timer stops, you can calmly record
+- ⏱️ **Timer keeps running** - Enter details while clock continues (like real soccer)
 - 🔄 **Track subs early** - Keeps "on field" list accurate
 - 📝 **Add notes** - "PK", "header", "solo run" for memory
+- ⏸️ **Pause only for injuries** - Use manual pause for timeouts/injuries
 
 ### Accuracy
 - ✅ **Double-check scorer** - Easy to tap wrong player

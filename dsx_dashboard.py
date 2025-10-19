@@ -176,6 +176,8 @@ def load_division_data():
         "OCL_BU08_Stars_Division_Rankings.csv",       # 5v5 Stars division
         "OCL_BU08_Stars_7v7_Division_Rankings.csv",   # 7v7 Stars division (Elite FC Arsenal)
         "MVYSA_B09_3_Division_Rankings.csv",          # 6 teams (BSA Celtic division)
+        "Haunted_Classic_B08Orange_Division_Rankings.csv",  # 2025 Haunted Classic Orange division
+        "Haunted_Classic_B08Black_Division_Rankings.csv",   # 2025 Haunted Classic Black division
     ]
     
     for file in division_files:
@@ -1666,6 +1668,10 @@ elif page == "🎮 Live Game Tracker":
                 st.session_state.last_update = time.time()
                 st.rerun()
         
+        # Show timer status
+        if st.session_state.timer_running:
+            st.success("⏱️ Timer running - Enter details while clock continues")
+        
         with col2:
             if st.button("⏭️ Next Half", use_container_width=True):
                 if st.session_state.current_half == 1:
@@ -1692,7 +1698,21 @@ elif page == "🎮 Live Game Tracker":
             if st.button("🔄 Refresh", use_container_width=True):
                 st.rerun()
         
-        # Update timer
+        # Manual pause/resume for injuries/timeouts only
+        if st.session_state.timer_running:
+            col6, col7 = st.columns(2)
+            with col6:
+                if st.button("⏸️ Pause (Injury)", use_container_width=True, help="Pause timer for injuries or timeouts"):
+                    st.session_state.timer_running = False
+                    st.session_state.last_update = time.time()
+                    st.rerun()
+            with col7:
+                if st.button("▶️ Resume", use_container_width=True, help="Resume timer after injury timeout"):
+                    st.session_state.timer_running = True
+                    st.session_state.last_update = time.time()
+                    st.rerun()
+        
+        # Update timer - Runs continuously like real soccer clock
         if st.session_state.timer_running:
             if st.session_state.last_update:
                 elapsed = time.time() - st.session_state.last_update

@@ -72,3 +72,4 @@ except FileNotFoundError:
     print("[ERROR] BSA_Celtic_Schedules.csv not found!")
     print("Cannot calculate actual goals without schedule data.")
 
+
