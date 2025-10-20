@@ -125,6 +125,12 @@ def fetch_ocl_stripes_results():
         # Create DataFrame
         df = pd.DataFrame(all_teams)
         
+        # Rename columns to match expected format
+        df = df.rename(columns={
+            'MP': 'GP',  # Matches Played -> Games Played
+            'PTS': 'Pts'  # Points -> Pts
+        })
+        
         # Add metadata
         df['League/Division'] = 'OSPL/COPL/OCL Fall 2025 - BU08 5v5 Stripes'
         df['SourceURL'] = url
