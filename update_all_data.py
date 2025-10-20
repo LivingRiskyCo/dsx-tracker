@@ -105,6 +105,12 @@ def main():
         "Club Ohio Fall Classic 2025 Tournament Data"
     ))
     
+    # 5c. Update OCL Stripes Live Results
+    updates.append(run_script(
+        "fetch_ocl_stripes_results.py",
+        "OCL Stripes Fall 2025 Live Results"
+    ))
+    
     # 6. Update Common Opponent Analysis
     updates.append(run_script(
         "analyze_common_opponents.py",

@@ -5942,7 +5942,7 @@ elif page == "⚙️ Data Manager":
     
     st.subheader("🔄 Update Data")
     
-    col1, col2, col3, col4, col5 = st.columns(5)
+    col1, col2, col3, col4, col5, col6 = st.columns(6)
     
     with col1:
         if st.button("Update Division", use_container_width=True):
@@ -5997,6 +5997,19 @@ elif page == "⚙️ Data Manager":
                     st.code(result.stderr)
     
     with col5:
+        if st.button("Update OCL Stripes Results", use_container_width=True):
+            with st.spinner("Fetching OCL Stripes results..."):
+                import subprocess
+                result = subprocess.run(['python', 'fetch_ocl_stripes_results.py'], 
+                                      capture_output=True, text=True)
+                if result.returncode == 0:
+                    st.success("OCL Stripes results updated!")
+                    refresh_data()
+                else:
+                    st.error("Error updating OCL Stripes results")
+                    st.code(result.stderr)
+    
+    with col6:
         if st.button("Update All", use_container_width=True):
             with st.spinner("Updating all data..."):
                 import subprocess
@@ -6011,6 +6024,8 @@ elif page == "⚙️ Data Manager":
                 subprocess.run(['python', 'fetch_cu_fall_finale.py'])
                 # Update Club Ohio Fall Classic
                 subprocess.run(['python', 'fetch_club_ohio_fall_classic.py'])
+                # Update OCL Stripes Results
+                subprocess.run(['python', 'fetch_ocl_stripes_results.py'])
                 
                 st.success("All data updated!")
                 refresh_data()
