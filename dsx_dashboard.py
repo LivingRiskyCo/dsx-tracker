@@ -369,6 +369,13 @@ if page == "🎯 What's Next":
         # Load division data for predictions
         all_divisions_df = load_division_data()
         
+        # Helper function to normalize team names for matching
+        def normalize_name(name):
+            """Normalize team name for matching (strip, lower, remove extra spaces)"""
+            if pd.isna(name):
+                return ""
+            return ' '.join(str(name).strip().split()).lower()
+        
         # Calculate DSX stats dynamically
         dsx_stats = calculate_dsx_stats()
         dsx_si = dsx_stats['StrengthIndex']
@@ -805,22 +812,68 @@ if page == "🎯 What's Next":
                     with col2:
                         st.subheader("🎯 Head-to-Head Prediction")
                     
-                        # Get opponent stats from consolidated division data
+                        # Get opponent stats from consolidated division data (with fuzzy matching)
                         opp_si = None
                         opp_gf = None
                         opp_ga = None
                         opp_gp = 1
                         
                         if not all_divisions_df.empty:
+                            # Try exact match first
                             opp_data = all_divisions_df[all_divisions_df['Team'] == opponent]
+                            
+                            # If no exact match, try case-insensitive
+                            if opp_data.empty:
+                                opp_normalized = normalize_name(opponent)
+                                for idx, row in all_divisions_df.iterrows():
+                                    team_normalized = normalize_name(row['Team'])
+                                    if team_normalized == opp_normalized:
+                                        opp_data = all_divisions_df.iloc[[idx]]
+                                        break
+                            
+                            # If still no match, try fuzzy matching
+                            if opp_data.empty:
+                                opp_normalized = normalize_name(opponent)
+                                opp_words = [w for w in opp_normalized.split() if len(w) > 3]
+                                
+                                best_match = None
+                                best_score = 0
+                                
+                                for idx, row in all_divisions_df.iterrows():
+                                    team_normalized = normalize_name(row['Team'])
+                                    team_words = [w for w in team_normalized.split() if len(w) > 3]
+                                    
+                                    match_score = sum(1 for word in opp_words if word in team_normalized)
+                                    match_score += sum(1 for word in team_words if word in opp_normalized)
+                                    
+                                    if match_score >= 2 and match_score > best_score:
+                                        best_score = match_score
+                                        best_match = row['Team']
+                                
+                                if best_match:
+                                    opp_data = all_divisions_df[all_divisions_df['Team'] == best_match]
+                            
                             if not opp_data.empty:
                                 team = opp_data.iloc[0]
                                 opp_si = team['StrengthIndex']
                                 # Calculate per-game stats
                                 opp_gp = team.get('GP', 1)
                                 opp_gp = opp_gp if opp_gp > 0 else 1
-                                opp_gf = team.get('GF', 0) / opp_gp  # Goals per game
-                                opp_ga = team.get('GA', 0) / opp_gp  # Goals against per game
+                                
+                                # Check if GF/GA are totals or per-game already
+                                gf_val = team.get('GF', 0)
+                                ga_val = team.get('GA', 0)
+                                
+                                # If GF > 10, likely totals (divide by GP), otherwise might be per-game
+                                if gf_val > 10:
+                                    opp_gf = gf_val / opp_gp if opp_gp > 0 else 0
+                                else:
+                                    opp_gf = gf_val
+                                
+                                if ga_val > 10:
+                                    opp_ga = ga_val / opp_gp if opp_gp > 0 else 0
+                                else:
+                                    opp_ga = ga_val
                     
                     if opp_si is not None:
                         # Enhanced Strength Index display
@@ -995,6 +1048,141 @@ if page == "🎯 What's Next":
                             st.info(f"⚖️ **Win Probability: {win_prob}%**")
                         
                         st.write(f"Draw: {draw_prob}% | Loss: {loss_prob}%")
+                        
+                        # Opponent's Full Season History & Stats
+                        st.markdown("---")
+                        st.subheader("📊 Opponent's Full Season History")
+                        
+                        # Try to find opponent in division data with fuzzy matching
+                        opp_division_row = pd.DataFrame()
+                        data_found = False
+                        
+                        if not all_divisions_df.empty:
+                            # Try exact match first
+                            opp_division_row = all_divisions_df[all_divisions_df['Team'] == opponent].copy()
+                            
+                            # If no exact match, try case-insensitive match
+                            if opp_division_row.empty:
+                                selected_normalized = normalize_name(opponent)
+                                for idx, row in all_divisions_df.iterrows():
+                                    team_name = str(row['Team'])
+                                    if normalize_name(team_name) == selected_normalized:
+                                        opp_division_row = all_divisions_df.iloc[[idx]]
+                                        data_found = True
+                                        break
+                            
+                            # If still no match, try fuzzy matching
+                            if opp_division_row.empty:
+                                selected_normalized = normalize_name(opponent)
+                                opp_words = [w for w in selected_normalized.split() if len(w) > 3]
+                                
+                                matches = []
+                                for idx, row in all_divisions_df.iterrows():
+                                    team_normalized = normalize_name(row['Team'])
+                                    match_score = sum(1 for word in opp_words if word in team_normalized)
+                                    if match_score >= 2:
+                                        matches.append((match_score, idx, row['Team']))
+                                
+                                if matches:
+                                    matches.sort(reverse=True)
+                                    best_match_idx = matches[0][1]
+                                    best_match_name = matches[0][2]
+                                    opp_division_row = all_divisions_df.iloc[[best_match_idx]]
+                                    st.warning(f"⚠️ **Fuzzy Match Found**: Using data for **{best_match_name}** (similar to {opponent})")
+                                    data_found = True
+                            
+                            if not opp_division_row.empty:
+                                data_found = True
+                                opp_full = opp_division_row.iloc[0]
+                                
+                                # Show their complete season stats
+                                col1, col2, col3, col4, col5 = st.columns(5)
+                                
+                                with col1:
+                                    st.metric("Overall Record", f"{int(opp_full.get('W', 0))}-{int(opp_full.get('L', 0))}-{int(opp_full.get('D', 0))}")
+                                    st.caption(f"Games Played: {int(opp_full.get('GP', 0))}")
+                                
+                                with col2:
+                                    opp_ppg = opp_full.get('PPG', 0)
+                                    st.metric("Points Per Game", f"{opp_ppg:.2f}")
+                                    opp_pts = opp_full.get('Pts', opp_full.get('Points', 0))
+                                    if opp_pts > 0:
+                                        st.caption(f"Total Points: {int(opp_pts)}")
+                                
+                                with col3:
+                                    opp_gf = opp_full.get('GF', 0)
+                                    opp_ga = opp_full.get('GA', 0)
+                                    opp_gp_val = opp_full.get('GP', 1)
+                                    if opp_gp_val > 0:
+                                        # Handle both totals and per-game
+                                        if opp_gf > 10:
+                                            opp_gf_pg = opp_gf / opp_gp_val
+                                        else:
+                                            opp_gf_pg = opp_gf
+                                        if opp_ga > 10:
+                                            opp_ga_pg = opp_ga / opp_gp_val
+                                        else:
+                                            opp_ga_pg = opp_ga
+                                        st.metric("Goals", f"{opp_gf_pg:.1f} - {opp_ga_pg:.1f}")
+                                        st.caption(f"Per game averages")
+                                
+                                with col4:
+                                    opp_gd = opp_full.get('GD', 0)
+                                    opp_gp_val = opp_full.get('GP', 1)
+                                    if opp_gp_val > 0:
+                                        if abs(opp_gd) > 10:
+                                            opp_gd_pg = opp_gd / opp_gp_val
+                                        else:
+                                            opp_gd_pg = opp_gd
+                                    else:
+                                        opp_gd_pg = 0
+                                    st.metric("Goal Difference", f"{opp_gd_pg:+.1f}")
+                                    st.caption(f"Per game")
+                                
+                                with col5:
+                                    opp_rank = opp_full.get('Rank', opp_full.get('rank', 'N/A'))
+                                    opp_si_full = opp_full.get('StrengthIndex', opp_full.get('strength_index', 0))
+                                    if opp_rank != 'N/A':
+                                        st.metric("Division Rank", f"#{int(opp_rank)}")
+                                    else:
+                                        st.metric("Division Rank", "N/A")
+                                    st.caption(f"Strength: {opp_si_full:.1f}")
+                                
+                                st.markdown("---")
+                                
+                                # Division context
+                                division_name = opp_full.get('Division', opp_full.get('League/Division', 'Unknown'))
+                                league_name = opp_full.get('League', opp_full.get('League/Division', 'Unknown'))
+                                
+                                st.subheader("🏆 Division/League Context")
+                                
+                                col1, col2 = st.columns(2)
+                                
+                                with col1:
+                                    st.write(f"**League:** {league_name}")
+                                    st.write(f"**Division:** {division_name}")
+                                    if opp_rank != 'N/A':
+                                        st.write(f"**Position:** #{int(opp_rank)}")
+                                
+                                with col2:
+                                    # Performance assessment
+                                    if opp_ppg >= 2.0:
+                                        st.success("🔥 **Strong Season**")
+                                        st.write(f"PPG: {opp_ppg:.2f} - Top tier performance")
+                                    elif opp_ppg >= 1.5:
+                                        st.info("👍 **Good Season**")
+                                        st.write(f"PPG: {opp_ppg:.2f} - Solid performance")
+                                    elif opp_ppg >= 1.0:
+                                        st.warning("📊 **Average Season**")
+                                        st.write(f"PPG: {opp_ppg:.2f} - Competitive level")
+                                    else:
+                                        st.error("⚠️ **Struggling Season**")
+                                        st.write(f"PPG: {opp_ppg:.2f} - Below average")
+                        
+                        if not data_found and opp_si is not None:
+                            st.warning("⚠️ **Limited Data Available**")
+                            st.write("This opponent is not in a tracked division, so we only have basic prediction data.")
+                            st.info("💡 Full season history requires access to this team's league/division schedule.")
                     else:
                         st.warning("Opponent data not available. Run data update to get predictions.")
                 
@@ -3545,6 +3733,211 @@ elif page == "🏆 Division Rankings":
                         ),
                     }
                 )
+                
+                # Team Details Selector
+                st.markdown("---")
+                st.subheader("🔍 View Team Details")
+                
+                # Get list of teams (clean names, without bold formatting)
+                team_list = combined_df['Team'].tolist()
+                # Clean team names for selector (remove bold formatting)
+                clean_team_names = [team.replace('🟢 **', '').replace('**', '') if '**' in str(team) else str(team) for team in team_list]
+                
+                selected_team_idx = st.selectbox(
+                    "Select a team to view detailed information:",
+                    options=range(len(clean_team_names)),
+                    format_func=lambda x: f"#{combined_df.iloc[x]['Rank']} - {clean_team_names[x]}",
+                    key="rankings_team_selector"
+                )
+                
+                if selected_team_idx is not None:
+                    selected_team_row = combined_df.iloc[selected_team_idx]
+                    selected_team_name = clean_team_names[selected_team_idx]
+                    
+                    st.markdown("---")
+                    st.header(f"📊 {selected_team_name} - Full Details")
+                    
+                    # Show basic stats
+                    col1, col2, col3, col4 = st.columns(4)
+                    
+                    with col1:
+                        st.metric("Rank", f"#{int(selected_team_row['Rank'])}")
+                        st.metric("Games Played", int(selected_team_row['GP']))
+                    
+                    with col2:
+                        st.metric("Record", f"{int(selected_team_row['W'])}-{int(selected_team_row['L'])}-{int(selected_team_row['D'])}")
+                        st.metric("Points", int(selected_team_row['Pts']))
+                    
+                    with col3:
+                        st.metric("PPG", f"{selected_team_row['PPG']:.2f}")
+                        st.metric("Strength Index", f"{selected_team_row['StrengthIndex']:.1f}")
+                    
+                    with col4:
+                        st.metric("Goals/Game", f"{selected_team_row['GF']:.2f}")
+                        st.metric("Goals Against/Game", f"{selected_team_row['GA']:.2f}")
+                        st.metric("Goal Diff/Game", f"{selected_team_row['GD']:+.2f}")
+                    
+                    # Show full season history if available in division data
+                    st.markdown("---")
+                    st.subheader("📈 Full Season History")
+                    
+                    # Try to find team in division data
+                    if not df.empty:
+                        opp_division_row = df[df['Team'] == selected_team_name].copy()
+                        
+                        # Try fuzzy matching if no exact match
+                        if opp_division_row.empty:
+                            selected_normalized = normalize_name(selected_team_name)
+                            for idx, row in df.iterrows():
+                                team_normalized = normalize_name(row['Team'])
+                                if team_normalized == selected_normalized:
+                                    opp_division_row = df.iloc[[idx]]
+                                    break
+                        
+                        # Try fuzzy match
+                        if opp_division_row.empty:
+                            selected_normalized = normalize_name(selected_team_name)
+                            opp_words = [w for w in selected_normalized.split() if len(w) > 3]
+                            matches = []
+                            for idx, row in df.iterrows():
+                                team_normalized = normalize_name(row['Team'])
+                                match_score = sum(1 for word in opp_words if word in team_normalized)
+                                if match_score >= 2:
+                                    matches.append((match_score, idx, row['Team']))
+                            if matches:
+                                matches.sort(reverse=True)
+                                best_match_idx = matches[0][1]
+                                opp_division_row = df.iloc[[best_match_idx]]
+                        
+                        if not opp_division_row.empty:
+                            opp_full = opp_division_row.iloc[0]
+                            
+                            # Division/League info
+                            division_name = opp_full.get('Division', opp_full.get('League/Division', 'Unknown'))
+                            league_name = opp_full.get('League', opp_full.get('League/Division', 'Unknown'))
+                            source_url = opp_full.get('SourceURL', 'N/A')
+                            
+                            col1, col2 = st.columns(2)
+                            
+                            with col1:
+                                st.write(f"**League:** {league_name}")
+                                st.write(f"**Division:** {division_name}")
+                                if source_url != 'N/A':
+                                    st.write(f"**Source:** [View Division Data]({source_url})")
+                            
+                            with col2:
+                                # Performance assessment
+                                opp_ppg_full = opp_full.get('PPG', 0)
+                                if opp_ppg_full >= 2.0:
+                                    st.success("🔥 **Strong Season** - Top tier performance")
+                                elif opp_ppg_full >= 1.5:
+                                    st.info("👍 **Good Season** - Solid performance")
+                                elif opp_ppg_full >= 1.0:
+                                    st.warning("📊 **Average Season** - Competitive level")
+                                else:
+                                    st.error("⚠️ **Struggling Season** - Below average")
+                            
+                            # Goals analysis
+                            st.markdown("---")
+                            st.subheader("⚽ Goals Analysis")
+                            
+                            opp_gp_full = opp_full.get('GP', 1)
+                            opp_gf_full = opp_full.get('GF', 0)
+                            opp_ga_full = opp_full.get('GA', 0)
+                            
+                            # Handle totals vs per-game
+                            if opp_gp_full > 0:
+                                if opp_gf_full > 10:
+                                    opp_gf_pg_full = opp_gf_full / opp_gp_full
+                                else:
+                                    opp_gf_pg_full = opp_gf_full
+                                
+                                if opp_ga_full > 10:
+                                    opp_ga_pg_full = opp_ga_full / opp_gp_full
+                                else:
+                                    opp_ga_pg_full = opp_ga_full
+                            else:
+                                opp_gf_pg_full = 0
+                                opp_ga_pg_full = 0
+                            
+                            col1, col2 = st.columns(2)
+                            
+                            with col1:
+                                st.write(f"**Goals For:** {opp_gf_pg_full:.2f} per game")
+                                if opp_gf_pg_full >= 3.0:
+                                    st.success("🔥 High scoring team - strong attack")
+                                elif opp_gf_pg_full >= 2.0:
+                                    st.info("⚽ Moderate scoring - decent attack")
+                                else:
+                                    st.warning("📉 Low scoring - offensive struggles")
+                            
+                            with col2:
+                                st.write(f"**Goals Against:** {opp_ga_pg_full:.2f} per game")
+                                if opp_ga_pg_full <= 1.0:
+                                    st.success("🛡️ Strong defense - tough to score on")
+                                elif opp_ga_pg_full <= 2.0:
+                                    st.info("⚠️ Average defense - some gaps")
+                                else:
+                                    st.warning("🛡️ Weak defense - scoring opportunities")
+                        else:
+                            st.info("💡 This team's data comes from head-to-head matches with DSX only.")
+                            st.write("**Data Source:** DSX Match History")
+                            st.write(f"**Games vs DSX:** {int(selected_team_row['GP'])}")
+                    
+                    # DSX vs This Team Head-to-Head
+                    st.markdown("---")
+                    st.subheader("⚔️ DSX vs This Team - Head-to-Head")
+                    
+                    if not dsx_matches.empty:
+                        h2h_games = dsx_matches[dsx_matches['Opponent'] == selected_team_name].copy()
+                        
+                        if not h2h_games.empty:
+                            dsx_wins = len(h2h_games[h2h_games['Outcome'] == 'W'])
+                            dsx_draws = len(h2h_games[h2h_games['Outcome'] == 'D'])
+                            dsx_losses = len(h2h_games[h2h_games['Outcome'] == 'L'])
+                            
+                            col1, col2, col3 = st.columns(3)
+                            
+                            with col1:
+                                st.metric("DSX Record", f"{dsx_wins}-{dsx_draws}-{dsx_losses}")
+                            
+                            dsx_h2h_gf = h2h_games['GF'].sum()
+                            dsx_h2h_ga = h2h_games['GA'].sum()
+                            
+                            with col2:
+                                st.metric("Goals Scored", f"{dsx_h2h_gf:.0f}")
+                            
+                            with col3:
+                                st.metric("Goals Against", f"{dsx_h2h_ga:.0f}")
+                            
+                            st.markdown("---")
+                            st.subheader("📅 Game-by-Game History")
+                            
+                            for idx, game in h2h_games.iterrows():
+                                date = game['Date']
+                                tournament = game.get('Tournament', 'N/A')
+                                gf = game['GF']
+                                ga = game['GA']
+                                outcome = game['Outcome']
+                                
+                                if outcome == 'W':
+                                    icon = "✅"
+                                    color = "success"
+                                elif outcome == 'D':
+                                    icon = "➖"
+                                    color = "info"
+                                else:
+                                    icon = "❌"
+                                    color = "error"
+                                
+                                st.write(f"{icon} **{date}** - {tournament}")
+                                st.write(f"   DSX {gf} - {ga} {selected_team_name} ({outcome})")
+                                st.write("")
+                        else:
+                            st.info("No head-to-head history yet.")
+                    
+                    else:
+                        st.info("No match history available.")
                 
                 # Visualizations
                 st.markdown("---")
