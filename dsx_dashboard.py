@@ -381,7 +381,20 @@ if page == "🎯 What's Next":
         st.markdown("---")
         
         # Get recent completed games from match history
-        recent_games = dsx_matches.tail(3)
+        # Filter to only completed games (those with Outcome) and sort by date descending
+        completed_games = dsx_matches[dsx_matches['Outcome'].notna()].copy()
+        
+        if not completed_games.empty:
+            # Convert date to datetime for proper sorting
+            try:
+                completed_games['Date_Parsed'] = pd.to_datetime(completed_games['Date'], errors='coerce')
+                completed_games = completed_games.sort_values('Date_Parsed', ascending=False)
+            except:
+                # If date parsing fails, try sorting by index (newest at bottom)
+                completed_games = completed_games.sort_index(ascending=False)
+            
+            # Get last 3 (most recent) completed games
+            recent_games = completed_games.head(3)
         
         if not recent_games.empty:
             for idx, game in recent_games.iterrows():
@@ -474,22 +487,22 @@ if page == "🎯 What's Next":
         st.header("📈 Form Trend Analysis")
         st.markdown("---")
         
-        # Analyze last 5 games for form trends
+        # Analyze last 7 games for form trends (tournaments typically 3-4 games)
         if len(dsx_matches) >= 3:
-            last_5_games = dsx_matches.tail(5)
+            last_7_games = dsx_matches.tail(7)
             
             # Calculate form metrics
-            form_wins = len(last_5_games[last_5_games['Outcome'] == 'W'])
-            form_draws = len(last_5_games[last_5_games['Outcome'] == 'D'])
-            form_losses = len(last_5_games[last_5_games['Outcome'] == 'L'])
+            form_wins = len(last_7_games[last_7_games['Outcome'] == 'W'])
+            form_draws = len(last_7_games[last_7_games['Outcome'] == 'D'])
+            form_losses = len(last_7_games[last_7_games['Outcome'] == 'L'])
             form_points = (form_wins * 3) + form_draws
-            form_ppg = form_points / len(last_5_games)
+            form_ppg = form_points / len(last_7_games)
             
             # Goals trend
-            form_gf = last_5_games['GF'].sum()
-            form_ga = last_5_games['GA'].sum()
-            form_gf_pg = form_gf / len(last_5_games)
-            form_ga_pg = form_ga / len(last_5_games)
+            form_gf = last_7_games['GF'].sum()
+            form_ga = last_7_games['GA'].sum()
+            form_gf_pg = form_gf / len(last_7_games)
+            form_ga_pg = form_ga / len(last_7_games)
             form_gd_pg = form_gf_pg - form_ga_pg
             
             # Compare to season average
@@ -507,7 +520,7 @@ if page == "🎯 What's Next":
             col1, col2, col3, col4 = st.columns(4)
             
             with col1:
-                st.metric("Last 5 Games", f"{form_wins}-{form_losses}-{form_draws}", 
+                st.metric("Last 7 Games", f"{form_wins}-{form_losses}-{form_draws}", 
                          f"{ppg_trend} ({form_ppg:.2f} PPG)")
             
             with col2:
@@ -544,7 +557,7 @@ if page == "🎯 What's Next":
             if form_gd_pg < -1.0:
                 recommendations.append("⚖️ **Balance Needed**: Goal difference negative. Focus on both ends of the field.")
             
-            if form_wins == 0 and len(last_5_games) >= 3:
+            if form_wins == 0 and len(last_7_games) >= 3:
                 recommendations.append("💪 **Confidence Building**: No wins in recent games. Focus on small victories and team morale.")
             
             if form_wins >= 3:
@@ -556,9 +569,10 @@ if page == "🎯 What's Next":
                     st.write(rec)
             
             # Recent games breakdown
-            st.subheader("📋 Last 5 Games Breakdown")
+            st.subheader("📋 Last 7 Games Breakdown")
+            st.caption("💡 Shows last 7 games to capture full tournament results (3-4 games per tournament)")
             
-            for idx, game in last_5_games.iterrows():
+            for idx, game in last_7_games.iterrows():
                 opponent = game['Opponent']
                 gf = game['GF']
                 ga = game['GA']
@@ -599,6 +613,7 @@ if page == "🎯 What's Next":
         
         else:
             st.info("📊 **Form Analysis Available After 3+ Games** - Play more games to see trend analysis.")
+            st.caption("💡 Once you have 7+ games, you'll see analysis covering 2+ tournaments!")
         
         st.markdown("---")
         
@@ -759,11 +774,19 @@ if page == "🎯 What's Next":
         
         st.markdown("---")
         
-        # Filter to only upcoming games
-        upcoming_games = upcoming[upcoming['Status'] == 'Upcoming']
+        # Filter to only upcoming games (case-insensitive)
+        upcoming_games = upcoming[upcoming['Status'].str.upper() == 'UPCOMING'].copy()
         
         if not upcoming_games.empty:
-            for idx, game in upcoming_games.head(3).iterrows():
+            # Sort by date for proper chronological order
+            try:
+                upcoming_games['Date_Parsed'] = pd.to_datetime(upcoming_games['Date'], errors='coerce')
+                upcoming_games = upcoming_games.sort_values('Date_Parsed', ascending=True)
+            except:
+                # If date parsing fails, keep original order
+                pass
+            
+            for idx, game in upcoming_games.head(5).iterrows():
                 opponent = game['Opponent']
                 game_date = game['Date']
                 location = game['Location']
@@ -2910,7 +2933,7 @@ elif page == "💬 Team Chat":
 elif page == "🏆 Division Rankings":
     st.title("🏆 Competitive Rankings - DSX vs Opponents")
     
-    st.info("📊 **DSX isn't in a division, but here's how you rank against all the teams you play!**")
+    st.info("📊 **See how DSX ranks among your peers - teams that also play tournament schedules like DSX.**")
     
     # Load DSX match history
     try:
@@ -2969,144 +2992,367 @@ elif page == "🏆 Division Rankings":
         st.warning("No match history found. Add games to `DSX_Matches_Fall2025.csv`!")
         dsx_row = pd.DataFrame()
     
-    # Load opponent stats from all divisions being tracked
-    opponent_stats = []
-    
     # Get unique opponents DSX has played or will play
-    try:
-        actual_opponents = pd.read_csv("DSX_Actual_Opponents.csv", index_col=False).reset_index(drop=True)
-        opponent_names = actual_opponents['Opponent'].unique().tolist()
-    except:
-        opponent_names = []
+    opponent_names = []
     
-    try:
-        upcoming_opponents = pd.read_csv("DSX_Upcoming_Opponents.csv", index_col=False).reset_index(drop=True)
-        opponent_names.extend(upcoming_opponents['Opponent'].unique().tolist())
-    except:
-        pass
-    
-    # Add opponents from match history
+    # Load from match history
     if not dsx_matches.empty:
         opponent_names.extend(dsx_matches['Opponent'].unique().tolist())
     
+    # Load from upcoming opponents
+    try:
+        upcoming_opponents = pd.read_csv("DSX_Upcoming_Opponents.csv", index_col=False).reset_index(drop=True)
+        # Filter for upcoming games only
+        upcoming = upcoming_opponents[upcoming_opponents['Status'].str.lower() == 'upcoming']
+        opponent_names.extend(upcoming['Opponent'].unique().tolist())
+    except:
+        pass
+    
     opponent_names = list(set(opponent_names))  # Remove duplicates
     
-    # Load division data and filter for DSX opponents
+    # ===== PEER RANKINGS - Tournament Teams =====
+    # Build peer group from tournament divisions and similar-strength teams
+    peer_teams = []
+    
+    if not dsx_row.empty:
+        st.markdown("---")
+        st.header("🎯 Peer Rankings - Tournament Teams")
+        st.info("💡 **This shows how DSX ranks among similar teams - those playing tournament schedules like DSX.**")
+        
+        # Load tournament division files (teams that play tournaments like DSX)
+        tournament_files = [
+            "Haunted_Classic_B08Orange_Division_Rankings.csv",
+            "Haunted_Classic_B08Black_Division_Rankings.csv",
+            "Club_Ohio_Fall_Classic_2025_Division_Rankings.csv",
+            "CU_Fall_Finale_2025_Division_Rankings.csv",
+        ]
+        
+        tournament_teams = []
+        for tour_file in tournament_files:
+            if os.path.exists(tour_file):
+                try:
+                    tour_df = pd.read_csv(tour_file, index_col=False)
+                    if not tour_df.empty:
+                        tournament_teams.append(tour_df)
+                except:
+                    pass
+        
+        if tournament_teams:
+            tournament_df = pd.concat(tournament_teams, ignore_index=True)
+            # Remove DSX from tournament data (we'll add our own stats)
+            tournament_df = tournament_df[~tournament_df['Team'].str.contains('DSX', case=False, na=False)]
+            
+            # Get DSX strength for peer filtering
+            dsx_si = dsx_row.iloc[0]['StrengthIndex'] if not dsx_row.empty else 0
+            
+            # Filter for peer teams (similar strength: within 25 points of DSX)
+            # Also include all tournament teams regardless of strength (they're tournament players like DSX)
+            if not tournament_df.empty:
+                # Include all tournament teams (they're all peers by definition - tournament players)
+                peer_df = tournament_df.copy()
+                
+                # Calculate per-game stats for tournament teams
+                for idx, row in peer_df.iterrows():
+                    gp = pd.to_numeric(row.get('GP', 0), errors='coerce')
+                    if pd.isna(gp) or gp <= 0:
+                        gp = 1
+                    
+                    gf_val = pd.to_numeric(row.get('GF', 0), errors='coerce')
+                    if pd.isna(gf_val):
+                        gf_val = 0
+                    
+                    ga_val = pd.to_numeric(row.get('GA', 0), errors='coerce')
+                    if pd.isna(ga_val):
+                        ga_val = 0
+                    
+                    gd_val = gf_val - ga_val
+                    
+                    peer_df.at[idx, 'GF_PG'] = gf_val / gp if gp > 0 else 0
+                    peer_df.at[idx, 'GA_PG'] = ga_val / gp if gp > 0 else 0
+                    peer_df.at[idx, 'GD_PG'] = gd_val / gp if gp > 0 else 0
+                    peer_df.at[idx, 'IsDSX'] = False
+                    
+                    # Ensure required columns exist
+                    if 'PPG' not in peer_df.columns or pd.isna(peer_df.at[idx, 'PPG']):
+                        w = pd.to_numeric(row.get('W', 0), errors='coerce') or 0
+                        d = pd.to_numeric(row.get('D', 0), errors='coerce') or 0
+                        pts = (w * 3) + d
+                        peer_df.at[idx, 'PPG'] = pts / gp if gp > 0 else 0
+                    
+                    if 'StrengthIndex' not in peer_df.columns or pd.isna(peer_df.at[idx, 'StrengthIndex']):
+                        # Calculate Strength Index if missing
+                        ppg = peer_df.at[idx, 'PPG'] if 'PPG' in peer_df.columns else 0
+                        gd_pg = peer_df.at[idx, 'GD_PG']
+                        ppg_norm = max(0.0, min(3.0, ppg)) / 3.0 * 100.0
+                        gdpg_norm = (max(-5.0, min(5.0, gd_pg)) + 5.0) / 10.0 * 100.0
+                        peer_df.at[idx, 'StrengthIndex'] = round(0.7 * ppg_norm + 0.3 * gdpg_norm, 1)
+                
+                # Add DSX to peer group
+                dsx_peer_row = dsx_row.copy()
+                peer_df = pd.concat([peer_df, dsx_peer_row], ignore_index=True)
+                
+                # Sort by PPG then Strength Index
+                peer_df = peer_df.sort_values(['PPG', 'StrengthIndex'], ascending=[False, False]).reset_index(drop=True)
+                peer_df['Rank'] = range(1, len(peer_df) + 1)
+                
+                # Get DSX rank in peer group
+                dsx_peer_rank = peer_df[peer_df['IsDSX'] == True]
+                if not dsx_peer_rank.empty:
+                    dsx_peer_rank_num = int(dsx_peer_rank['Rank'].values[0])
+                    total_peers = len(peer_df)
+                    
+                    col1, col2, col3 = st.columns(3)
+                    with col1:
+                        st.metric("DSX Peer Rank", f"#{dsx_peer_rank_num} of {total_peers}", 
+                                 f"{'Top tier' if dsx_peer_rank_num <= total_peers * 0.33 else 'Mid tier' if dsx_peer_rank_num <= total_peers * 0.67 else 'Building'}")
+                    with col2:
+                        st.metric("Peer Group Size", total_peers, "Tournament teams")
+                    with col3:
+                        st.metric("DSX Strength", f"{dsx_si:.1f}", 
+                                 f"{'Strong' if dsx_si > 60 else 'Solid' if dsx_si > 40 else 'Building'}")
+                    
+                    # Display peer rankings table
+                    st.markdown("---")
+                    st.subheader("📊 Peer Rankings Table")
+                    st.caption("Teams playing tournament schedules (like DSX) - ranked by PPG and Strength Index")
+                    
+                    # Format for display
+                    display_peer_df = peer_df.copy()
+                    display_peer_df['Team'] = display_peer_df.apply(
+                        lambda row: f"🟢 **{row['Team']}**" if row['IsDSX'] else row['Team'],
+                        axis=1
+                    )
+                    
+                    # Round numeric columns
+                    display_peer_df['PPG'] = display_peer_df['PPG'].round(2)
+                    display_peer_df['StrengthIndex'] = display_peer_df['StrengthIndex'].round(1)
+                    
+                    # Select columns to display
+                    peer_cols = ['Rank', 'Team', 'GP', 'W', 'L', 'D', 'PPG', 'StrengthIndex']
+                    available_cols = [col for col in peer_cols if col in display_peer_df.columns]
+                    
+                    st.dataframe(
+                        display_peer_df[available_cols],
+                        use_container_width=True,
+                        hide_index=True,
+                        column_config={
+                            "Rank": st.column_config.NumberColumn("Rank", format="%d"),
+                            "Team": st.column_config.TextColumn("Team"),
+                            "GP": st.column_config.NumberColumn("GP", help="Games Played"),
+                            "W": st.column_config.NumberColumn("W", help="Wins"),
+                            "L": st.column_config.NumberColumn("L", help="Losses"),
+                            "D": st.column_config.NumberColumn("D", help="Draws"),
+                            "PPG": st.column_config.NumberColumn("PPG", help="Points Per Game", format="%.2f"),
+                            "StrengthIndex": st.column_config.ProgressColumn(
+                                "Strength",
+                                help="Combined strength rating (0-100)",
+                                format="%.1f",
+                                min_value=0,
+                                max_value=100,
+                            ),
+                        }
+                    )
+                    
+                    st.success(f"✅ **DSX ranks #{dsx_peer_rank_num} of {total_peers} among tournament-playing peer teams!**")
+                    
+                    # Show tournament breakdown
+                    st.markdown("---")
+                    st.subheader("🏆 Tournament Breakdown")
+                    
+                    col1, col2 = st.columns(2)
+                    with col1:
+                        st.write("**Tournaments Tracked:**")
+                        tournaments = []
+                        if os.path.exists("Haunted_Classic_B08Orange_Division_Rankings.csv"):
+                            tournaments.append("🎃 Haunted Classic")
+                        if os.path.exists("Haunted_Classic_B08Black_Division_Rankings.csv"):
+                            tournaments.append("🎃 Haunted Classic (Black)")
+                        if os.path.exists("Club_Ohio_Fall_Classic_2025_Division_Rankings.csv"):
+                            tournaments.append("🏅 Club Ohio Fall Classic")
+                        if os.path.exists("CU_Fall_Finale_2025_Division_Rankings.csv"):
+                            tournaments.append("🏆 CU Fall Finale")
+                        
+                        for tour in tournaments:
+                            st.write(f"  • {tour}")
+                        
+                    with col2:
+                        st.write("**Peer Group Insights:**")
+                        peers_above = len(peer_df[peer_df['Rank'] < dsx_peer_rank_num])
+                        peers_below = len(peer_df[peer_df['Rank'] > dsx_peer_rank_num])
+                        st.write(f"  • {peers_above} teams above DSX")
+                        st.write(f"  • {peers_below} teams below DSX")
+                        
+                        if dsx_peer_rank_num <= total_peers * 0.5:
+                            st.success("🎯 DSX is in the **top half** of tournament teams!")
+                        elif dsx_peer_rank_num <= total_peers * 0.75:
+                            st.info("📈 DSX is in the **middle tier** of tournament teams")
+                        else:
+                            st.warning("📊 DSX is **building** - room to climb in peer rankings")
+            
+            else:
+                st.info("💡 **No tournament division data yet.** Once you play more tournaments, this will show your rank among other tournament teams.")
+        else:
+            st.info("💡 **Tournament data coming soon!** As DSX plays more tournaments, this section will show your rank among other tournament-playing teams.")
+    
+    st.markdown("---")
+    st.header("📋 Rankings vs Opponents (Played & Upcoming)")
+    
+    # Load division data
     df = load_division_data()
     
-    if not df.empty and not dsx_row.empty:
-        # Try exact match first
-        opponent_df = df[df['Team'].isin(opponent_names)].copy()
-        
-        # Show matching results
-        with st.expander(f"🔍 Opponent Matching Details ({len(opponent_df)} of {len(opponent_names)} matched)"):
-            if not opponent_df.empty:
-                st.success(f"✅ Found {len(opponent_df)} exact matches!")
-                st.write("**Matched teams:**", opponent_df['Team'].tolist())
+    # Helper function to normalize team names for matching
+    def normalize_name(name):
+        """Normalize team name for matching (strip, lower, remove extra spaces)"""
+        if pd.isna(name):
+            return ""
+        return ' '.join(str(name).strip().split()).lower()
+    
+    # Build opponent rankings - include ALL teams DSX has played/will play
+    # For teams with division data, use that. For others, use head-to-head stats only
+    opponent_df = pd.DataFrame()
+    matched_opponents = {}  # Map original opponent name -> matched team name
+    
+    # Load DSX match history to calculate head-to-head stats for unmatched teams
+    try:
+        actual_opponents = pd.read_csv("DSX_Actual_Opponents.csv", index_col=False)
+    except:
+        actual_opponents = pd.DataFrame()
+    
+    # First, try to match teams to division data
+    if not df.empty and opponent_names:
+        # Try exact match first (case-insensitive)
+        for opp_name in opponent_names:
+            opp_normalized = normalize_name(opp_name)
             
-            unmatched = [opp for opp in opponent_names if opp not in opponent_df['Team'].values]
-            if unmatched:
-                st.warning(f"⚠️ {len(unmatched)} opponents not found in division data:")
-                st.write(unmatched)
-                st.caption("These teams might not be in the divisions we're tracking, or the names might not match exactly.")
-        
-        # If no exact matches, try fuzzy matching
-        if opponent_df.empty and opponent_names:
-            st.warning("⚠️ No exact matches found. Trying fuzzy matching...")
+            # Try exact match
+            for idx, row in df.iterrows():
+                team_normalized = normalize_name(row['Team'])
+                if team_normalized == opp_normalized:
+                    if opp_name not in matched_opponents:
+                        matched_opponents[opp_name] = row['Team']
+                        if opponent_df.empty:
+                            opponent_df = df.iloc[[idx]].copy()
+                        else:
+                            opponent_df = pd.concat([opponent_df, df.iloc[[idx]]], ignore_index=True)
+                    break
             
-            # Try partial matching (case-insensitive, more aggressive)
-            matched_teams = []
-            match_details = []
-            
-            for opp in opponent_names:
-                opp_lower = str(opp).lower()
-                # Extract key parts of opponent name (remove common words)
-                opp_parts = [p for p in opp_lower.split() if p not in ['boys', 'girls', 'academy', 'fc', 'sc', 'soccer', 'club', '2018', '2017', 'b', 'u8', 'u08', 'bu08', '18b']]
+            # If no exact match, try partial/fuzzy matching
+            if opp_name not in matched_opponents:
+                # Extract key words (minimum 3 characters)
+                opp_words = [w for w in opp_normalized.split() if len(w) > 3]
                 
                 best_match = None
-                best_match_score = 0
+                best_score = 0
                 
                 for idx, row in df.iterrows():
-                    team_lower = str(row['Team']).lower()
-                    team_parts = [p for p in team_lower.split() if p not in ['boys', 'girls', 'academy', 'fc', 'sc', 'soccer', 'club', '2018', '2017', 'b', 'u8', 'u08', 'bu08', '18b']]
+                    team_normalized = normalize_name(row['Team'])
+                    team_words = [w for w in team_normalized.split() if len(w) > 3]
                     
-                    # Count matching parts
-                    match_count = sum(1 for part in opp_parts if part in team_lower or any(part in tp for tp in team_parts))
-                    match_count += sum(1 for part in team_parts if part in opp_lower or any(part in op for op in opp_parts))
+                    # Count matching words
+                    match_score = sum(1 for word in opp_words if word in team_normalized)
+                    match_score += sum(1 for word in team_words if word in opp_normalized)
                     
-                    if match_count > best_match_score and match_count >= 2:  # At least 2 matching parts
-                        best_match_score = match_count
+                    if match_score >= 2 and match_score > best_score:
+                        best_score = match_score
                         best_match = row['Team']
                 
-                if best_match and best_match not in matched_teams:
-                    matched_teams.append(best_match)
-                    match_details.append(f"'{opp}' → '{best_match}'")
+                if best_match:
+                    matched_opponents[opp_name] = best_match
+                    matched_row = df[df['Team'] == best_match]
+                    if not matched_row.empty:
+                        if opponent_df.empty:
+                            opponent_df = matched_row.copy()
+                        else:
+                            opponent_df = pd.concat([opponent_df, matched_row], ignore_index=True)
+    
+    # Remove duplicates (same team matched from multiple opponent names)
+    if not opponent_df.empty:
+        opponent_df = opponent_df.drop_duplicates(subset=['Team'], keep='first')
+    
+    # Add ALL remaining opponents using head-to-head stats (even if not in division data)
+    matched_set = set(matched_opponents.values())
+    unmatched_opponents = [opp for opp in opponent_names if opp not in matched_set]
+    
+    if unmatched_opponents and not dsx_matches.empty:
+        for opp_name in unmatched_opponents:
+            # Get stats from head-to-head matches with DSX
+            opp_matches = dsx_matches[dsx_matches['Opponent'] == opp_name].copy()
             
-            if matched_teams:
-                opponent_df = df[df['Team'].isin(matched_teams)].copy()
-                st.success(f"✅ Found {len(opponent_df)} teams using fuzzy matching!")
-                with st.expander("🔗 Fuzzy Match Results"):
-                    for detail in match_details:
-                        st.write(detail)
+            if not opp_matches.empty:
+                # Calculate opponent stats from games vs DSX (perspective: goals they scored/allowed)
+                opp_gp = len(opp_matches)
+                opp_gf = pd.to_numeric(opp_matches['GA'], errors='coerce').fillna(0).sum()  # Goals they scored = DSX's GA
+                opp_ga = pd.to_numeric(opp_matches['GF'], errors='coerce').fillna(0).sum()  # Goals they allowed = DSX's GF
+                opp_gd = opp_gf - opp_ga
                 
-                # Show unmatched teams
-                matched_opp_names = [detail.split("'")[1] for detail in match_details]
-                unmatched_opps = [opp for opp in opponent_names if opp not in matched_opp_names]
+                # Calculate W/D/L from opponent's perspective
+                opp_w = len(opp_matches[opp_matches['Outcome'] == 'L'])  # Opponent wins = DSX losses
+                opp_l = len(opp_matches[opp_matches['Outcome'] == 'W'])  # Opponent losses = DSX wins
+                opp_d = len(opp_matches[opp_matches['Outcome'] == 'D'])  # Draws are same
                 
-                if unmatched_opps:
-                    with st.expander(f"⚠️ {len(unmatched_opps)} Teams Still Unmatched - Debug Info"):
-                        st.write("**These opponents couldn't be matched:**")
-                        
-                        for opp in unmatched_opps:
-                            st.markdown(f"**{opp}**")
-                            
-                            # Show extracted key parts
-                            opp_lower = str(opp).lower()
-                            opp_parts = [p for p in opp_lower.split() if p not in ['boys', 'girls', 'academy', 'fc', 'sc', 'soccer', 'club', '2018', '2017', 'b', 'u8', 'u08', 'bu08', '18b']]
-                            st.write(f"   - Key parts extracted: {opp_parts}")
-                            
-                            # Find closest potential matches
-                            potential_matches = []
-                            for idx, row in df.iterrows():
-                                team_lower = str(row['Team']).lower()
-                                team_parts = [p for p in team_lower.split() if p not in ['boys', 'girls', 'academy', 'fc', 'sc', 'soccer', 'club', '2018', '2017', 'b', 'u8', 'u08', 'bu08', '18b']]
-                                
-                                match_count = sum(1 for part in opp_parts if part in team_lower)
-                                if match_count > 0:
-                                    potential_matches.append((row['Team'], match_count, team_parts))
-                            
-                            # Sort by match count
-                            potential_matches.sort(key=lambda x: x[1], reverse=True)
-                            
-                            if potential_matches[:3]:
-                                st.write("   - Closest matches in division data:")
-                                for team, score, parts in potential_matches[:3]:
-                                    st.write(f"      • {team} (score: {score}, parts: {parts})")
-                            else:
-                                st.write("   - ❌ No similar teams found in tracked divisions")
-                                st.caption("   → This team might not be in any division we're tracking")
-                            
-                            st.write("")
-                        
-                        st.info("💡 **To fix:** Run `python update_all_data.py` to fetch more division data, or these teams might not be in tracked leagues.")
-            else:
-                st.error(f"❌ Could not find any matching teams.")
-                with st.expander("🔍 Troubleshooting - Detailed Debug"):
-                    st.write("**Your opponents:**")
-                    st.write(opponent_names[:10])
-                    st.write("\n**Available teams in division data (sample):**")
-                    st.write(df['Team'].head(15).tolist())
-                    
-                    st.markdown("---")
-                    st.write("**Why no matches?**")
-                    for opp in opponent_names[:5]:
-                        opp_lower = str(opp).lower()
-                        opp_parts = [p for p in opp_lower.split() if p not in ['boys', 'girls', 'academy', 'fc', 'sc', 'soccer', 'club', '2018', '2017', 'b', 'u8', 'u08', 'bu08', '18b']]
-                        st.write(f"\n'{opp}':")
-                        st.write(f"  - Key parts: {opp_parts}")
-                        st.write(f"  - No teams in division data with 2+ matching parts")
-                    
-                    st.info("💡 **Tip:** Run `python update_all_data.py` to refresh division data and make sure your opponents' divisions are being tracked!")
+                opp_pts = (opp_w * 3) + opp_d
+                opp_ppg = opp_pts / opp_gp if opp_gp > 0 else 0
+                opp_gf_pg = opp_gf / opp_gp if opp_gp > 0 else 0
+                opp_ga_pg = opp_ga / opp_gp if opp_gp > 0 else 0
+                opp_gd_pg = opp_gd / opp_gp if opp_gp > 0 else 0
+                
+                # Calculate basic Strength Index from head-to-head
+                ppg_norm = max(0.0, min(3.0, opp_ppg)) / 3.0 * 100.0
+                gdpg_norm = (max(-5.0, min(5.0, opp_gd_pg)) + 5.0) / 10.0 * 100.0
+                opp_strength = round(0.7 * ppg_norm + 0.3 * gdpg_norm, 1)
+                
+                # Create opponent row with head-to-head stats
+                opp_row = pd.DataFrame([{
+                    'Team': opp_name,
+                    'GP': opp_gp,
+                    'W': opp_w,
+                    'D': opp_d,
+                    'L': opp_l,
+                    'GF': round(opp_gf_pg, 2),  # Per-game average
+                    'GA': round(opp_ga_pg, 2),  # Per-game average
+                    'GD': round(opp_gd_pg, 2),  # Per-game average
+                    'Pts': opp_pts,
+                    'PPG': opp_ppg,
+                    'GF_PG': opp_gf_pg,
+                    'GA_PG': opp_ga_pg,
+                    'GD_PG': opp_gd_pg,
+                    'StrengthIndex': opp_strength,
+                    'IsDSX': False,
+                    'League/Division': 'Head-to-Head vs DSX Only',
+                    'SourceURL': 'DSX_Matches_Fall2025.csv'
+                }])
+                
+                if opponent_df.empty:
+                    opponent_df = opp_row.copy()
+                else:
+                    opponent_df = pd.concat([opponent_df, opp_row], ignore_index=True)
+    
+    # Show matching summary (collapsed by default)
+    if not dsx_row.empty and opponent_names:
+        matched_count = len(opponent_df)
+        total_opponents = len(opponent_names)
+        
+        if matched_count > 0:
+            with st.expander(f"✅ Found {matched_count} of {total_opponents} opponents in division data", expanded=False):
+                st.success(f"**Matched Teams:** {matched_count}/{total_opponents}")
+                
+                # Show matched teams
+                if matched_opponents:
+                    st.write("**Matched opponents:**")
+                    for orig, matched in matched_opponents.items():
+                        if orig == matched:
+                            st.write(f"  ✅ {orig}")
+                        else:
+                            st.write(f"  ⚠️ {orig} → {matched} (fuzzy match)")
+                
+                # Show unmatched
+                matched_set = set(matched_opponents.keys())
+                unmatched = [opp for opp in opponent_names if opp not in matched_set]
+                if unmatched:
+                    st.warning(f"**Unmatched opponents ({len(unmatched)}):**")
+                    for opp in unmatched:
+                        st.write(f"  ❌ {opp}")
+                    st.caption("These teams may not be in tracked divisions or need better name matching.")
         
         # If still no matches, at least show DSX stats
         if opponent_df.empty:
@@ -3145,13 +3391,11 @@ elif page == "🏆 Division Rankings":
                 opponent_df.at[idx, 'GD_PG'] = gd / gp
                 opponent_df.at[idx, 'IsDSX'] = False
             
-            # Ensure GF, GA, GD columns exist and have proper values
-            if 'GF' not in opponent_df.columns:
-                opponent_df['GF'] = opponent_df['GF_PG'] * opponent_df['GP']
-            if 'GA' not in opponent_df.columns:
-                opponent_df['GA'] = opponent_df['GA_PG'] * opponent_df['GP']
-            if 'GD' not in opponent_df.columns:
-                opponent_df['GD'] = opponent_df['GD_PG'] * opponent_df['GP']
+            # Standardize GF, GA, GD to per-game values for consistent display
+            # (Some CSVs have totals, some have per-game - make them all per-game)
+            opponent_df['GF'] = opponent_df['GF_PG']  # Always use per-game
+            opponent_df['GA'] = opponent_df['GA_PG']  # Always use per-game
+            opponent_df['GD'] = opponent_df['GD_PG']  # Always use per-game
             
             # Combine DSX with opponents
             combined_df = pd.concat([dsx_row, opponent_df], ignore_index=True)
@@ -3254,8 +3498,8 @@ elif page == "🏆 Division Rankings":
                 st.markdown("---")
                 
                 # Rankings table
-                st.subheader("📊 Complete Rankings - DSX vs Opponents")
-                st.caption("Ranked by Points Per Game (PPG), then Strength Index")
+                st.subheader(f"📊 Rankings - DSX vs {len(opponent_df)} Opponents")
+                st.caption("Ranked by Points Per Game (PPG), then Strength Index. All stats shown are per-game averages for fair comparison.")
                 
                 # Format the dataframe for display
                 display_df = combined_df.copy()
@@ -3287,9 +3531,9 @@ elif page == "🏆 Division Rankings":
                         "W": st.column_config.NumberColumn("W", help="Wins"),
                         "L": st.column_config.NumberColumn("L", help="Losses"),
                         "D": st.column_config.NumberColumn("D", help="Draws"),
-                        "GF": st.column_config.NumberColumn("GF", help="Goals For (Total)"),
-                        "GA": st.column_config.NumberColumn("GA", help="Goals Against (Total)"),
-                        "GD": st.column_config.NumberColumn("GD", help="Goal Differential (Total)", format="%+d"),
+                        "GF": st.column_config.NumberColumn("GF", help="Goals For (Per Game Average)", format="%.2f"),
+                        "GA": st.column_config.NumberColumn("GA", help="Goals Against (Per Game Average)", format="%.2f"),
+                        "GD": st.column_config.NumberColumn("GD", help="Goal Differential (Per Game Average)", format="%+.2f"),
                         "Pts": st.column_config.NumberColumn("Pts", help="Total Points (3 for W, 1 for D)"),
                         "PPG": st.column_config.NumberColumn("PPG", help="Points Per Game", format="%.2f"),
                         "StrengthIndex": st.column_config.ProgressColumn(
@@ -4018,11 +4262,12 @@ elif page == "🎮 Game Predictions":
         try:
             match_history = pd.read_csv("DSX_Matches_Fall2025.csv")
             
-            # Show last 5 games with predictions vs actual results
-            recent_games = match_history.tail(5)
+            # Show last 7 games with predictions vs actual results (covers 2 tournaments)
+            recent_games = match_history.tail(7)
             
             if not recent_games.empty:
-                st.markdown("**Last 5 Games - Prediction vs Reality:**")
+                st.markdown("**Last 7 Games - Prediction vs Reality:**")
+                st.caption("💡 Showing last 7 games to cover 2 full tournaments (3-4 games each)")
                 st.markdown("---")
                 
                 for idx, game in recent_games.iterrows():
