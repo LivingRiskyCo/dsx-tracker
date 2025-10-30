@@ -10,6 +10,7 @@ import plotly.graph_objects as go
 from datetime import datetime, timedelta
 import os
 import time
+import sys
 
 # Page configuration
 st.set_page_config(
@@ -469,6 +470,295 @@ if page == "🎯 What's Next":
         st.header("📅 Upcoming Games")
         st.markdown("---")
         
+        # Form Trend Analysis Section
+        st.header("📈 Form Trend Analysis")
+        st.markdown("---")
+        
+        # Analyze last 5 games for form trends
+        if len(dsx_matches) >= 3:
+            last_5_games = dsx_matches.tail(5)
+            
+            # Calculate form metrics
+            form_wins = len(last_5_games[last_5_games['Outcome'] == 'W'])
+            form_draws = len(last_5_games[last_5_games['Outcome'] == 'D'])
+            form_losses = len(last_5_games[last_5_games['Outcome'] == 'L'])
+            form_points = (form_wins * 3) + form_draws
+            form_ppg = form_points / len(last_5_games)
+            
+            # Goals trend
+            form_gf = last_5_games['GF'].sum()
+            form_ga = last_5_games['GA'].sum()
+            form_gf_pg = form_gf / len(last_5_games)
+            form_ga_pg = form_ga / len(last_5_games)
+            form_gd_pg = form_gf_pg - form_ga_pg
+            
+            # Compare to season average
+            season_ppg = dsx_stats['PPG']
+            season_gf_pg = dsx_stats['GF_PG']
+            season_ga_pg = dsx_stats['GA_PG']
+            season_gd_pg = dsx_stats['GD_PG']
+            
+            # Form indicators
+            ppg_trend = "📈 Improving" if form_ppg > season_ppg else "📉 Declining" if form_ppg < season_ppg else "➡️ Stable"
+            gf_trend = "📈 Improving" if form_gf_pg > season_gf_pg else "📉 Declining" if form_gf_pg < season_gf_pg else "➡️ Stable"
+            ga_trend = "📈 Improving" if form_ga_pg < season_ga_pg else "📉 Declining" if form_ga_pg > season_ga_pg else "➡️ Stable"
+            gd_trend = "📈 Improving" if form_gd_pg > season_gd_pg else "📉 Declining" if form_gd_pg < season_gd_pg else "➡️ Stable"
+            
+            col1, col2, col3, col4 = st.columns(4)
+            
+            with col1:
+                st.metric("Last 5 Games", f"{form_wins}-{form_losses}-{form_draws}", 
+                         f"{ppg_trend} ({form_ppg:.2f} PPG)")
+            
+            with col2:
+                st.metric("Goals For/Game", f"{form_gf_pg:.1f}", 
+                         f"{gf_trend} (Season: {season_gf_pg:.1f})")
+            
+            with col3:
+                st.metric("Goals Against/Game", f"{form_ga_pg:.1f}", 
+                         f"{ga_trend} (Season: {season_ga_pg:.1f})")
+            
+            with col4:
+                st.metric("Goal Difference/Game", f"{form_gd_pg:+.1f}", 
+                         f"{gd_trend} (Season: {season_gd_pg:+.1f})")
+            
+            # Form analysis insights
+            st.subheader("🎯 Form Analysis")
+            
+            if form_ppg > season_ppg + 0.3:
+                st.success("🔥 **Hot Form!** DSX is playing better than season average. Keep the momentum!")
+            elif form_ppg < season_ppg - 0.3:
+                st.warning("⚠️ **Cold Form** - DSX needs to turn things around. Focus on fundamentals.")
+            else:
+                st.info("📊 **Consistent Form** - DSX is performing at season average. Look for small improvements.")
+            
+            # Specific recommendations based on trends
+            recommendations = []
+            
+            if form_gf_pg < season_gf_pg - 0.5:
+                recommendations.append("🎯 **Offensive Focus**: Goals per game down. Work on finishing and attacking patterns.")
+            
+            if form_ga_pg > season_ga_pg + 0.5:
+                recommendations.append("🛡️ **Defensive Focus**: Goals against up. Tighten up defensive shape and communication.")
+            
+            if form_gd_pg < -1.0:
+                recommendations.append("⚖️ **Balance Needed**: Goal difference negative. Focus on both ends of the field.")
+            
+            if form_wins == 0 and len(last_5_games) >= 3:
+                recommendations.append("💪 **Confidence Building**: No wins in recent games. Focus on small victories and team morale.")
+            
+            if form_wins >= 3:
+                recommendations.append("🚀 **Momentum Building**: Great recent form! Keep the same intensity and focus.")
+            
+            if recommendations:
+                st.subheader("💡 Strategic Recommendations")
+                for rec in recommendations:
+                    st.write(rec)
+            
+            # Recent games breakdown
+            st.subheader("📋 Last 5 Games Breakdown")
+            
+            for idx, game in last_5_games.iterrows():
+                opponent = game['Opponent']
+                gf = game['GF']
+                ga = game['GA']
+                outcome = game['Outcome']
+                date = game['Date']
+                tournament = game.get('Tournament', 'N/A')
+                
+                # Color coding
+                if outcome == 'W':
+                    color = "🟢"
+                    result_text = "WIN"
+                elif outcome == 'D':
+                    color = "🟡"
+                    result_text = "DRAW"
+                else:
+                    color = "🔴"
+                    result_text = "LOSS"
+                
+                col1, col2, col3, col4 = st.columns([2, 1, 1, 1])
+                
+                with col1:
+                    st.write(f"{color} **{date}**: {opponent}")
+                    st.caption(f"{tournament}")
+                
+                with col2:
+                    st.write(f"**{gf}-{ga}**")
+                
+                with col3:
+                    st.write(f"**{result_text}**")
+                
+                with col4:
+                    if gf > ga:
+                        st.write("✅ Good")
+                    elif gf == ga:
+                        st.write("➖ Even")
+                    else:
+                        st.write("❌ Tough")
+        
+        else:
+            st.info("📊 **Form Analysis Available After 3+ Games** - Play more games to see trend analysis.")
+        
+        st.markdown("---")
+        
+        # Season Trajectory Analysis
+        st.header("📈 Season Trajectory")
+        st.markdown("---")
+        
+        if len(dsx_matches) >= 4:
+            # Calculate trajectory over time
+            matches_with_dates = dsx_matches.copy()
+            matches_with_dates['Date'] = pd.to_datetime(matches_with_dates['Date'])
+            matches_with_dates = matches_with_dates.sort_values('Date')
+            
+            # Calculate rolling averages
+            matches_with_dates['Cumulative_PPG'] = matches_with_dates['Outcome'].map({'W': 3, 'D': 1, 'L': 0}).cumsum() / (matches_with_dates.index + 1)
+            matches_with_dates['Cumulative_GF'] = matches_with_dates['GF'].cumsum() / (matches_with_dates.index + 1)
+            matches_with_dates['Cumulative_GA'] = matches_with_dates['GA'].cumsum() / (matches_with_dates.index + 1)
+            matches_with_dates['Cumulative_GD'] = matches_with_dates['Cumulative_GF'] - matches_with_dates['Cumulative_GA']
+            
+            # Calculate trajectory trends
+            recent_games = 3
+            if len(matches_with_dates) >= recent_games:
+                early_ppg = matches_with_dates.iloc[:recent_games]['Cumulative_PPG'].iloc[-1]
+                recent_ppg = matches_with_dates.iloc[-recent_games:]['Cumulative_PPG'].iloc[-1]
+                ppg_trend = recent_ppg - early_ppg
+                
+                early_gd = matches_with_dates.iloc[:recent_games]['Cumulative_GD'].iloc[-1]
+                recent_gd = matches_with_dates.iloc[-recent_games:]['Cumulative_GD'].iloc[-1]
+                gd_trend = recent_gd - early_gd
+                
+                # Trajectory analysis
+                col1, col2, col3 = st.columns(3)
+                
+                with col1:
+                    if ppg_trend > 0.2:
+                        st.success("📈 **Improving**")
+                        st.write(f"PPG: +{ppg_trend:.2f}")
+                        st.caption("Getting better!")
+                    elif ppg_trend < -0.2:
+                        st.error("📉 **Declining**")
+                        st.write(f"PPG: {ppg_trend:.2f}")
+                        st.caption("Need to turn around")
+                    else:
+                        st.info("➡️ **Stable**")
+                        st.write(f"PPG: {ppg_trend:+.2f}")
+                        st.caption("Consistent performance")
+                
+                with col2:
+                    if gd_trend > 0.3:
+                        st.success("📈 **Improving**")
+                        st.write(f"GD: +{gd_trend:.2f}")
+                        st.caption("Better goal difference")
+                    elif gd_trend < -0.3:
+                        st.error("📉 **Declining**")
+                        st.write(f"GD: {gd_trend:.2f}")
+                        st.caption("Goal difference slipping")
+                    else:
+                        st.info("➡️ **Stable**")
+                        st.write(f"GD: {gd_trend:+.2f}")
+                        st.caption("Steady goal difference")
+                
+                with col3:
+                    # Overall trajectory assessment
+                    if ppg_trend > 0.2 and gd_trend > 0.3:
+                        st.success("🚀 **Strong Upward**")
+                        st.write("Both PPG & GD improving")
+                        st.caption("Excellent trajectory!")
+                    elif ppg_trend < -0.2 and gd_trend < -0.3:
+                        st.error("⚠️ **Concerning**")
+                        st.write("Both PPG & GD declining")
+                        st.caption("Need immediate attention")
+                    elif ppg_trend > 0.1 or gd_trend > 0.1:
+                        st.info("📈 **Positive**")
+                        st.write("Some improvement")
+                        st.caption("Moving in right direction")
+                    else:
+                        st.warning("➡️ **Flat**")
+                        st.write("No clear trend")
+                        st.caption("Room for improvement")
+            
+            # Season progression chart
+            st.subheader("📊 Season Progression")
+            
+            # Create a simple trajectory chart
+            fig = go.Figure()
+            
+            # Add PPG line
+            fig.add_trace(go.Scatter(
+                x=matches_with_dates['Date'],
+                y=matches_with_dates['Cumulative_PPG'],
+                mode='lines+markers',
+                name='Points Per Game',
+                line=dict(color='#2E8B57', width=3),
+                marker=dict(size=6)
+            ))
+            
+            # Add Goal Difference line
+            fig.add_trace(go.Scatter(
+                x=matches_with_dates['Date'],
+                y=matches_with_dates['Cumulative_GD'],
+                mode='lines+markers',
+                name='Goal Difference',
+                line=dict(color='#FF6B35', width=3),
+                marker=dict(size=6),
+                yaxis='y2'
+            ))
+            
+            # Update layout
+            fig.update_layout(
+                title="DSX Season Trajectory",
+                xaxis_title="Date",
+                yaxis_title="Points Per Game",
+                yaxis2=dict(title="Goal Difference", overlaying="y", side="right"),
+                hovermode='x unified',
+                height=400,
+                showlegend=True
+            )
+            
+            st.plotly_chart(fig, use_container_width=True)
+            
+            # Season insights
+            st.subheader("💡 Season Insights")
+            
+            current_ppg = matches_with_dates['Cumulative_PPG'].iloc[-1]
+            current_gd = matches_with_dates['Cumulative_GD'].iloc[-1]
+            
+            insights = []
+            
+            if current_ppg >= 2.0:
+                insights.append("🎯 **Strong Season**: PPG above 2.0 indicates excellent performance")
+            elif current_ppg >= 1.5:
+                insights.append("👍 **Good Season**: PPG above 1.5 shows solid performance")
+            elif current_ppg >= 1.0:
+                insights.append("📊 **Average Season**: PPG around 1.0 is competitive")
+            else:
+                insights.append("⚠️ **Challenging Season**: PPG below 1.0 needs improvement")
+            
+            if current_gd > 0:
+                insights.append("⚽ **Positive GD**: Scoring more than conceding - great sign!")
+            elif current_gd == 0:
+                insights.append("⚖️ **Even GD**: Balanced scoring and defending")
+            else:
+                insights.append("🛡️ **Negative GD**: Need to tighten defense or improve attack")
+            
+            # Recent form vs season average
+            if len(matches_with_dates) >= 3:
+                recent_3_ppg = matches_with_dates.tail(3)['Outcome'].map({'W': 3, 'D': 1, 'L': 0}).mean()
+                if recent_3_ppg > current_ppg + 0.5:
+                    insights.append("🔥 **Hot Finish**: Recent form much better than season average")
+                elif recent_3_ppg < current_ppg - 0.5:
+                    insights.append("❄️ **Cold Finish**: Recent form below season average")
+            
+            for insight in insights:
+                st.write(insight)
+        
+        else:
+            st.info("📊 **Season Trajectory Available After 4+ Games** - Play more games to see trajectory analysis.")
+        
+        st.markdown("---")
+        
         # Filter to only upcoming games
         upcoming_games = upcoming[upcoming['Status'] == 'Upcoming']
         
@@ -490,12 +780,13 @@ if page == "🎯 What's Next":
                         st.write(f"**Notes:** {game.get('Notes', 'N/A')}")
                     
                     with col2:
-                        st.subheader("🎯 Match Prediction")
+                        st.subheader("🎯 Head-to-Head Prediction")
                     
                         # Get opponent stats from consolidated division data
                         opp_si = None
                         opp_gf = None
                         opp_ga = None
+                        opp_gp = 1
                         
                         if not all_divisions_df.empty:
                             opp_data = all_divisions_df[all_divisions_df['Team'] == opponent]
@@ -591,16 +882,25 @@ if page == "🎯 What's Next":
                         dsx_prediction = round(pred_dsx_goals)
                         opp_prediction = round(pred_opp_goals)
                         
-                        # Calculate confidence based on range tightness
+                        # Calculate confidence based on range tightness and strength difference
                         dsx_range = pred_dsx_high - pred_dsx_low
                         opp_range = pred_opp_high - pred_opp_low
                         avg_range = (dsx_range + opp_range) / 2
                         
-                        if avg_range <= 2.0:
+                        # Calculate percentage confidence based on multiple factors
+                        range_factor = max(0, 1 - (avg_range / 4.0))  # Tighter range = higher confidence
+                        strength_factor = min(1.0, abs(si_diff) / 20.0)  # Bigger strength difference = higher confidence
+                        data_factor = min(1.0, opp_gp / 5.0)  # More opponent data = higher confidence
+                        
+                        # Weighted confidence calculation
+                        confidence_pct = (range_factor * 0.4 + strength_factor * 0.4 + data_factor * 0.2) * 100
+                        confidence_pct = max(25, min(95, confidence_pct))  # Clamp between 25% and 95%
+                        
+                        if confidence_pct >= 75:
                             confidence = "High"
                             confidence_color = "🟢"
                             confidence_style = "success"
-                        elif avg_range <= 3.0:
+                        elif confidence_pct >= 60:
                             confidence = "Medium"
                             confidence_color = "🟡"
                             confidence_style = "warning"
@@ -626,13 +926,13 @@ if page == "🎯 What's Next":
                         st.markdown("---")
                         if confidence_style == "success":
                             st.markdown(f"### 🎯 **Final Score: DSX {dsx_prediction}-{opp_prediction} {opponent}**")
-                            st.success(f"**{confidence_color} Confidence: {confidence}** (range: {avg_range:.1f} goals)")
+                            st.success(f"**{confidence_color} Confidence: {confidence} ({confidence_pct:.0f}%)** - Based on strength difference and data quality")
                         elif confidence_style == "warning":
                             st.markdown(f"### 🎯 **Final Score: DSX {dsx_prediction}-{opp_prediction} {opponent}**")
-                            st.warning(f"**{confidence_color} Confidence: {confidence}** (range: {avg_range:.1f} goals)")
+                            st.warning(f"**{confidence_color} Confidence: {confidence} ({confidence_pct:.0f}%)** - Based on strength difference and data quality")
                         else:
                             st.markdown(f"### 🎯 **Final Score: DSX {dsx_prediction}-{opp_prediction} {opponent}**")
-                            st.error(f"**{confidence_color} Confidence: {confidence}** (range: {avg_range:.1f} goals)")
+                            st.error(f"**{confidence_color} Confidence: {confidence} ({confidence_pct:.0f}%)** - Based on strength difference and data quality")
                         
                         # Win probability based on final predicted score
                         st.markdown("---")
@@ -1626,6 +1926,33 @@ elif page == "🎮 Live Game Tracker":
                     except:
                         pass
             
+                        # Opponent Season History
+                        st.markdown("---")
+                        st.subheader("📊 Opponent's Full Season History")
+                        opp_div_row = all_divisions_df[all_divisions_df['Team'] == opponent] if not all_divisions_df.empty else pd.DataFrame()
+                        if not opp_div_row.empty:
+                            opp_full = opp_div_row.iloc[0]
+                            colh1, colh2, colh3, colh4, colh5 = st.columns(5)
+                            with colh1:
+                                st.metric("Record", f"{int(opp_full.get('W',0))}-{int(opp_full.get('L',0))}-{int(opp_full.get('D',0))}")
+                                st.caption(f"GP: {int(opp_full.get('GP',0))}")
+                            with colh2:
+                                opp_ppg = float(opp_full.get('PPG', opp_full.get('Pts',0)/max(1, opp_full.get('GP',1))))
+                                st.metric("PPG", f"{opp_ppg:.2f}")
+                            with colh3:
+                                ogf = float(opp_full.get('GF',0)); oga = float(opp_full.get('GA',0))
+                                st.metric("GF/GA", f"{ogf:.1f} - {oga:.1f}")
+                            with colh4:
+                                ogd = float(opp_full.get('GD', ogf-oga))
+                                st.metric("GD", f"{ogd:+.1f}")
+                            with colh5:
+                                orank = opp_full.get('Rank', opp_full.get('rank','N/A'))
+                                osi = float(opp_full.get('StrengthIndex', opp_full.get('strength_index',0)))
+                                st.metric("Rank", f"#{int(orank)}" if orank!='N/A' else "N/A")
+                                st.caption(f"SI: {osi:.1f}")
+                        else:
+                            st.info("ℹ️ No division season stats found for this opponent in tracked files.")
+
             # Update session state
             if st.button("✅ Update Lineup", type="primary", use_container_width=True):
                 for pos, player in lineup_form.items():
@@ -3863,6 +4190,33 @@ elif page == "🎮 Game Predictions":
                         st.markdown("**0.0 Points**")
                         st.info("🤝 Dead Even")
                 
+                # Opponent Season History panel
+                st.markdown("---")
+                st.subheader("📊 Opponent's Full Season History")
+                opp_div_row = all_divisions_df[all_divisions_df['Team'] == selected_opponent] if not all_divisions_df.empty else pd.DataFrame()
+                if not opp_div_row.empty:
+                    opp_full = opp_div_row.iloc[0]
+                    oh1, oh2, oh3, oh4, oh5 = st.columns(5)
+                    with oh1:
+                        st.metric("Record", f"{int(opp_full.get('W',0))}-{int(opp_full.get('L',0))}-{int(opp_full.get('D',0))}")
+                        st.caption(f"GP: {int(opp_full.get('GP',0))}")
+                    with oh2:
+                        o_ppg = float(opp_full.get('PPG', opp_full.get('Pts',0)/max(1, opp_full.get('GP',1))))
+                        st.metric("PPG", f"{o_ppg:.2f}")
+                    with oh3:
+                        ogf = float(opp_full.get('GF',0)); oga = float(opp_full.get('GA',0))
+                        st.metric("GF/GA", f"{ogf:.1f} - {oga:.1f}")
+                    with oh4:
+                        ogd = float(opp_full.get('GD', ogf-oga))
+                        st.metric("GD", f"{ogd:+.1f}")
+                    with oh5:
+                        orank = opp_full.get('Rank', opp_full.get('rank','N/A'))
+                        osi = float(opp_full.get('StrengthIndex', opp_full.get('strength_index',0)))
+                        st.metric("Rank", f"#{int(orank)}" if orank!='N/A' else "N/A")
+                        st.caption(f"SI: {osi:.1f}")
+                else:
+                    st.info("ℹ️ No division season stats found for this opponent in tracked files.")
+
                 # Calculate prediction
                 st.markdown("---")
                 st.subheader("🔮 Score Prediction")
@@ -4494,8 +4848,291 @@ elif page == "🔍 Opponent Intel":
             
             st.markdown("---")
             
-            # Match history
-            st.subheader("📅 Match History")
+            # Opponent Weakness Detection
+            st.subheader("🎯 Opponent Weakness Analysis")
+            
+            # Load division data to get opponent's full stats
+            all_divisions_df = load_division_data()
+            opp_division_data = all_divisions_df[all_divisions_df['Team'] == selected_opp]
+            
+            if not opp_division_data.empty:
+                opp_full_stats = opp_division_data.iloc[0]
+                
+                # Analyze opponent's weaknesses
+                weaknesses = []
+                
+                # Goals against analysis
+                opp_ga_pg = opp_full_stats.get('GA', 0) / max(1, opp_full_stats.get('GP', 1))
+                if opp_ga_pg >= 3.0:
+                    weaknesses.append(f"🛡️ **Defensive Vulnerability**: Concedes {opp_ga_pg:.1f} goals per game - high-scoring opportunities")
+                elif opp_ga_pg >= 2.0:
+                    weaknesses.append(f"⚠️ **Defensive Concerns**: Concedes {opp_ga_pg:.1f} goals per game - some defensive gaps")
+                
+                # Goals for analysis
+                opp_gf_pg = opp_full_stats.get('GF', 0) / max(1, opp_full_stats.get('GP', 1))
+                if opp_gf_pg <= 1.0:
+                    weaknesses.append(f"⚽ **Offensive Struggles**: Only scores {opp_gf_pg:.1f} goals per game - limited attacking threat")
+                elif opp_gf_pg <= 1.5:
+                    weaknesses.append(f"📉 **Low Scoring**: Only {opp_gf_pg:.1f} goals per game - manageable attacking output")
+                
+                # Goal difference analysis
+                opp_gd_pg = opp_gf_pg - opp_ga_pg
+                if opp_gd_pg <= -1.0:
+                    weaknesses.append(f"📊 **Negative GD**: {opp_gd_pg:+.1f} goal difference per game - struggling overall")
+                elif opp_gd_pg <= 0:
+                    weaknesses.append(f"⚖️ **Even GD**: {opp_gd_pg:+.1f} goal difference - not dominating games")
+                
+                # Loss analysis
+                opp_losses = opp_full_stats.get('L', 0)
+                opp_gp = opp_full_stats.get('GP', 1)
+                loss_rate = opp_losses / opp_gp if opp_gp > 0 else 0
+                
+                if loss_rate >= 0.6:
+                    weaknesses.append(f"❌ **High Loss Rate**: {loss_rate:.0%} of games lost - vulnerable team")
+                elif loss_rate >= 0.4:
+                    weaknesses.append(f"⚠️ **Moderate Loss Rate**: {loss_rate:.0%} of games lost - beatable team")
+                
+                # Recent form analysis (if we have enough data)
+                if opp_gp >= 3:
+                    # This would need to be calculated from their recent games
+                    # For now, we'll use overall stats as proxy
+                    if opp_ga_pg >= 2.5 and opp_gf_pg <= 1.5:
+                        weaknesses.append(f"🔥 **Recent Struggles**: High goals against + low scoring = vulnerable form")
+                
+                # Display weaknesses
+                if weaknesses:
+                    st.info("🎯 **Key Weaknesses to Exploit:**")
+                    for weakness in weaknesses:
+                        st.write(f"• {weakness}")
+                else:
+                    st.info("⚠️ **No Major Weaknesses Detected** - This is a strong, well-balanced team")
+                
+                # Strategic recommendations based on weaknesses
+                st.subheader("💡 Strategic Recommendations")
+                
+                recommendations = []
+                
+                if opp_ga_pg >= 2.5:
+                    recommendations.append("🎯 **Attack Aggressively**: High goals against means scoring opportunities - press forward!")
+                
+                if opp_gf_pg <= 1.5:
+                    recommendations.append("🛡️ **Defensive Focus**: Low scoring team - focus on solid defense and counter-attacks")
+                
+                if opp_gd_pg <= -0.5:
+                    recommendations.append("⚡ **Control Tempo**: Negative goal difference suggests they struggle - dictate the pace")
+                
+                if loss_rate >= 0.5:
+                    recommendations.append("💪 **Mental Edge**: High loss rate means they may lack confidence - stay positive!")
+                
+                if opp_ga_pg >= 2.0 and opp_gf_pg <= 2.0:
+                    recommendations.append("🎲 **High-Scoring Game**: Both teams score/concede goals - expect an open, exciting match")
+                
+                if recommendations:
+                    for rec in recommendations:
+                        st.write(f"• {rec}")
+                else:
+                    st.write("• 🤝 **Even Matchup**: No clear tactical advantage - focus on execution and effort")
+            
+            else:
+                st.warning("⚠️ **Limited Data**: No division data available for detailed weakness analysis")
+                st.info("💡 **General Strategy**: Focus on your strengths and play with confidence!")
+            
+            st.markdown("---")
+            
+            # Opponent's Full Season History & Stats
+            st.subheader("📊 Opponent's Full Season History")
+            
+            # Load division data to show opponent's complete season stats
+            all_divisions_df = load_division_data()
+            opp_division_data = all_divisions_df[all_divisions_df['Team'] == selected_opp]
+            
+            if not opp_division_data.empty:
+                opp_full = opp_division_data.iloc[0]
+                
+                # Show their complete season stats
+                col1, col2, col3, col4, col5 = st.columns(5)
+                
+                with col1:
+                    st.metric("Overall Record", f"{int(opp_full.get('W', 0))}-{int(opp_full.get('L', 0))}-{int(opp_full.get('D', 0))}")
+                    st.caption(f"Games Played: {int(opp_full.get('GP', 0))}")
+                
+                with col2:
+                    opp_ppg = opp_full.get('PPG', 0)
+                    st.metric("Points Per Game", f"{opp_ppg:.2f}")
+                    opp_pts = opp_full.get('Pts', opp_full.get('Points', 0))
+                    if opp_pts > 0:
+                        st.caption(f"Total Points: {int(opp_pts)}")
+                
+                with col3:
+                    opp_gf = opp_full.get('GF', 0)
+                    opp_ga = opp_full.get('GA', 0)
+                    st.metric("Goals", f"{opp_gf:.1f} - {opp_ga:.1f}")
+                    st.caption(f"Per game averages")
+                
+                with col4:
+                    opp_gd = opp_full.get('GD', opp_gf - opp_ga)
+                    st.metric("Goal Difference", f"{opp_gd:+.1f}")
+                    st.caption(f"Per game")
+                
+                with col5:
+                    opp_rank = opp_full.get('Rank', opp_full.get('rank', 'N/A'))
+                    opp_si = opp_full.get('StrengthIndex', opp_full.get('strength_index', 0))
+                    st.metric("Division Rank", f"#{int(opp_rank)}" if opp_rank != 'N/A' else "N/A")
+                    st.caption(f"Strength: {opp_si:.1f}")
+                
+                st.markdown("---")
+                
+                # Division context
+                division_name = opp_full.get('Division', opp_full.get('League/Division', 'Unknown'))
+                league_name = opp_full.get('League', opp_full.get('League/Division', 'Unknown'))
+                
+                st.subheader("🏆 Division/League Context")
+                
+                col1, col2 = st.columns(2)
+                
+                with col1:
+                    st.write(f"**League:** {league_name}")
+                    st.write(f"**Division:** {division_name}")
+                    
+                    # Try to find their position in division
+                    if opp_rank != 'N/A':
+                        # Load the specific division file if possible
+                        try:
+                            # Check which division file this team is from
+                            div_files = [
+                                "OCL_BU08_Stripes_Division_Rankings.csv",
+                                "OCL_BU08_White_Division_Rankings.csv",
+                                "OCL_BU08_Stars_Division_Rankings.csv",
+                                "OCL_BU08_Stars_7v7_Division_Rankings.csv",
+                                "MVYSA_B09_3_Division_Rankings.csv",
+                                "Haunted_Classic_B08Orange_Division_Rankings.csv",
+                                "Haunted_Classic_B08Black_Division_Rankings.csv",
+                                "CU_Fall_Finale_2025_Division_Rankings.csv",
+                                "Club_Ohio_Fall_Classic_2025_Division_Rankings.csv",
+                            ]
+                            
+                            team_found = False
+                            for div_file in div_files:
+                                if os.path.exists(div_file):
+                                    div_df = pd.read_csv(div_file)
+                                    if selected_opp in div_df['Team'].values:
+                                        total_teams = len(div_df)
+                                        st.write(f"**Division Size:** {total_teams} teams")
+                                        st.write(f"**Position:** #{int(opp_rank)} of {total_teams}")
+                                        
+                                        # Show teams around them in division
+                                        if int(opp_rank) > 1:
+                                            above_team = div_df[div_df['Rank'] == int(opp_rank) - 1]
+                                            if not above_team.empty:
+                                                st.caption(f"↑ Above: {above_team.iloc[0]['Team']}")
+                                        
+                                        if int(opp_rank) < total_teams:
+                                            below_team = div_df[div_df['Rank'] == int(opp_rank) + 1]
+                                            if not below_team.empty:
+                                                st.caption(f"↓ Below: {below_team.iloc[0]['Team']}")
+                                        
+                                        team_found = True
+                                        break
+                            
+                            if not team_found:
+                                st.write(f"**Position:** #{int(opp_rank)}")
+                        except Exception as e:
+                            st.write(f"**Position:** #{int(opp_rank)}")
+                
+                with col2:
+                    # Performance assessment
+                    if opp_ppg >= 2.0:
+                        st.success("🔥 **Strong Season**")
+                        st.write(f"PPG: {opp_ppg:.2f} - Top tier performance")
+                    elif opp_ppg >= 1.5:
+                        st.info("👍 **Good Season**")
+                        st.write(f"PPG: {opp_ppg:.2f} - Solid performance")
+                    elif opp_ppg >= 1.0:
+                        st.warning("📊 **Average Season**")
+                        st.write(f"PPG: {opp_ppg:.2f} - Competitive level")
+                    else:
+                        st.error("⚠️ **Struggling Season**")
+                        st.write(f"PPG: {opp_ppg:.2f} - Below average")
+                    
+                    if opp_gd > 0:
+                        st.write(f"✅ Positive GD: {opp_gd:+.1f}")
+                    elif opp_gd < 0:
+                        st.write(f"❌ Negative GD: {opp_gd:+.1f}")
+                    else:
+                        st.write(f"➖ Even GD: {opp_gd:+.1f}")
+                
+                st.markdown("---")
+                
+                # Season breakdown
+                st.subheader("📈 Season Performance Breakdown")
+                
+                wins = int(opp_full.get('W', 0))
+                losses = int(opp_full.get('L', 0))
+                draws = int(opp_full.get('D', 0))
+                gp = int(opp_full.get('GP', 0))
+                
+                if gp > 0:
+                    win_pct = (wins / gp) * 100
+                    loss_pct = (losses / gp) * 100
+                    draw_pct = (draws / gp) * 100
+                    
+                    col1, col2, col3 = st.columns(3)
+                    
+                    with col1:
+                        st.write(f"**Wins:** {wins} ({win_pct:.1f}%)")
+                        st.progress(win_pct / 100)
+                    
+                    with col2:
+                        st.write(f"**Draws:** {draws} ({draw_pct:.1f}%)")
+                        st.progress(draw_pct / 100)
+                    
+                    with col3:
+                        st.write(f"**Losses:** {losses} ({loss_pct:.1f}%)")
+                        st.progress(loss_pct / 100)
+                
+                # Goals analysis
+                st.markdown("---")
+                st.subheader("⚽ Goals Analysis")
+                
+                col1, col2 = st.columns(2)
+                
+                with col1:
+                    st.write(f"**Goals For:** {opp_gf:.1f} per game")
+                    if opp_gf >= 3.0:
+                        st.success("🔥 High scoring team - strong attack")
+                    elif opp_gf >= 2.0:
+                        st.info("⚽ Moderate scoring - decent attack")
+                    else:
+                        st.warning("📉 Low scoring - offensive struggles")
+                
+                with col2:
+                    st.write(f"**Goals Against:** {opp_ga:.1f} per game")
+                    if opp_ga <= 1.0:
+                        st.success("🛡️ Strong defense - tough to score on")
+                    elif opp_ga <= 2.0:
+                        st.info("⚠️ Average defense - some gaps")
+                    else:
+                        st.warning("🛡️ Weak defense - scoring opportunities")
+                
+                st.markdown("---")
+                
+                # Data availability note
+                st.info("💡 **Note:** This shows overall season statistics. Full game-by-game history would require access to league schedules and results, which can be added as we gather more data sources.")
+            
+            else:
+                st.warning("⚠️ **Limited Data Available**")
+                st.write("This opponent is not in a tracked division, so we only have data from DSX's games against them.")
+                st.write("**What we know:**")
+                st.write(f"• DSX Record: {opp_row['Record']}")
+                st.write(f"• Goals For: {opp_row['GF']}")
+                st.write(f"• Goals Against: {opp_row['GA']}")
+                st.write(f"• PPG vs DSX: {opp_row['PPG']:.2f}")
+                st.info("💡 To get full season history, we'd need access to this team's league/division schedule.")
+            
+            st.markdown("---")
+            
+            # Match history (DSX vs this opponent)
+            st.subheader("📅 DSX vs " + selected_opp + " - Head-to-Head History")
             
             match_display = opp_matches[['Date', 'Tournament', 'Location', 'GF', 'GA', 'Outcome', 'Points', 'GoalDiff']].copy()
             match_display.columns = ['Date', 'Tournament', 'Location', 'GF', 'GA', 'Result', 'Pts', 'GD']
@@ -4632,169 +5269,336 @@ elif page == "🔍 Opponent Intel":
             
             st.subheader(f"🔍 Scouting Report: {selected_upcoming}")
             
-            # Check if it's a BSA Celtic team
-            if "BSA Celtic" in selected_upcoming:
-                try:
-                    bsa_schedules = pd.read_csv("BSA_Celtic_Schedules.csv")
-                    team_matches = bsa_schedules[bsa_schedules['OpponentTeam'] == selected_upcoming]
-                    
-                    # Filter completed matches
-                    completed = team_matches[team_matches['GF'] != ''].copy()
-                    
-                    if len(completed) > 0:
-                        completed['GF'] = pd.to_numeric(completed['GF'])
-                        completed['GA'] = pd.to_numeric(completed['GA'])
-                        completed['GD'] = completed['GF'] - completed['GA']
-                        
-                        # Calculate stats
-                        wins = (completed['GD'] > 0).sum()
-                        draws = (completed['GD'] == 0).sum()
-                        losses = (completed['GD'] < 0).sum()
-                        
-                        col1, col2, col3, col4, col5 = st.columns(5)
-                        
-                        with col1:
-                            st.metric("Games", len(completed))
-                        with col2:
-                            st.metric("Record", f"{wins}-{losses}-{draws}")
-                        with col3:
-                            st.metric("GF/Game", f"{completed['GF'].mean():.2f}")
-                        with col4:
-                            st.metric("GA/Game", f"{completed['GA'].mean():.2f}")
-                        with col5:
-                            ppg = (wins * 3 + draws) / len(completed)
-                            st.metric("PPG", f"{ppg:.2f}")
-                        
-                        st.markdown("---")
-                        
-                        # Calculate Strength Index
-                        gd_per_game = completed['GD'].mean()
-                        ppg_norm = max(0.0, min(3.0, ppg)) / 3.0 * 100.0
-                        gd_norm = (max(-5.0, min(5.0, gd_per_game)) + 5.0) / 10.0 * 100.0
-                        strength_index = 0.7 * ppg_norm + 0.3 * gd_norm
-                        
-                        st.subheader("📊 Strength Assessment")
-                        
-                        col1, col2 = st.columns(2)
-                        
-                        with col1:
-                            dsx_stats = calculate_dsx_stats()
-                            st.metric("Opponent SI", f"{strength_index:.1f}")
-                            st.metric("DSX SI", f"{dsx_stats['StrengthIndex']:.1f}")
-                        
-                        with col2:
-                            dsx_stats = calculate_dsx_stats()
-                            si_diff = dsx_stats['StrengthIndex'] - strength_index
-                            if si_diff > 10:
-                                st.success("✅ DSX is stronger")
-                                st.write("**Target:** Win (3 points)")
-                            elif si_diff < -10:
-                                st.error("⚠️ Opponent is stronger")
-                                st.write("**Target:** Stay competitive")
-                            else:
-                                st.info("⚖️ Evenly matched")
-                                st.write("**Target:** Fight for all points")
-                        
-                        st.markdown("---")
-                        
-                        # Recent form
-                        st.subheader("📈 Recent Form")
-                        
-                        recent_5 = completed.tail(5)
-                        
-                        for _, match in recent_5.iterrows():
-                            if pd.notna(match['GF']) and pd.notna(match['GA']):
-                                result = "W" if match['GD'] > 0 else "D" if match['GD'] == 0 else "L"
-                                if result == "W":
-                                    st.success(f"**{result}** {int(match['GF'])}-{int(match['GA'])} vs {match['TheirOpponent']}")
-                                elif result == "D":
-                                    st.info(f"**{result}** {int(match['GF'])}-{int(match['GA'])} vs {match['TheirOpponent']}")
-                                else:
-                                    st.error(f"**{result}** {int(match['GF'])}-{int(match['GA'])} vs {match['TheirOpponent']}")
-                        
-                        st.markdown("---")
-                        
-                        # Game plan
-                        st.subheader("📋 Recommended Game Plan")
-                        
-                        if si_diff > 10:
-                            st.write("**Offensive Approach:**")
-                            st.write("- Press high and control possession")
-                            st.write("- Create multiple scoring chances")
-                            st.write("- Build team confidence")
-                        elif si_diff < -10:
-                            st.write("**Defensive Approach:**")
-                            st.write("- Stay compact and organized")
-                            st.write("- Counter-attack when possible")
-                            st.write("- Limit their scoring chances")
-                        else:
-                            st.write("**Balanced Approach:**")
-                            st.write("- Match their intensity")
-                            st.write("- Be clinical with chances")
-                            st.write("- Strong defensive shape")
-                        
-                    else:
-                        st.warning(f"No completed matches found for {selected_upcoming}")
-                        st.write("Check back closer to game day for updated results")
-                        
-                except FileNotFoundError:
-                    st.warning("BSA Celtic schedule data not available")
-                    st.write("Run `python fetch_bsa_celtic.py` to get their latest results")
+            # Opponent Full Season History (from tracked divisions)
+            st.markdown("---")
+            st.subheader("📊 Opponent's Full Season History")
             
-            # Check if it's Club Ohio West (division team)
-            elif "Club Ohio" in selected_upcoming:
-                try:
-                    division = pd.read_csv("OCL_BU08_Stripes_Division_with_DSX.csv")
-                    club_ohio = division[division['Team'].str.contains("Club Ohio", na=False, case=False)]
-                    
-                    if not club_ohio.empty:
-                        team = club_ohio.iloc[0]
-                        
-                        col1, col2, col3, col4, col5 = st.columns(5)
-                        
-                        with col1:
-                            st.metric("Division Rank", f"#{int(team['Rank'])} / 7")
-                        with col2:
-                            st.metric("Record", f"{int(team['W'])}-{int(team['D'])}-{int(team['L'])}")
-                        with col3:
-                            st.metric("GF/Game", f"{team['GF']:.2f}")
-                        with col4:
-                            st.metric("GA/Game", f"{team['GA']:.2f}")
-                        with col5:
-                            st.metric("PPG", f"{team['PPG']:.2f}")
-                        
-                        st.markdown("---")
-                        
-                        st.subheader("📊 Strength Assessment")
-                        
-                        col1, col2 = st.columns(2)
-                        
-                        # Get dynamic DSX stats
-                        dsx_stats = calculate_dsx_stats()
-                        dsx_si = dsx_stats['StrengthIndex']
-                        
-                        with col1:
-                            st.metric("Opponent SI", f"{team['StrengthIndex']:.1f}")
-                            st.metric("DSX SI", f"{dsx_si:.1f}")
-                        
-                        with col2:
-                            si_diff = dsx_si - team['StrengthIndex']
-                            if si_diff > 10:
-                                st.success("✅ DSX is stronger")
-                            elif si_diff < -10:
-                                st.error("⚠️ Opponent is stronger")
-                            else:
-                                st.info("⚖️ Evenly matched")
-                    else:
-                        st.warning("Division data not found for this team")
-                        
-                except FileNotFoundError:
-                    st.warning("Division data not available")
-                    st.write("Run `python fetch_gotsport_division.py` to get latest standings")
+            # Load division data - make sure it's accessible throughout
+            try:
+                all_divisions_df = load_division_data()
+            except Exception:
+                all_divisions_df = pd.DataFrame()
             
+            # Track if we found data
+            data_found = False
+            
+            # Try exact match first
+            opp_division_row = all_divisions_df[all_divisions_df['Team'] == selected_upcoming] if not all_divisions_df.empty else pd.DataFrame()
+            
+            if not opp_division_row.empty:
+                data_found = True
+            
+            # If no exact match, try case-insensitive match
+            if opp_division_row.empty and not all_divisions_df.empty:
+                # Normalize both for comparison
+                selected_normalized = str(selected_upcoming).strip().lower()
+                
+                # Check each team with case-insensitive comparison
+                for idx, row in all_divisions_df.iterrows():
+                    team_name = str(row['Team'])
+                    if team_name.strip().lower() == selected_normalized:
+                        opp_division_row = all_divisions_df.iloc[[idx]]
+                        st.success(f"✅ **Found team (case-insensitive match):** {team_name}")
+                        data_found = True
+                        break
+            
+            # If no exact match, try fuzzy matching (case-insensitive, strip whitespace)
+            if opp_division_row.empty and not all_divisions_df.empty:
+                # Normalize names for matching (strip, lower, remove extra spaces)
+                def normalize_name(name):
+                    if pd.isna(name):
+                        return ""
+                    return ' '.join(str(name).strip().split()).lower()
+                
+                selected_normalized = normalize_name(selected_upcoming)
+                
+                # Try case-insensitive match
+                for idx, row in all_divisions_df.iterrows():
+                    team_name = row['Team']
+                    if normalize_name(team_name) == selected_normalized:
+                        opp_division_row = all_divisions_df.iloc[[idx]]
+                        st.info(f"ℹ️ Found team with similar name: **{team_name}**")
+                        break
+                
+                # If still no match, try partial matching (contains)
+                if opp_division_row.empty:
+                    # Extract key words from selected opponent
+                    key_words = [w for w in selected_normalized.split() if len(w) > 3]
+                    
+                    # Look for teams containing key words
+                    matches = []
+                    for idx, row in all_divisions_df.iterrows():
+                        team_normalized = normalize_name(row['Team'])
+                        # Count matching key words
+                        match_score = sum(1 for word in key_words if word in team_normalized)
+                        if match_score >= 2:  # At least 2 key words match
+                            matches.append((match_score, idx, row['Team']))
+                    
+                    if matches:
+                        # Sort by match score (best first)
+                        matches.sort(reverse=True)
+                        best_match_idx = matches[0][1]
+                        best_match_name = matches[0][2]
+                        opp_division_row = all_divisions_df.iloc[[best_match_idx]]
+                        st.warning(f"⚠️ **Fuzzy Match Found**: Using data for **{best_match_name}** (similar to {selected_upcoming})")
+                        data_found = True
+            
+            if not opp_division_row.empty:
+                data_found = True
+                opp_full = opp_division_row.iloc[0]
+                col1, col2, col3, col4, col5 = st.columns(5)
+                with col1:
+                    st.metric("Overall Record", f"{int(opp_full.get('W', 0))}-{int(opp_full.get('L', 0))}-{int(opp_full.get('D', 0))}")
+                    st.caption(f"Games Played: {int(opp_full.get('GP', 0))}")
+                with col2:
+                    opp_ppg = float(opp_full.get('PPG', opp_full.get('Pts', 0) / max(1, opp_full.get('GP', 1))))
+                    st.metric("Points Per Game", f"{opp_ppg:.2f}")
+                with col3:
+                    opp_gf = float(opp_full.get('GF', 0))
+                    opp_ga = float(opp_full.get('GA', 0))
+                    st.metric("Goals", f"{opp_gf:.1f} - {opp_ga:.1f}")
+                    st.caption("Per game averages")
+                with col4:
+                    opp_gd = float(opp_full.get('GD', opp_gf - opp_ga))
+                    st.metric("Goal Difference", f"{opp_gd:+.1f}")
+                    st.caption("Per game")
+                with col5:
+                    opp_rank = opp_full.get('Rank', opp_full.get('rank', 'N/A'))
+                    opp_si = float(opp_full.get('StrengthIndex', opp_full.get('strength_index', 0)))
+                    st.metric("Division Rank", f"#{int(opp_rank)}" if opp_rank != 'N/A' else "N/A")
+                    st.caption(f"Strength: {opp_si:.1f}")
+                
+                # Division/League context
+                division_name = opp_full.get('Division', opp_full.get('League/Division', 'Unknown'))
+                league_name = opp_full.get('League', opp_full.get('League/Division', 'Unknown'))
+                colA, colB = st.columns(2)
+                with colA:
+                    st.write(f"**League:** {league_name}")
+                    st.write(f"**Division:** {division_name}")
+                with colB:
+                    if opp_ppg >= 2.0:
+                        st.success("🔥 Strong Season")
+                    elif opp_ppg >= 1.5:
+                        st.info("👍 Good Season")
+                    elif opp_ppg >= 1.0:
+                        st.warning("📊 Average Season")
+                    else:
+                        st.error("⚠️ Struggling Season")
+                st.markdown("---")
             else:
-                st.info("Scouting data not yet available for this opponent")
-                st.write("Check back as game approaches or add data manually")
+                st.warning("⚠️ **No division data found for this exact team name**")
+                st.write(f"**Searched for:** {selected_upcoming}")
+                
+                # Show similar teams that ARE available
+                if not all_divisions_df.empty:
+                    # Extract key words from the selected opponent
+                    selected_words = str(selected_upcoming).lower().split()
+                    key_words = [w for w in selected_words if len(w) > 3]
+                    
+                    # Find teams with any matching words
+                    similar_teams = []
+                    for _, row in all_divisions_df.iterrows():
+                        team_name = str(row['Team'])
+                        team_words = team_name.lower().split()
+                        # Count matching words
+                        matches = sum(1 for word in key_words if any(tw.startswith(word) or word in tw for tw in team_words))
+                        if matches > 0:
+                            similar_teams.append((matches, team_name))
+                    
+                    if similar_teams:
+                        similar_teams.sort(reverse=True)
+                        st.info(f"💡 **Similar teams found in our database:**")
+                        for score, team_name in similar_teams[:5]:  # Show top 5
+                            st.write(f"  - {team_name} (similarity: {score} words)")
+                        st.write("")
+                        st.info("💡 **Tip:** If you see a similar team above, it might be the same team with a slightly different name. The fuzzy matching should handle this automatically.")
+                    else:
+                        st.write(f"**Total teams in database:** {len(all_divisions_df)}")
+                        st.write("**Sample teams available:**")
+                        sample_teams = all_divisions_df.head(5)['Team'].tolist()
+                        for team in sample_teams:
+                            st.write(f"  - {team}")
+                
+                st.write("**📊 Showing any specialized sources below if available:**")
+            
+            # Only check specialized sources if we didn't already find general data
+            if not data_found:
+                # Check if it's a BSA Celtic team
+                if "BSA Celtic" in selected_upcoming:
+                    try:
+                        bsa_schedules = pd.read_csv("BSA_Celtic_Schedules.csv")
+                        team_matches = bsa_schedules[bsa_schedules['OpponentTeam'] == selected_upcoming]
+                        
+                        # Filter completed matches
+                        completed = team_matches[team_matches['GF'] != ''].copy()
+                        
+                        if len(completed) > 0:
+                            completed['GF'] = pd.to_numeric(completed['GF'])
+                            completed['GA'] = pd.to_numeric(completed['GA'])
+                            completed['GD'] = completed['GF'] - completed['GA']
+                            
+                            # Calculate stats
+                            wins = (completed['GD'] > 0).sum()
+                            draws = (completed['GD'] == 0).sum()
+                            losses = (completed['GD'] < 0).sum()
+                            
+                            col1, col2, col3, col4, col5 = st.columns(5)
+                            
+                            with col1:
+                                st.metric("Games", len(completed))
+                            with col2:
+                                st.metric("Record", f"{wins}-{losses}-{draws}")
+                            with col3:
+                                st.metric("GF/Game", f"{completed['GF'].mean():.2f}")
+                            with col4:
+                                st.metric("GA/Game", f"{completed['GA'].mean():.2f}")
+                            with col5:
+                                ppg = (wins * 3 + draws) / len(completed)
+                                st.metric("PPG", f"{ppg:.2f}")
+                            
+                            st.markdown("---")
+                            
+                            # Calculate Strength Index
+                            gd_per_game = completed['GD'].mean()
+                            ppg_norm = max(0.0, min(3.0, ppg)) / 3.0 * 100.0
+                            gd_norm = (max(-5.0, min(5.0, gd_per_game)) + 5.0) / 10.0 * 100.0
+                            strength_index = 0.7 * ppg_norm + 0.3 * gd_norm
+                            
+                            st.subheader("📊 Strength Assessment")
+                            
+                            col1, col2 = st.columns(2)
+                            
+                            with col1:
+                                dsx_stats = calculate_dsx_stats()
+                                st.metric("Opponent SI", f"{strength_index:.1f}")
+                                st.metric("DSX SI", f"{dsx_stats['StrengthIndex']:.1f}")
+                            
+                            with col2:
+                                dsx_stats = calculate_dsx_stats()
+                                si_diff = dsx_stats['StrengthIndex'] - strength_index
+                                if si_diff > 10:
+                                    st.success("✅ DSX is stronger")
+                                    st.write("**Target:** Win (3 points)")
+                                elif si_diff < -10:
+                                    st.error("⚠️ Opponent is stronger")
+                                    st.write("**Target:** Stay competitive")
+                                else:
+                                    st.info("⚖️ Evenly matched")
+                                    st.write("**Target:** Fight for all points")
+                            
+                            st.markdown("---")
+                            
+                            # Recent form
+                            st.subheader("📈 Recent Form")
+                            
+                            recent_5 = completed.tail(5)
+                            
+                            for _, match in recent_5.iterrows():
+                                if pd.notna(match['GF']) and pd.notna(match['GA']):
+                                    result = "W" if match['GD'] > 0 else "D" if match['GD'] == 0 else "L"
+                                    if result == "W":
+                                        st.success(f"**{result}** {int(match['GF'])}-{int(match['GA'])} vs {match['TheirOpponent']}")
+                                    elif result == "D":
+                                        st.info(f"**{result}** {int(match['GF'])}-{int(match['GA'])} vs {match['TheirOpponent']}")
+                                    else:
+                                        st.error(f"**{result}** {int(match['GF'])}-{int(match['GA'])} vs {match['TheirOpponent']}")
+                            
+                            st.markdown("---")
+                            
+                            # Game plan
+                            st.subheader("📋 Recommended Game Plan")
+                            
+                            if si_diff > 10:
+                                st.write("**Offensive Approach:**")
+                                st.write("- Press high and control possession")
+                                st.write("- Create multiple scoring chances")
+                                st.write("- Build team confidence")
+                            elif si_diff < -10:
+                                st.write("**Defensive Approach:**")
+                                st.write("- Stay compact and organized")
+                                st.write("- Counter-attack when possible")
+                                st.write("- Limit their scoring chances")
+                            else:
+                                st.write("**Balanced Approach:**")
+                                st.write("- Match their intensity")
+                                st.write("- Be clinical with chances")
+                                st.write("- Strong defensive shape")
+                            
+                        else:
+                            st.warning(f"No completed matches found for {selected_upcoming}")
+                            st.write("Check back closer to game day for updated results")
+                            
+                    except FileNotFoundError:
+                        st.warning("BSA Celtic schedule data not available")
+                        st.write("Run `python fetch_bsa_celtic.py` to get their latest results")
+                
+                # Check if it's Club Ohio West (division team)
+                elif "Club Ohio" in selected_upcoming:
+                    try:
+                        division = pd.read_csv("OCL_BU08_Stripes_Division_with_DSX.csv")
+                        club_ohio = division[division['Team'].str.contains("Club Ohio", na=False, case=False)]
+                        
+                        if not club_ohio.empty:
+                            team = club_ohio.iloc[0]
+                            
+                            col1, col2, col3, col4, col5 = st.columns(5)
+                            
+                            with col1:
+                                st.metric("Division Rank", f"#{int(team['Rank'])} / 7")
+                            with col2:
+                                st.metric("Record", f"{int(team['W'])}-{int(team['D'])}-{int(team['L'])}")
+                            with col3:
+                                st.metric("GF/Game", f"{team['GF']:.2f}")
+                            with col4:
+                                st.metric("GA/Game", f"{team['GA']:.2f}")
+                            with col5:
+                                st.metric("PPG", f"{team['PPG']:.2f}")
+                            
+                            st.markdown("---")
+                            
+                            st.subheader("📊 Strength Assessment")
+                            
+                            col1, col2 = st.columns(2)
+                            
+                            # Get dynamic DSX stats
+                            dsx_stats = calculate_dsx_stats()
+                            dsx_si = dsx_stats['StrengthIndex']
+                            
+                            with col1:
+                                st.metric("Opponent SI", f"{team['StrengthIndex']:.1f}")
+                                st.metric("DSX SI", f"{dsx_si:.1f}")
+                            
+                            with col2:
+                                si_diff = dsx_si - team['StrengthIndex']
+                                if si_diff > 10:
+                                    st.success("✅ DSX is stronger")
+                                elif si_diff < -10:
+                                    st.error("⚠️ Opponent is stronger")
+                                else:
+                                    st.info("⚖️ Evenly matched")
+                        else:
+                            st.warning("Division data not found for this team")
+                            
+                    except FileNotFoundError:
+                        st.warning("Division data not available")
+                        st.write("Run `python fetch_gotsport_division.py` to get latest standings")
+                
+                # Final fallback - no data found anywhere
+                else:
+                    if all_divisions_df.empty:
+                        st.info("📊 **General scouting data not available**")
+                        st.write("This opponent is not in any tracked divisions we're monitoring.")
+                        st.write("💡 **To add data:**")
+                        st.write("  - Check if they're in a division we should track")
+                        st.write("  - Add their division to the fetch scripts")
+                        st.write("  - Or enter data manually in Data Manager")
+                    else:
+                        # We have division data loaded, so if we got here, the opponent wasn't found
+                        # This means they're not in our tracked divisions
+                        st.info("ℹ️ **Opponent not in tracked divisions**")
+                        st.write("This team may be in a different league/division that we're not tracking yet.")
+                        st.write(f"💡 **We're tracking {len(all_divisions_df)} teams** across multiple divisions.")
+                        st.write("If this opponent should be tracked, add their division data source to the Data Manager.")
                 
         except FileNotFoundError:
             st.error("Upcoming schedule not found")
@@ -5882,6 +6686,41 @@ elif page == "⚙️ Data Manager":
                             file_name=filename,
                             key=f"download_{filename}"
                         )
+
+        st.markdown("---")
+        st.subheader("📂 Tracked Leagues/Divisions")
+        tracked_files = [
+            ("OCL BU08 Stripes", "OCL_BU08_Stripes_Division_Rankings.csv"),
+            ("OCL BU08 White", "OCL_BU08_White_Division_Rankings.csv"),
+            ("OCL BU08 Stars (5v5)", "OCL_BU08_Stars_Division_Rankings.csv"),
+            ("OCL BU08 Stars (7v7)", "OCL_BU08_Stars_7v7_Division_Rankings.csv"),
+            ("MVYSA B09-3", "MVYSA_B09_3_Division_Rankings.csv"),
+            ("Haunted Classic B08 Orange", "Haunted_Classic_B08Orange_Division_Rankings.csv"),
+            ("Haunted Classic B08 Black", "Haunted_Classic_B08Black_Division_Rankings.csv"),
+            ("CU Fall Finale 2025 U8 Boys Platinum", "CU_Fall_Finale_2025_Division_Rankings.csv"),
+            ("Club Ohio Fall Classic 2025 U09B Select III", "Club_Ohio_Fall_Classic_2025_Division_Rankings.csv"),
+        ]
+        rows = []
+        for name, fname in tracked_files:
+            exists = os.path.exists(fname)
+            rows.append({'League/Division': name, 'File': fname, 'Status': '✅ Available' if exists else '❌ Missing'})
+        st.dataframe(pd.DataFrame(rows), use_container_width=True, hide_index=True)
+
+        st.markdown("---")
+        st.subheader("🔌 Update Scripts & Sources")
+        sources = [
+            { 'Script': 'fetch_ocl_stripes_results.py', 'Purpose': 'OCL Stripes live results', 'Source': 'GotSport results group' },
+            { 'Script': 'fetch_club_ohio_fall_classic.py', 'Purpose': 'Club Ohio Fall Classic U09B Select III', 'Source': 'GotSport (group=436954 & age=9&gender=m)' },
+            { 'Script': 'fetch_cu_fall_finale.py', 'Purpose': 'CU Fall Finale divisions', 'Source': 'GotSport schedules' },
+            { 'Script': 'fetch_bsa_celtic.py', 'Purpose': 'BSA schedules/results (special-case)', 'Source': 'Club site CSV scrape' },
+            { 'Script': 'fetch_mvysa_division.py', 'Purpose': 'MVYSA division standings', 'Source': 'MVYSA site' },
+            { 'Script': 'update_mvysa_real_scores.py', 'Purpose': 'Manual MVYSA scores update', 'Source': 'Manual entry from MVYSA' },
+            { 'Script': 'fetch_gotsport_stars_division.py', 'Purpose': 'OCL Stars 5v5 division', 'Source': 'GotSport' },
+            { 'Script': 'fetch_gotsport_stars_7v7.py', 'Purpose': 'OCL Stars 7v7 division', 'Source': 'GotSport' },
+            { 'Script': 'fetch_gotsport_white_division.py', 'Purpose': 'OCL White division', 'Source': 'GotSport' },
+            { 'Script': 'fetch_division_schedules.py', 'Purpose': 'Generic division schedules', 'Source': 'GotSport' },
+        ]
+        st.dataframe(pd.DataFrame(sources), use_container_width=True, hide_index=True)
     
     st.markdown("---")
     
@@ -5948,7 +6787,7 @@ elif page == "⚙️ Data Manager":
         if st.button("Update Division", use_container_width=True):
             with st.spinner("Fetching division data..."):
                 import subprocess
-                result = subprocess.run(['python', 'fetch_gotsport_division.py'], 
+                result = subprocess.run([sys.executable, 'fetch_gotsport_division.py'], 
                                       capture_output=True, text=True)
                 if result.returncode == 0:
                     st.success("Division data updated!")
@@ -5961,7 +6800,7 @@ elif page == "⚙️ Data Manager":
         if st.button("Update BSA Celtic", use_container_width=True):
             with st.spinner("Fetching BSA Celtic..."):
                 import subprocess
-                result = subprocess.run(['python', 'fetch_bsa_celtic.py'], 
+                result = subprocess.run([sys.executable, 'fetch_bsa_celtic.py'], 
                                       capture_output=True, text=True)
                 if result.returncode == 0:
                     st.success("BSA Celtic data updated!")
@@ -5974,7 +6813,7 @@ elif page == "⚙️ Data Manager":
         if st.button("Update CU Fall Finale", use_container_width=True):
             with st.spinner("Fetching CU Fall Finale..."):
                 import subprocess
-                result = subprocess.run(['python', 'fetch_cu_fall_finale.py'], 
+                result = subprocess.run([sys.executable, 'fetch_cu_fall_finale.py'], 
                                       capture_output=True, text=True)
                 if result.returncode == 0:
                     st.success("CU Fall Finale data updated!")
@@ -5987,7 +6826,7 @@ elif page == "⚙️ Data Manager":
         if st.button("Update Club Ohio Fall Classic", use_container_width=True):
             with st.spinner("Fetching Club Ohio Fall Classic..."):
                 import subprocess
-                result = subprocess.run(['python', 'fetch_club_ohio_fall_classic.py'], 
+                result = subprocess.run([sys.executable, 'fetch_club_ohio_fall_classic.py'], 
                                       capture_output=True, text=True)
                 if result.returncode == 0:
                     st.success("Club Ohio Fall Classic data updated!")
@@ -6000,7 +6839,7 @@ elif page == "⚙️ Data Manager":
         if st.button("Update OCL Stripes Results", use_container_width=True):
             with st.spinner("Fetching OCL Stripes results..."):
                 import subprocess
-                result = subprocess.run(['python', 'fetch_ocl_stripes_results.py'], 
+                result = subprocess.run([sys.executable, 'fetch_ocl_stripes_results.py'], 
                                       capture_output=True, text=True)
                 if result.returncode == 0:
                     st.success("OCL Stripes results updated!")
@@ -6015,17 +6854,17 @@ elif page == "⚙️ Data Manager":
                 import subprocess
                 
                 # Update division
-                subprocess.run(['python', 'fetch_gotsport_division.py'])
+                subprocess.run([sys.executable, 'fetch_gotsport_division.py'])
                 # Update schedules
-                subprocess.run(['python', 'fetch_division_schedules.py'])
+                subprocess.run([sys.executable, 'fetch_division_schedules.py'])
                 # Update BSA Celtic
-                subprocess.run(['python', 'fetch_bsa_celtic.py'])
+                subprocess.run([sys.executable, 'fetch_bsa_celtic.py'])
                 # Update CU Fall Finale
-                subprocess.run(['python', 'fetch_cu_fall_finale.py'])
+                subprocess.run([sys.executable, 'fetch_cu_fall_finale.py'])
                 # Update Club Ohio Fall Classic
-                subprocess.run(['python', 'fetch_club_ohio_fall_classic.py'])
+                subprocess.run([sys.executable, 'fetch_club_ohio_fall_classic.py'])
                 # Update OCL Stripes Results
-                subprocess.run(['python', 'fetch_ocl_stripes_results.py'])
+                subprocess.run([sys.executable, 'fetch_ocl_stripes_results.py'])
                 
                 st.success("All data updated!")
                 refresh_data()
