@@ -99,6 +99,12 @@ def main():
         "CU Fall Finale 2025 Tournament Data"
     ))
     
+    # 5b. Update OCL BU09 7v7 Stripes Division (2017 Boys - Benchmarking Only)
+    updates.append(run_script(
+        "fetch_ocl_bu09_7v7_stripes.py",
+        "OCL BU09 7v7 Stripes - 2017 Boys Benchmarking Data (Not in main rankings)"
+    ))
+    
     # 5b. Update Club Ohio Fall Classic Tournament Data
     updates.append(run_script(
         "fetch_club_ohio_fall_classic.py",
