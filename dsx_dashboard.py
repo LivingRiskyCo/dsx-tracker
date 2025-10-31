@@ -1074,31 +1074,31 @@ if page == "🎯 What's Next":
                 pass
             
             for idx, game in upcoming_games.head(5).iterrows():
-            opponent = game['Opponent']
-            game_date = game['Date']
-            location = game['Location']
-            league = game.get('Tournament', game.get('League', 'N/A'))
-            
-            with st.expander(f"**{game_date}**: {opponent} ({league})", expanded=(idx==0)):
-                col1, col2 = st.columns([2, 3])
+                opponent = game['Opponent']
+                game_date = game['Date']
+                location = game['Location']
+                league = game.get('Tournament', game.get('League', 'N/A'))
                 
-                with col1:
-                    st.subheader("📍 Game Info")
-                    st.write(f"**Date:** {game_date}")
-                    st.write(f"**Location:** {location}")
-                    st.write(f"**League:** {league}")
-                    st.write(f"**Notes:** {game.get('Notes', 'N/A')}")
-                
-                with col2:
+                with st.expander(f"**{game_date}**: {opponent} ({league})", expanded=(idx==0)):
+                    col1, col2 = st.columns([2, 3])
+                    
+                    with col1:
+                        st.subheader("📍 Game Info")
+                        st.write(f"**Date:** {game_date}")
+                        st.write(f"**Location:** {location}")
+                        st.write(f"**League:** {league}")
+                        st.write(f"**Notes:** {game.get('Notes', 'N/A')}")
+                    
+                    with col2:
                         st.subheader("🎯 Head-to-Head Prediction")
-                    
+                        
                         # Get opponent stats from consolidated division data (with alias + fuzzy matching)
-                    opp_si = None
-                    opp_gf = None
-                    opp_ga = None
+                        opp_si = None
+                        opp_gf = None
+                        opp_ga = None
                         opp_gp = 1
-                    
-                    if not all_divisions_df.empty:
+                        
+                        if not all_divisions_df.empty:
                             # Apply alias first
                             opponent_alias = resolve_alias(opponent)
                             # Try exact match first
@@ -1135,12 +1135,12 @@ if page == "🎯 What's Next":
                                 if best_match:
                                     opp_data = all_divisions_df[all_divisions_df['Team'] == best_match]
                             
-                        if not opp_data.empty:
-                            team = opp_data.iloc[0]
-                            opp_si = team['StrengthIndex']
-                            # Calculate per-game stats
-                            opp_gp = team.get('GP', 1)
-                            opp_gp = opp_gp if opp_gp > 0 else 1
+                            if not opp_data.empty:
+                                team = opp_data.iloc[0]
+                                opp_si = team['StrengthIndex']
+                                # Calculate per-game stats
+                                opp_gp = team.get('GP', 1)
+                                opp_gp = opp_gp if opp_gp > 0 else 1
                                 
                                 # Check if GF/GA are totals or per-game already
                                 gf_val = team.get('GF', 0)
@@ -1157,217 +1157,217 @@ if page == "🎯 What's Next":
                                 else:
                                     opp_ga = ga_val
                     
-                    if opp_si is not None:
-                        # Enhanced Strength Index display
-                        st.markdown("---")
-                        st.subheader("⚡ Strength Index Analysis")
-                        
-                        # Create a more prominent SI display
-                        col_a, col_b, col_c = st.columns(3)
-                        
-                        with col_a:
-                            st.markdown("### 🏆 DSX Orange")
-                            st.markdown(f"**Strength Index: {dsx_si:.1f}**")
-                            st.caption(f"Goals/Game: {dsx_gf_avg:.1f}")
-                            st.caption(f"Goals Against: {dsx_ga_avg:.1f}")
-                        
-                        with col_b:
-                            st.markdown("### ⚔️ " + opponent)
-                            st.markdown(f"**Strength Index: {opp_si:.1f}**")
-                            if opp_gf is not None:
-                                st.caption(f"Goals/Game: {opp_gf:.1f}")
-                            if opp_ga is not None:
-                                st.caption(f"Goals Against: {opp_ga:.1f}")
-                        
-                        with col_c:
-                            si_diff = dsx_si - opp_si
-                            if si_diff > 0:
-                                st.markdown("### 🎯 DSX Advantage")
-                                st.markdown(f"**+{si_diff:.1f} Points**")
-                                st.success("✅ We're Stronger")
-                            elif si_diff < 0:
-                                st.markdown("### ⚠️ Opponent Advantage")
-                                st.markdown(f"**{si_diff:.1f} Points**")
-                                st.warning("⚠️ They're Stronger")
+                        if opp_si is not None:
+                            # Enhanced Strength Index display
+                            st.markdown("---")
+                            st.subheader("⚡ Strength Index Analysis")
+                            
+                            # Create a more prominent SI display
+                            col_a, col_b, col_c = st.columns(3)
+                            
+                            with col_a:
+                                st.markdown("### 🏆 DSX Orange")
+                                st.markdown(f"**Strength Index: {dsx_si:.1f}**")
+                                st.caption(f"Goals/Game: {dsx_gf_avg:.1f}")
+                                st.caption(f"Goals Against: {dsx_ga_avg:.1f}")
+                            
+                            with col_b:
+                                st.markdown("### ⚔️ " + opponent)
+                                st.markdown(f"**Strength Index: {opp_si:.1f}**")
+                                if opp_gf is not None:
+                                    st.caption(f"Goals/Game: {opp_gf:.1f}")
+                                if opp_ga is not None:
+                                    st.caption(f"Goals Against: {opp_ga:.1f}")
+                            
+                            with col_c:
+                                si_diff = dsx_si - opp_si
+                                if si_diff > 0:
+                                    st.markdown("### 🎯 DSX Advantage")
+                                    st.markdown(f"**+{si_diff:.1f} Points**")
+                                    st.success("✅ We're Stronger")
+                                elif si_diff < 0:
+                                    st.markdown("### ⚠️ Opponent Advantage")
+                                    st.markdown(f"**{si_diff:.1f} Points**")
+                                    st.warning("⚠️ They're Stronger")
+                                else:
+                                    st.markdown("### ⚖️ Even Match")
+                                    st.markdown("**0.0 Points**")
+                                    st.info("🤝 Dead Even")
+                            
+                            # Predicted score
+                            st.markdown("---")
+                            st.subheader("🔮 Score Prediction")
+                            
+                            # Improved prediction logic that properly accounts for strength differences
+                            # When opponent is stronger (negative si_diff), they should score more, we should score less
+                            # When we're stronger (positive si_diff), we should score more, they should score less
+                            
+                            # Base predictions on each team's offensive capability
+                            # Use more aggressive SI impact for realistic predictions
+                            si_impact = si_diff * 0.08  # Even stronger impact
+                            
+                            pred_dsx_goals = max(0.5, dsx_gf_avg + si_impact)
+                            pred_opp_goals = max(0.5, (opp_gf if opp_gf else dsx_ga_avg) - si_impact)
+                            
+                            # Track if we swapped the predictions
+                            swapped = False
+                            
+                            # Ensure the stronger team actually scores more goals
+                            if si_diff < -5:  # Opponent is significantly stronger
+                                if pred_dsx_goals >= pred_opp_goals:
+                                    # Swap the predictions so stronger team scores more
+                                    pred_dsx_goals, pred_opp_goals = pred_opp_goals, pred_dsx_goals
+                                    swapped = True
+                                # If they're much stronger, give them at least 1 more goal
+                                elif pred_dsx_goals == pred_opp_goals and si_diff < -10:
+                                    pred_opp_goals = pred_dsx_goals + 1
+                            elif si_diff > 5:  # We are significantly stronger
+                                if pred_opp_goals >= pred_dsx_goals:
+                                    # Swap the predictions so stronger team scores more
+                                    pred_dsx_goals, pred_opp_goals = pred_opp_goals, pred_dsx_goals
+                                    swapped = True
+                                # If we're much stronger, give us at least 1 more goal
+                                elif pred_dsx_goals == pred_opp_goals and si_diff > 10:
+                                    pred_dsx_goals = pred_opp_goals + 1
+                            
+                            # Calculate ranges for confidence assessment
+                            pred_dsx_low = max(0, pred_dsx_goals - 1.5)
+                            pred_dsx_high = pred_dsx_goals + 1.5
+                            pred_opp_low = max(0, pred_opp_goals - 1.5)
+                            pred_opp_high = pred_opp_goals + 1.5
+                            
+                            # Calculate single score predictions (rounded to realistic values)
+                            dsx_prediction = round(pred_dsx_goals)
+                            opp_prediction = round(pred_opp_goals)
+                            
+                            # Calculate confidence based on range tightness and strength difference
+                            dsx_range = pred_dsx_high - pred_dsx_low
+                            opp_range = pred_opp_high - pred_opp_low
+                            avg_range = (dsx_range + opp_range) / 2
+                            
+                            # Calculate percentage confidence based on multiple factors
+                            range_factor = max(0, 1 - (avg_range / 4.0))  # Tighter range = higher confidence
+                            strength_factor = min(1.0, abs(si_diff) / 20.0)  # Bigger strength difference = higher confidence
+                            data_factor = min(1.0, opp_gp / 5.0)  # More opponent data = higher confidence
+                            
+                            # Weighted confidence calculation
+                            confidence_pct = (range_factor * 0.4 + strength_factor * 0.4 + data_factor * 0.2) * 100
+                            confidence_pct = max(25, min(95, confidence_pct))  # Clamp between 25% and 95%
+                            
+                            if confidence_pct >= 75:
+                                confidence = "High"
+                                confidence_color = "🟢"
+                                confidence_style = "success"
+                            elif confidence_pct >= 60:
+                                confidence = "Medium"
+                                confidence_color = "🟡"
+                                confidence_style = "warning"
                             else:
-                                st.markdown("### ⚖️ Even Match")
-                                st.markdown("**0.0 Points**")
-                                st.info("🤝 Dead Even")
-                        
-                        # Predicted score
-                        st.markdown("---")
-                        st.subheader("🔮 Score Prediction")
-                        
-                        # Improved prediction logic that properly accounts for strength differences
-                        # When opponent is stronger (negative si_diff), they should score more, we should score less
-                        # When we're stronger (positive si_diff), we should score more, they should score less
-                        
-                        # Base predictions on each team's offensive capability
-                        # Use more aggressive SI impact for realistic predictions
-                        si_impact = si_diff * 0.08  # Even stronger impact
-                        
-                        pred_dsx_goals = max(0.5, dsx_gf_avg + si_impact)
-                        pred_opp_goals = max(0.5, (opp_gf if opp_gf else dsx_ga_avg) - si_impact)
-                        
-                        # Track if we swapped the predictions
-                        swapped = False
-                        
-                        # Ensure the stronger team actually scores more goals
-                        if si_diff < -5:  # Opponent is significantly stronger
-                            if pred_dsx_goals >= pred_opp_goals:
-                                # Swap the predictions so stronger team scores more
-                                pred_dsx_goals, pred_opp_goals = pred_opp_goals, pred_dsx_goals
-                                swapped = True
-                            # If they're much stronger, give them at least 1 more goal
-                            elif pred_dsx_goals == pred_opp_goals and si_diff < -10:
-                                pred_opp_goals = pred_dsx_goals + 1
-                        elif si_diff > 5:  # We are significantly stronger
-                            if pred_opp_goals >= pred_dsx_goals:
-                                # Swap the predictions so stronger team scores more
-                                pred_dsx_goals, pred_opp_goals = pred_opp_goals, pred_dsx_goals
-                                swapped = True
-                            # If we're much stronger, give us at least 1 more goal
-                            elif pred_dsx_goals == pred_opp_goals and si_diff > 10:
-                                pred_dsx_goals = pred_opp_goals + 1
-                        
-                        # Calculate ranges for confidence assessment
-                        pred_dsx_low = max(0, pred_dsx_goals - 1.5)
-                        pred_dsx_high = pred_dsx_goals + 1.5
-                        pred_opp_low = max(0, pred_opp_goals - 1.5)
-                        pred_opp_high = pred_opp_goals + 1.5
-                        
-                        # Calculate single score predictions (rounded to realistic values)
-                        dsx_prediction = round(pred_dsx_goals)
-                        opp_prediction = round(pred_opp_goals)
-                        
-                        # Calculate confidence based on range tightness and strength difference
-                        dsx_range = pred_dsx_high - pred_dsx_low
-                        opp_range = pred_opp_high - pred_opp_low
-                        avg_range = (dsx_range + opp_range) / 2
-                        
-                        # Calculate percentage confidence based on multiple factors
-                        range_factor = max(0, 1 - (avg_range / 4.0))  # Tighter range = higher confidence
-                        strength_factor = min(1.0, abs(si_diff) / 20.0)  # Bigger strength difference = higher confidence
-                        data_factor = min(1.0, opp_gp / 5.0)  # More opponent data = higher confidence
-                        
-                        # Weighted confidence calculation
-                        confidence_pct = (range_factor * 0.4 + strength_factor * 0.4 + data_factor * 0.2) * 100
-                        confidence_pct = max(25, min(95, confidence_pct))  # Clamp between 25% and 95%
-                        
-                        if confidence_pct >= 75:
-                            confidence = "High"
-                            confidence_color = "🟢"
-                            confidence_style = "success"
-                        elif confidence_pct >= 60:
-                            confidence = "Medium"
-                            confidence_color = "🟡"
-                            confidence_style = "warning"
-                        else:
-                            confidence = "Low"
-                            confidence_color = "🔴"
-                            confidence_style = "error"
-                        
-                        # Enhanced score prediction display
-                        col1, col2 = st.columns(2)
-                        
-                        with col1:
-                            st.markdown("### 🏆 DSX Orange")
-                            st.markdown(f"## **{dsx_prediction} Goals**")
-                            st.caption(f"Range: {pred_dsx_low:.1f} - {pred_dsx_high:.1f}")
-                        
-                        with col2:
-                            st.markdown("### ⚔️ " + opponent)
-                            st.markdown(f"## **{opp_prediction} Goals**")
-                            st.caption(f"Range: {pred_opp_low:.1f} - {pred_opp_high:.1f}")
-                        
-                        # Final score prediction with confidence color - better sized
-                        st.markdown("---")
-                        if confidence_style == "success":
-                            st.markdown(f"### 🎯 **Final Score: DSX {dsx_prediction}-{opp_prediction} {opponent}**")
-                            st.success(f"**{confidence_color} Confidence: {confidence} ({confidence_pct:.0f}%)** - Based on strength difference and data quality")
-                        elif confidence_style == "warning":
-                            st.markdown(f"### 🎯 **Final Score: DSX {dsx_prediction}-{opp_prediction} {opponent}**")
-                            st.warning(f"**{confidence_color} Confidence: {confidence} ({confidence_pct:.0f}%)** - Based on strength difference and data quality")
-                        else:
-                            st.markdown(f"### 🎯 **Final Score: DSX {dsx_prediction}-{opp_prediction} {opponent}**")
-                            st.error(f"**{confidence_color} Confidence: {confidence} ({confidence_pct:.0f}%)** - Based on strength difference and data quality")
-                        
-                        # Win probability based on final predicted score
-                        st.markdown("---")
-                        
-                        # Calculate win probability using rounded final score shown to user
-                        if dsx_prediction > opp_prediction:
-                            # We're predicted to win
-                            goal_diff = dsx_prediction - opp_prediction
-                            if goal_diff >= 2:
-                                win_prob = 75
-                                draw_prob = 15
-                                loss_prob = 10
-                                st.success(f"✅ **Win Probability: {win_prob}%**")
+                                confidence = "Low"
+                                confidence_color = "🔴"
+                                confidence_style = "error"
+                            
+                            # Enhanced score prediction display
+                            col1, col2 = st.columns(2)
+                            
+                            with col1:
+                                st.markdown("### 🏆 DSX Orange")
+                                st.markdown(f"## **{dsx_prediction} Goals**")
+                                st.caption(f"Range: {pred_dsx_low:.1f} - {pred_dsx_high:.1f}")
+                            
+                            with col2:
+                                st.markdown("### ⚔️ " + opponent)
+                                st.markdown(f"## **{opp_prediction} Goals**")
+                                st.caption(f"Range: {pred_opp_low:.1f} - {pred_opp_high:.1f}")
+                            
+                            # Final score prediction with confidence color - better sized
+                            st.markdown("---")
+                            if confidence_style == "success":
+                                st.markdown(f"### 🎯 **Final Score: DSX {dsx_prediction}-{opp_prediction} {opponent}**")
+                                st.success(f"**{confidence_color} Confidence: {confidence} ({confidence_pct:.0f}%)** - Based on strength difference and data quality")
+                            elif confidence_style == "warning":
+                                st.markdown(f"### 🎯 **Final Score: DSX {dsx_prediction}-{opp_prediction} {opponent}**")
+                                st.warning(f"**{confidence_color} Confidence: {confidence} ({confidence_pct:.0f}%)** - Based on strength difference and data quality")
                             else:
-                                win_prob = 60
-                                draw_prob = 25
-                                loss_prob = 15
-                                st.success(f"✅ **Win Probability: {win_prob}%**")
-                        elif dsx_prediction < opp_prediction:
-                            # We're predicted to lose
-                            goal_diff = opp_prediction - dsx_prediction
-                            if goal_diff >= 2:
-                                win_prob = 15
-                                draw_prob = 20
-                                loss_prob = 65
-                                st.error(f"⚠️ **Win Probability: {win_prob}%**")
+                                st.markdown(f"### 🎯 **Final Score: DSX {dsx_prediction}-{opp_prediction} {opponent}**")
+                                st.error(f"**{confidence_color} Confidence: {confidence} ({confidence_pct:.0f}%)** - Based on strength difference and data quality")
+                            
+                            # Win probability based on final predicted score
+                            st.markdown("---")
+                            
+                            # Calculate win probability using rounded final score shown to user
+                            if dsx_prediction > opp_prediction:
+                                # We're predicted to win
+                                goal_diff = dsx_prediction - opp_prediction
+                                if goal_diff >= 2:
+                                    win_prob = 75
+                                    draw_prob = 15
+                                    loss_prob = 10
+                                    st.success(f"✅ **Win Probability: {win_prob}%**")
+                                else:
+                                    win_prob = 60
+                                    draw_prob = 25
+                                    loss_prob = 15
+                                    st.success(f"✅ **Win Probability: {win_prob}%**")
+                            elif dsx_prediction < opp_prediction:
+                                # We're predicted to lose
+                                goal_diff = opp_prediction - dsx_prediction
+                                if goal_diff >= 2:
+                                    win_prob = 15
+                                    draw_prob = 20
+                                    loss_prob = 65
+                                    st.error(f"⚠️ **Win Probability: {win_prob}%**")
+                                else:
+                                    win_prob = 25
+                                    draw_prob = 30
+                                    loss_prob = 45
+                                    st.error(f"⚠️ **Win Probability: {win_prob}%**")
                             else:
-                                win_prob = 25
-                                draw_prob = 30
-                                loss_prob = 45
-                                st.error(f"⚠️ **Win Probability: {win_prob}%**")
+                                # Predicted draw
+                                win_prob = 35
+                                draw_prob = 40
+                                loss_prob = 25
+                                st.info(f"⚖️ **Win Probability: {win_prob}%**")
+                            
+                            st.write(f"Draw: {draw_prob}% | Loss: {loss_prob}%")
+                            
+                            # Opponent's Three-Stat Snapshot (League Season + Tournament + H2H vs DSX)
+                            try:
+                                dsx_matches_for_snapshot = pd.read_csv("DSX_Matches_Fall2025.csv", index_col=False)
+                            except:
+                                dsx_matches_for_snapshot = pd.DataFrame()
+                            
+                            opponent_snapshot = get_opponent_three_stat_snapshot(opponent, all_divisions_df, dsx_matches_for_snapshot)
+                            if opponent_snapshot:
+                                display_opponent_three_stat_snapshot(opponent_snapshot, opponent)
+                            else:
+                                st.info(f"📊 Scouting data not yet available for {opponent}")
                         else:
-                            # Predicted draw
-                            win_prob = 35
-                            draw_prob = 40
-                            loss_prob = 25
-                            st.info(f"⚖️ **Win Probability: {win_prob}%**")
-                        
-                        st.write(f"Draw: {draw_prob}% | Loss: {loss_prob}%")
-                        
-                        # Opponent's Three-Stat Snapshot (League Season + Tournament + H2H vs DSX)
-                        try:
-                            dsx_matches_for_snapshot = pd.read_csv("DSX_Matches_Fall2025.csv", index_col=False)
-                        except:
-                            dsx_matches_for_snapshot = pd.DataFrame()
-                        
-                        opponent_snapshot = get_opponent_three_stat_snapshot(opponent, all_divisions_df, dsx_matches_for_snapshot)
-                        if opponent_snapshot:
-                            display_opponent_three_stat_snapshot(opponent_snapshot, opponent)
-                        else:
-                            st.info(f"📊 Scouting data not yet available for {opponent}")
+                            st.warning("Opponent data not available. Run data update to get predictions.")
+                    
+                    st.markdown("---")
+                    
+                    # Keys to Victory
+                    st.subheader("🔑 Keys to Victory")
+                    
+                    if opp_si and opp_si > dsx_si + 10:
+                        st.write("**Defensive Focus:**")
+                        st.write("- ✅ Stay compact defensively")
+                        st.write("- ✅ Quick counter-attacks")
+                        st.write("- ✅ Set piece opportunities")
+                        st.write("- ✅ High energy for 60 minutes")
+                    elif opp_si and opp_si < dsx_si - 10:
+                        st.write("**Offensive Pressure:**")
+                        st.write("- ✅ High press from kickoff")
+                        st.write("- ✅ Dominate possession")
+                        st.write("- ✅ Create multiple chances")
+                        st.write("- ✅ Early goal to set tone")
                     else:
-                        st.warning("Opponent data not available. Run data update to get predictions.")
-                
-                st.markdown("---")
-                
-                # Keys to Victory
-                st.subheader("🔑 Keys to Victory")
-                
-                if opp_si and opp_si > dsx_si + 10:
-                    st.write("**Defensive Focus:**")
-                    st.write("- ✅ Stay compact defensively")
-                    st.write("- ✅ Quick counter-attacks")
-                    st.write("- ✅ Set piece opportunities")
-                    st.write("- ✅ High energy for 60 minutes")
-                elif opp_si and opp_si < dsx_si - 10:
-                    st.write("**Offensive Pressure:**")
-                    st.write("- ✅ High press from kickoff")
-                    st.write("- ✅ Dominate possession")
-                    st.write("- ✅ Create multiple chances")
-                    st.write("- ✅ Early goal to set tone")
-                else:
-                    st.write("**Balanced Approach:**")
-                    st.write("- ✅ Stay organized defensively")
-                    st.write("- ✅ Be clinical with chances")
-                    st.write("- ✅ Match their intensity")
-                    st.write("- ✅ Capitalize on mistakes")
+                        st.write("**Balanced Approach:**")
+                        st.write("- ✅ Stay organized defensively")
+                        st.write("- ✅ Be clinical with chances")
+                        st.write("- ✅ Match their intensity")
+                        st.write("- ✅ Capitalize on mistakes")
         elif 'Status' in upcoming.columns:
             # Debug info to help identify missing upcoming items
             with st.expander("ℹ️ Troubleshooting: Upcoming schedule (no upcoming detected)"):
@@ -3681,7 +3681,7 @@ elif page == "🏆 Division Rankings":
                 
                 if opponent_df.empty:
                     opponent_df = opp_row.copy()
-                            else:
+                else:
                     opponent_df = pd.concat([opponent_df, opp_row], ignore_index=True)
     
     # Show matching summary (collapsed by default)
@@ -3699,7 +3699,7 @@ elif page == "🏆 Division Rankings":
                     for orig, matched in matched_opponents.items():
                         if orig == matched:
                             st.write(f"  ✅ {orig}")
-            else:
+                        else:
                             st.write(f"  ⚠️ {orig} → {matched} (fuzzy match)")
                 
                 # Show unmatched
