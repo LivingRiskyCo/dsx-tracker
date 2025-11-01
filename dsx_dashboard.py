@@ -349,36 +349,84 @@ def get_opponent_three_stat_snapshot(opponent_name, all_divisions_df, dsx_matche
         return ' '.join(str(name).strip().split()).lower()
     
     # Try to find opponent in division data (League Season Stats)
+    # IMPORTANT: Filter out tournament files to get league/division season stats
     resolved_opp_name = resolve_alias(opponent_name)
     opp_division_row = pd.DataFrame()
     
     if not all_divisions_df.empty:
-        # Try exact match first
-        opp_division_row = all_divisions_df[all_divisions_df['Team'] == resolved_opp_name].copy()
+        # Filter out tournament data for League Season stats
+        # Tournament files: Haunted Classic, CU Fall Finale, Club Ohio Fall Classic
+        league_divisions_df = all_divisions_df.copy()
         
-        # If no exact match, try case-insensitive
-        if opp_division_row.empty:
-            opp_normalized = normalize_name_for_match(resolved_opp_name)
-            for idx, row in all_divisions_df.iterrows():
-                team_normalized = normalize_name_for_match(row['Team'])
-                if team_normalized == opp_normalized:
-                    opp_division_row = all_divisions_df.iloc[[idx]]
-                    break
+        # Identify tournament rows
+        tournament_keywords = ['Haunted Classic', 'CU Fall Finale', 'Club Ohio Fall Classic']
+        is_tournament = league_divisions_df.apply(
+            lambda row: any(kw in str(row.get('League', '')) + str(row.get('SourceURL', '')) 
+                           for kw in tournament_keywords), 
+            axis=1
+        )
         
-        # If still no match, try fuzzy matching
-        if opp_division_row.empty:
-            opp_normalized = normalize_name_for_match(resolved_opp_name)
-            opp_words = [w for w in opp_normalized.split() if len(w) > 3]
-            matches = []
-            for idx, row in all_divisions_df.iterrows():
-                team_normalized = normalize_name_for_match(row['Team'])
-                match_score = sum(1 for word in opp_words if word in team_normalized)
-                if match_score >= 2:
-                    matches.append((match_score, idx, row['Team']))
-            if matches:
-                matches.sort(reverse=True)
-                best_match_idx = matches[0][1]
-                opp_division_row = all_divisions_df.iloc[[best_match_idx]]
+        # Prefer league/division data over tournament data for "League Season" section
+        league_only_df = league_divisions_df[~is_tournament].copy()
+        tournament_only_df = league_divisions_df[is_tournament].copy()
+        
+        # First try to find in league/division data
+        if not league_only_df.empty:
+            # Try exact match first
+            opp_division_row = league_only_df[league_only_df['Team'] == resolved_opp_name].copy()
+            
+            # If no exact match, try case-insensitive
+            if opp_division_row.empty:
+                opp_normalized = normalize_name_for_match(resolved_opp_name)
+                for idx, row in league_only_df.iterrows():
+                    team_normalized = normalize_name_for_match(row['Team'])
+                    if team_normalized == opp_normalized:
+                        opp_division_row = league_only_df.iloc[[idx]]
+                        break
+            
+            # If still no match, try fuzzy matching
+            if opp_division_row.empty:
+                opp_normalized = normalize_name_for_match(resolved_opp_name)
+                opp_words = [w for w in opp_normalized.split() if len(w) > 3]
+                matches = []
+                for idx, row in league_only_df.iterrows():
+                    team_normalized = normalize_name_for_match(row['Team'])
+                    match_score = sum(1 for word in opp_words if word in team_normalized)
+                    if match_score >= 2:
+                        matches.append((match_score, idx, row['Team']))
+                if matches:
+                    matches.sort(reverse=True)
+                    best_match_idx = matches[0][1]
+                    opp_division_row = league_only_df.iloc[[best_match_idx]]
+        
+        # If still no match in league data, fall back to tournament data (for teams that only exist in tournaments)
+        if opp_division_row.empty and not tournament_only_df.empty:
+            # Try exact match first
+            opp_division_row = tournament_only_df[tournament_only_df['Team'] == resolved_opp_name].copy()
+            
+            # If no exact match, try case-insensitive
+            if opp_division_row.empty:
+                opp_normalized = normalize_name_for_match(resolved_opp_name)
+                for idx, row in tournament_only_df.iterrows():
+                    team_normalized = normalize_name_for_match(row['Team'])
+                    if team_normalized == opp_normalized:
+                        opp_division_row = tournament_only_df.iloc[[idx]]
+                        break
+            
+            # If still no match, try fuzzy matching
+            if opp_division_row.empty:
+                opp_normalized = normalize_name_for_match(resolved_opp_name)
+                opp_words = [w for w in opp_normalized.split() if len(w) > 3]
+                matches = []
+                for idx, row in tournament_only_df.iterrows():
+                    team_normalized = normalize_name_for_match(row['Team'])
+                    match_score = sum(1 for word in opp_words if word in team_normalized)
+                    if match_score >= 2:
+                        matches.append((match_score, idx, row['Team']))
+                if matches:
+                    matches.sort(reverse=True)
+                    best_match_idx = matches[0][1]
+                    opp_division_row = tournament_only_df.iloc[[best_match_idx]]
     
     if not opp_division_row.empty:
         opp_full = opp_division_row.iloc[0]
