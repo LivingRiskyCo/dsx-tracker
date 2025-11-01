@@ -6103,7 +6103,24 @@ elif page == "🎮 Game Predictions":
             opp_ga = None
             
             if not all_divisions_df.empty:
+                # Try exact match first
                 opp_data = all_divisions_df[all_divisions_df['Team'] == selected_opponent]
+                
+                # If no exact match, try normalized matching
+                if opp_data.empty:
+                    opp_normalized = normalize_name(selected_opponent)
+                    for idx, row in all_divisions_df.iterrows():
+                        team_normalized = normalize_name(str(row.get('Team', '')))
+                        if opp_normalized == team_normalized:
+                            opp_data = all_divisions_df.iloc[[idx]]
+                            break
+                
+                # If still no match, try alias resolution
+                if opp_data.empty:
+                    opp_resolved = resolve_alias(selected_opponent)
+                    if opp_resolved != selected_opponent:
+                        opp_data = all_divisions_df[all_divisions_df['Team'] == opp_resolved]
+                
                 if not opp_data.empty:
                     opp_si = opp_data.iloc[0]['StrengthIndex']
                     # Calculate per-game stats
