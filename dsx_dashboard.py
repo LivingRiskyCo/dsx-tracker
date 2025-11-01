@@ -430,27 +430,6 @@ def get_opponent_three_stat_snapshot(opponent_name, all_divisions_df, dsx_matche
     
     if not opp_division_row.empty:
         opp_full = opp_division_row.iloc[0]
-        gp = opp_full.get('GP', 1)
-        gp = gp if gp > 0 else 1
-        
-        # Handle both totals and per-game
-        opp_gf = opp_full.get('GF', 0)
-        opp_ga = opp_full.get('GA', 0)
-        if opp_gf > 10:  # Heuristic: if > 10, it's likely total
-            opp_gf_pg = opp_gf / gp if gp > 0 else 0
-        else:
-            opp_gf_pg = opp_gf
-        
-        if opp_ga > 10:
-            opp_ga_pg = opp_ga / gp if gp > 0 else 0
-        else:
-            opp_ga_pg = opp_ga
-        
-        opp_gd = opp_full.get('GD', opp_gf - opp_ga)
-        if abs(opp_gd) > 10:
-            opp_gd_pg = opp_gd / gp if gp > 0 else 0
-        else:
-            opp_gd_pg = opp_gd
         
         # Safely convert W/L/D to int, handling NaN and various types
         def safe_int(value, default=0):
@@ -471,27 +450,94 @@ def get_opponent_three_stat_snapshot(opponent_name, all_divisions_df, dsx_matche
             except (ValueError, TypeError, IndexError):
                 return default
         
+        def safe_float(value, default=0.0):
+            """Safely convert value to float, handling NaN"""
+            if pd.isna(value):
+                return default
+            try:
+                if hasattr(value, 'iloc'):
+                    value = value.iloc[0] if len(value) > 0 else default
+                if hasattr(value, '__iter__') and not isinstance(value, (str, bytes)):
+                    value = value[0] if len(value) > 0 else default
+                if value != value:  # NaN check
+                    return default
+                return float(value)
+            except (ValueError, TypeError, IndexError):
+                return default
+        
+        def safe_str(value, default='Unknown'):
+            """Safely convert value to string, handling NaN"""
+            if pd.isna(value):
+                return default
+            try:
+                return str(value).strip() if str(value).strip() else default
+            except:
+                return default
+        
+        # Safely get GP, handling NaN
+        gp = safe_int(opp_full.get('GP', 1), default=1)
+        gp = gp if gp > 0 else 1
+        
+        # Handle both totals and per-game for GF/GA
+        opp_gf_raw = opp_full.get('GF', 0)
+        opp_ga_raw = opp_full.get('GA', 0)
+        opp_gf = safe_float(opp_gf_raw, 0)
+        opp_ga = safe_float(opp_ga_raw, 0)
+        
+        if opp_gf > 10:  # Heuristic: if > 10, it's likely total
+            opp_gf_pg = opp_gf / gp if gp > 0 else 0
+        else:
+            opp_gf_pg = opp_gf
+        
+        if opp_ga > 10:
+            opp_ga_pg = opp_ga / gp if gp > 0 else 0
+        else:
+            opp_ga_pg = opp_ga
+        
+        # Get GD, handling NaN
+        opp_gd_raw = opp_full.get('GD', opp_gf - opp_ga)
+        opp_gd = safe_float(opp_gd_raw, opp_gf - opp_ga)
+        
+        if abs(opp_gd) > 10:
+            opp_gd_pg = opp_gd / gp if gp > 0 else 0
+        else:
+            opp_gd_pg = opp_gd
+        
         w = safe_int(opp_full.get('W', 0))
         l = safe_int(opp_full.get('L', 0))
         d = safe_int(opp_full.get('D', 0))
         pts = (w * 3) + d
         opp_ppg = pts / gp if gp > 0 else 0
         
-        league_name = opp_full.get('League', opp_full.get('League/Division', 'Unknown'))
-        division_name = opp_full.get('Division', opp_full.get('League/Division', 'Unknown'))
+        # Safely get league/division names, handling NaN
+        league_name = safe_str(opp_full.get('League', opp_full.get('League/Division', 'Unknown')), 'Unknown')
+        division_name = safe_str(opp_full.get('Division', opp_full.get('League/Division', 'Unknown')), 'Unknown')
+        
+        # Safely get Rank and StrengthIndex
+        rank_val = opp_full.get('Rank', 'N/A')
+        if pd.isna(rank_val):
+            rank_display = 'N/A'
+        else:
+            try:
+                rank_display = int(float(rank_val))
+            except:
+                rank_display = 'N/A'
+        
+        strength_val = opp_full.get('StrengthIndex', 0)
+        strength = safe_float(strength_val, 0)
         
         snapshot['league'] = {
             'record': f"{w}-{l}-{d}",
-            'gp': int(gp),
+            'gp': gp,
             'ppg': round(opp_ppg, 2),
-            'gf_pg': round(opp_gf_pg, 2),
-            'ga_pg': round(opp_ga_pg, 2),
-            'gd_pg': round(opp_gd_pg, 2),
-            'rank': opp_full.get('Rank', 'N/A'),
-            'strength': opp_full.get('StrengthIndex', 0),
+            'gf_pg': round(opp_gf_pg, 2) if not pd.isna(opp_gf_pg) else 0.0,
+            'ga_pg': round(opp_ga_pg, 2) if not pd.isna(opp_ga_pg) else 0.0,
+            'gd_pg': round(opp_gd_pg, 2) if not pd.isna(opp_gd_pg) else 0.0,
+            'rank': rank_display,
+            'strength': strength,
             'league': league_name,
             'division': division_name,
-            'team_name': opp_full.get('Team', opponent_name)
+            'team_name': safe_str(opp_full.get('Team', opponent_name), opponent_name)
         }
     
     # Get Head-to-Head vs DSX stats
