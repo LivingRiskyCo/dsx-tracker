@@ -4211,13 +4211,18 @@ elif page == "🏆 Division Rankings":
             # Remove DSX from tournament data (we'll add our own stats)
             if 'Team' in tournament_df.columns:
                 try:
-                    # Convert Team column to string, handling NaN values
-                    tournament_df['Team'] = tournament_df['Team'].fillna('').astype(str)
-                    # Filter out DSX entries safely
-                    mask = tournament_df['Team'].str.contains('DSX', case=False, na=False)
-                    tournament_df = tournament_df[~mask].copy()
-                except (AttributeError, TypeError, KeyError) as e:
-                    # If Team column can't be processed as string, skip this filter
+                    # Convert Team column to string, handling all edge cases
+                    # First ensure it's a proper Series
+                    team_series = tournament_df['Team'].copy()
+                    # Fill NaN and convert to string
+                    team_series = team_series.fillna('').astype(str)
+                    # Now try to filter
+                    if len(team_series) > 0:
+                        mask = team_series.str.contains('DSX', case=False, na=False)
+                        tournament_df = tournament_df[~mask].copy()
+                except Exception as e:
+                    # If anything goes wrong, skip DSX filtering but continue
+                    # The app should still work without this filter
                     pass
             
             # Filter out teams with empty or missing team names
