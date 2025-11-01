@@ -6001,13 +6001,30 @@ elif page == "🎮 Game Predictions":
                     game_date = game['Date']
                     tournament = game['Tournament']
                     
-                    # Get opponent stats for prediction
+                    # Get opponent stats for prediction (with fuzzy matching and aliases)
                     opp_si = None
                     opp_gf = None
                     opp_ga = None
                     
                     if not all_divisions_df.empty:
+                        # Try exact match first
                         opp_data = all_divisions_df[all_divisions_df['Team'] == opponent]
+                        
+                        # If no exact match, try normalized matching
+                        if opp_data.empty:
+                            opp_normalized = normalize_name(opponent)
+                            for idx, row in all_divisions_df.iterrows():
+                                team_normalized = normalize_name(str(row.get('Team', '')))
+                                if opp_normalized == team_normalized:
+                                    opp_data = all_divisions_df.iloc[[idx]]
+                                    break
+                        
+                        # If still no match, try alias resolution
+                        if opp_data.empty:
+                            opp_resolved = resolve_alias(opponent)
+                            if opp_resolved != opponent:
+                                opp_data = all_divisions_df[all_divisions_df['Team'] == opp_resolved]
+                        
                         if not opp_data.empty:
                             opp_si = opp_data.iloc[0]['StrengthIndex']
                             opp_gp = opp_data.iloc[0].get('GP', 1)
