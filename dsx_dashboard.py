@@ -4302,24 +4302,48 @@ elif page == "🏆 Division Rankings":
                 # Calculate per-game stats for tournament teams
                 for idx, row in peer_df.iterrows():
                     try:
+                        # Get and convert GP to float safely
                         gp_val = row.get('GP', 0)
-                        gp = pd.to_numeric(gp_val, errors='coerce')
-                        # Check if gp is valid (not NaN and > 0)
-                        if pd.isna(gp) if hasattr(pd, 'isna') else (gp != gp):
+                        gp_num = pd.to_numeric(gp_val, errors='coerce')
+                        # Convert to scalar float - handle both Series and scalar
+                        if hasattr(gp_num, 'iloc'):
+                            gp_float = float(gp_num.iloc[0]) if len(gp_num) > 0 else 0
+                        elif hasattr(gp_num, '__iter__') and not isinstance(gp_num, str):
+                            gp_float = float(gp_num[0]) if len(gp_num) > 0 else 0
+                        else:
+                            gp_float = float(gp_num) if not pd.isna(gp_num) else 0
+                        
+                        # Check if valid
+                        if gp_float != gp_float or gp_float <= 0:  # NaN check: gp_float != gp_float
                             continue  # Skip this row - invalid GP
-                        gp_float = float(gp)
-                        if gp_float <= 0:
-                            continue  # Skip this row - zero or negative GP
                         gp = gp_float
-                    except (ValueError, TypeError, AttributeError):
+                    except (ValueError, TypeError, AttributeError, IndexError):
                         continue  # Skip this row - couldn't parse GP
                     
-                    gf_val = pd.to_numeric(row.get('GF', 0), errors='coerce')
-                    if pd.isna(gf_val):
+                    try:
+                        # Get and convert GF safely
+                        gf_val_raw = row.get('GF', 0)
+                        gf_num = pd.to_numeric(gf_val_raw, errors='coerce')
+                        if hasattr(gf_num, 'iloc'):
+                            gf_val = float(gf_num.iloc[0]) if len(gf_num) > 0 else 0
+                        elif hasattr(gf_num, '__iter__') and not isinstance(gf_num, str):
+                            gf_val = float(gf_num[0]) if len(gf_num) > 0 else 0
+                        else:
+                            gf_val = float(gf_num) if not pd.isna(gf_num) else 0
+                    except (ValueError, TypeError, AttributeError, IndexError):
                         gf_val = 0
                     
-                    ga_val = pd.to_numeric(row.get('GA', 0), errors='coerce')
-                    if pd.isna(ga_val):
+                    try:
+                        # Get and convert GA safely
+                        ga_val_raw = row.get('GA', 0)
+                        ga_num = pd.to_numeric(ga_val_raw, errors='coerce')
+                        if hasattr(ga_num, 'iloc'):
+                            ga_val = float(ga_num.iloc[0]) if len(ga_num) > 0 else 0
+                        elif hasattr(ga_num, '__iter__') and not isinstance(ga_num, str):
+                            ga_val = float(ga_num[0]) if len(ga_num) > 0 else 0
+                        else:
+                            ga_val = float(ga_num) if not pd.isna(ga_num) else 0
+                    except (ValueError, TypeError, AttributeError, IndexError):
                         ga_val = 0
                     
                     gd_val = gf_val - ga_val
