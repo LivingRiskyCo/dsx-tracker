@@ -594,8 +594,25 @@ def calculate_dsx_stats():
 
 @st.cache_data(ttl=3600)
 def load_dsx_matches():
-    """Load DSX match history"""
-    # From the conversation - could also load from CSV
+    """Load DSX match history from CSV file"""
+    try:
+        # Try to load from CSV first (preferred - supports Data Manager updates)
+        if os.path.exists("DSX_Matches_Fall2025.csv"):
+            df = pd.read_csv("DSX_Matches_Fall2025.csv", index_col=False).reset_index(drop=True)
+            # Ensure Date is datetime
+            if 'Date' in df.columns:
+                df['Date'] = pd.to_datetime(df['Date'], errors='coerce')
+            # Calculate Result if not present
+            if 'Result' not in df.columns and 'GF' in df.columns and 'GA' in df.columns:
+                df['Result'] = df.apply(lambda r: 'W' if r['GF'] > r['GA'] else ('D' if r['GF'] == r['GA'] else 'L'), axis=1)
+            # Calculate GD if not present
+            if 'GD' not in df.columns and 'GF' in df.columns and 'GA' in df.columns:
+                df['GD'] = df['GF'] - df['GA']
+            return df
+    except Exception as e:
+        pass
+    
+    # Fallback: hardcoded matches (only used if CSV doesn't exist or fails)
     matches = [
         {'Date': '2025-08-09', 'Tournament': 'Dublin Charity Cup', 'Opponent': '2017 Boys Premier OCL', 'GF': 3, 'GA': 15},
         {'Date': '2025-08-16', 'Tournament': 'Dublin Charity Cup', 'Opponent': 'Blast FC U8', 'GF': 4, 'GA': 5},
@@ -4357,22 +4374,103 @@ elif page == "🏆 Division Rankings":
                     if 'PPG' not in peer_df.columns:
                         peer_df['PPG'] = 0.0
                     
-                    if pd.isna(peer_df.at[idx, 'PPG']) or peer_df.at[idx, 'PPG'] == 0:
-                        w = pd.to_numeric(row.get('W', 0), errors='coerce') or 0
-                        d = pd.to_numeric(row.get('D', 0), errors='coerce') or 0
-                        pts = (w * 3) + d
-                        peer_df.at[idx, 'PPG'] = pts / gp if gp > 0 else 0
+                    # Check PPG safely - convert to scalar first
+                    try:
+                        ppg_val = peer_df.at[idx, 'PPG']
+                        # Convert to scalar float if it's a Series
+                        if hasattr(ppg_val, 'iloc'):
+                            ppg_float = float(ppg_val.iloc[0]) if len(ppg_val) > 0 else 0
+                        elif hasattr(ppg_val, '__iter__') and not isinstance(ppg_val, (str, bytes)):
+                            ppg_float = float(ppg_val[0]) if len(ppg_val) > 0 else 0
+                        else:
+                            ppg_float = float(ppg_val) if not (ppg_val != ppg_val) else 0  # NaN check
+                        
+                        if ppg_float != ppg_float or ppg_float == 0:  # NaN or zero
+                            # Calculate PPG
+                            w = row.get('W', 0)
+                            d = row.get('D', 0)
+                            w_num = pd.to_numeric(w, errors='coerce')
+                            d_num = pd.to_numeric(d, errors='coerce')
+                            w_float = float(w_num) if not (w_num != w_num) else 0
+                            d_float = float(d_num) if not (d_num != d_num) else 0
+                            pts = (w_float * 3) + d_float
+                            peer_df.at[idx, 'PPG'] = pts / gp if gp > 0 else 0
+                    except (ValueError, TypeError, AttributeError, IndexError):
+                        # If PPG check fails, calculate it
+                        try:
+                            w = row.get('W', 0)
+                            d = row.get('D', 0)
+                            w_num = pd.to_numeric(w, errors='coerce')
+                            d_num = pd.to_numeric(d, errors='coerce')
+                            w_float = float(w_num) if not (w_num != w_num) else 0
+                            d_float = float(d_num) if not (d_num != d_num) else 0
+                            pts = (w_float * 3) + d_float
+                            peer_df.at[idx, 'PPG'] = pts / gp if gp > 0 else 0
+                        except:
+                            peer_df.at[idx, 'PPG'] = 0
                     
                     if 'StrengthIndex' not in peer_df.columns:
                         peer_df['StrengthIndex'] = 0.0
                     
-                    if pd.isna(peer_df.at[idx, 'StrengthIndex']) or peer_df.at[idx, 'StrengthIndex'] == 0:
-                        # Calculate Strength Index if missing
-                        ppg = peer_df.at[idx, 'PPG'] if 'PPG' in peer_df.columns else 0
-                        gd_pg = peer_df.at[idx, 'GD_PG']
-                        ppg_norm = max(0.0, min(3.0, ppg)) / 3.0 * 100.0
-                        gdpg_norm = (max(-5.0, min(5.0, gd_pg)) + 5.0) / 10.0 * 100.0
-                        peer_df.at[idx, 'StrengthIndex'] = round(0.7 * ppg_norm + 0.3 * gdpg_norm, 1)
+                    # Check StrengthIndex safely
+                    try:
+                        si_val = peer_df.at[idx, 'StrengthIndex']
+                        # Convert to scalar float if it's a Series
+                        if hasattr(si_val, 'iloc'):
+                            si_float = float(si_val.iloc[0]) if len(si_val) > 0 else 0
+                        elif hasattr(si_val, '__iter__') and not isinstance(si_val, (str, bytes)):
+                            si_float = float(si_val[0]) if len(si_val) > 0 else 0
+                        else:
+                            si_float = float(si_val) if not (si_val != si_val) else 0  # NaN check
+                        
+                        if si_float != si_float or si_float == 0:  # NaN or zero
+                            # Calculate Strength Index if missing
+                            try:
+                                ppg_raw = peer_df.at[idx, 'PPG'] if 'PPG' in peer_df.columns else 0
+                                # Convert PPG to scalar
+                                if hasattr(ppg_raw, 'iloc'):
+                                    ppg = float(ppg_raw.iloc[0]) if len(ppg_raw) > 0 else 0
+                                elif hasattr(ppg_raw, '__iter__') and not isinstance(ppg_raw, (str, bytes)):
+                                    ppg = float(ppg_raw[0]) if len(ppg_raw) > 0 else 0
+                                else:
+                                    ppg = float(ppg_raw) if not (ppg_raw != ppg_raw) else 0
+                                
+                                gd_pg_raw = peer_df.at[idx, 'GD_PG']
+                                # Convert GD_PG to scalar
+                                if hasattr(gd_pg_raw, 'iloc'):
+                                    gd_pg = float(gd_pg_raw.iloc[0]) if len(gd_pg_raw) > 0 else 0
+                                elif hasattr(gd_pg_raw, '__iter__') and not isinstance(gd_pg_raw, (str, bytes)):
+                                    gd_pg = float(gd_pg_raw[0]) if len(gd_pg_raw) > 0 else 0
+                                else:
+                                    gd_pg = float(gd_pg_raw) if not (gd_pg_raw != gd_pg_raw) else 0
+                                
+                                ppg_norm = max(0.0, min(3.0, ppg)) / 3.0 * 100.0
+                                gdpg_norm = (max(-5.0, min(5.0, gd_pg)) + 5.0) / 10.0 * 100.0
+                                peer_df.at[idx, 'StrengthIndex'] = round(0.7 * ppg_norm + 0.3 * gdpg_norm, 1)
+                            except (ValueError, TypeError, AttributeError, IndexError):
+                                peer_df.at[idx, 'StrengthIndex'] = 0
+                    except (ValueError, TypeError, AttributeError, IndexError):
+                        # If check fails, try to calculate Strength Index
+                        try:
+                            ppg = 0
+                            gd_pg = 0
+                            if 'PPG' in peer_df.columns:
+                                ppg_raw = peer_df.at[idx, 'PPG']
+                                if hasattr(ppg_raw, 'iloc'):
+                                    ppg = float(ppg_raw.iloc[0]) if len(ppg_raw) > 0 else 0
+                                else:
+                                    ppg = float(ppg_raw) if not (ppg_raw != ppg_raw) else 0
+                            if 'GD_PG' in peer_df.columns:
+                                gd_pg_raw = peer_df.at[idx, 'GD_PG']
+                                if hasattr(gd_pg_raw, 'iloc'):
+                                    gd_pg = float(gd_pg_raw.iloc[0]) if len(gd_pg_raw) > 0 else 0
+                                else:
+                                    gd_pg = float(gd_pg_raw) if not (gd_pg_raw != gd_pg_raw) else 0
+                            ppg_norm = max(0.0, min(3.0, ppg)) / 3.0 * 100.0
+                            gdpg_norm = (max(-5.0, min(5.0, gd_pg)) + 5.0) / 10.0 * 100.0
+                            peer_df.at[idx, 'StrengthIndex'] = round(0.7 * ppg_norm + 0.3 * gdpg_norm, 1)
+                        except:
+                            peer_df.at[idx, 'StrengthIndex'] = 0
                 
                 # Final cleanup: remove any rows with missing team names or invalid data
                 try:
