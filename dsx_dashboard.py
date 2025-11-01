@@ -3395,8 +3395,46 @@ elif page == "🏆 Division Rankings":
         
         if tournament_teams:
             tournament_df = pd.concat(tournament_teams, ignore_index=True)
+            # Normalize column names (handle lowercase/capitalized variations)
+            col_mapping = {}
+            for col in tournament_df.columns:
+                col_lower = col.lower()
+                if col_lower == 'team':
+                    col_mapping[col] = 'Team'
+                elif col_lower == 'rank':
+                    col_mapping[col] = 'Rank'
+                elif col_lower == 'gp':
+                    col_mapping[col] = 'GP'
+                elif col_lower in ['w', 'l', 'd', 'gf', 'ga', 'gd', 'pts', 'ppg']:
+                    col_mapping[col] = col.upper()
+                elif col_lower in ['strengthindex', 'strength_index']:
+                    col_mapping[col] = 'StrengthIndex'
+                # Keep other columns as-is
+            
+            # Apply column name normalization
+            if col_mapping:
+                tournament_df = tournament_df.rename(columns=col_mapping)
+            
             # Remove DSX from tournament data (we'll add our own stats)
             tournament_df = tournament_df[~tournament_df['Team'].str.contains('DSX', case=False, na=False)]
+            
+            # Filter out teams with empty or missing team names
+            tournament_df = tournament_df[tournament_df['Team'].notna()].copy()
+            tournament_df = tournament_df[tournament_df['Team'].astype(str).str.strip() != ''].copy()
+            
+            # Filter out teams with zero games played (they haven't started tournament yet)
+            if 'GP' in tournament_df.columns:
+                tournament_df['GP'] = pd.to_numeric(tournament_df['GP'], errors='coerce').fillna(0)
+            else:
+                tournament_df['GP'] = 0
+            tournament_df = tournament_df[tournament_df['GP'] > 0].copy()
+            
+            # Double-check: remove any rows where GP is still 0 or team name is empty
+            tournament_df = tournament_df[
+                (tournament_df['GP'] > 0) & 
+                (tournament_df['Team'].notna()) & 
+                (tournament_df['Team'].astype(str).str.strip() != '')
+            ].copy()
             
             # Get DSX strength for peer filtering
             dsx_si = dsx_row.iloc[0]['StrengthIndex'] if not dsx_row.empty else 0
@@ -3407,11 +3445,18 @@ elif page == "🏆 Division Rankings":
                 # Include all tournament teams (they're all peers by definition - tournament players)
                 peer_df = tournament_df.copy()
                 
+                # Filter out any rows with missing team names or GP=0 (shouldn't happen but double-check)
+                peer_df = peer_df[
+                    (peer_df['Team'].notna()) & 
+                    (peer_df['Team'].astype(str).str.strip() != '') &
+                    (peer_df['GP'] > 0)
+                ].copy()
+                
                 # Calculate per-game stats for tournament teams
                 for idx, row in peer_df.iterrows():
                     gp = pd.to_numeric(row.get('GP', 0), errors='coerce')
                     if pd.isna(gp) or gp <= 0:
-                        gp = 1
+                        continue  # Skip this row - it shouldn't be here but just in case
                     
                     gf_val = pd.to_numeric(row.get('GF', 0), errors='coerce')
                     if pd.isna(gf_val):
@@ -3429,19 +3474,32 @@ elif page == "🏆 Division Rankings":
                     peer_df.at[idx, 'IsDSX'] = False
                     
                     # Ensure required columns exist
-                    if 'PPG' not in peer_df.columns or pd.isna(peer_df.at[idx, 'PPG']):
+                    if 'PPG' not in peer_df.columns:
+                        peer_df['PPG'] = 0.0
+                    
+                    if pd.isna(peer_df.at[idx, 'PPG']) or peer_df.at[idx, 'PPG'] == 0:
                         w = pd.to_numeric(row.get('W', 0), errors='coerce') or 0
                         d = pd.to_numeric(row.get('D', 0), errors='coerce') or 0
                         pts = (w * 3) + d
                         peer_df.at[idx, 'PPG'] = pts / gp if gp > 0 else 0
                     
-                    if 'StrengthIndex' not in peer_df.columns or pd.isna(peer_df.at[idx, 'StrengthIndex']):
+                    if 'StrengthIndex' not in peer_df.columns:
+                        peer_df['StrengthIndex'] = 0.0
+                    
+                    if pd.isna(peer_df.at[idx, 'StrengthIndex']) or peer_df.at[idx, 'StrengthIndex'] == 0:
                         # Calculate Strength Index if missing
                         ppg = peer_df.at[idx, 'PPG'] if 'PPG' in peer_df.columns else 0
                         gd_pg = peer_df.at[idx, 'GD_PG']
                         ppg_norm = max(0.0, min(3.0, ppg)) / 3.0 * 100.0
                         gdpg_norm = (max(-5.0, min(5.0, gd_pg)) + 5.0) / 10.0 * 100.0
                         peer_df.at[idx, 'StrengthIndex'] = round(0.7 * ppg_norm + 0.3 * gdpg_norm, 1)
+                
+                # Final cleanup: remove any rows with missing team names or invalid data
+                peer_df = peer_df[
+                    (peer_df['Team'].notna()) & 
+                    (peer_df['Team'].astype(str).str.strip() != '') &
+                    (peer_df['GP'] > 0)
+                ].copy()
                 
                 # Add DSX to peer group
                 dsx_peer_row = dsx_row.copy()
@@ -3450,6 +3508,12 @@ elif page == "🏆 Division Rankings":
                 # Sort by PPG then Strength Index
                 peer_df = peer_df.sort_values(['PPG', 'StrengthIndex'], ascending=[False, False]).reset_index(drop=True)
                 peer_df['Rank'] = range(1, len(peer_df) + 1)
+                
+                # Final check: ensure no empty team names made it through
+                peer_df = peer_df[
+                    (peer_df['Team'].notna()) & 
+                    (peer_df['Team'].astype(str).str.strip() != '')
+                ].copy()
                 
                 # Get DSX rank in peer group
                 dsx_peer_rank = peer_df[peer_df['IsDSX'] == True]
