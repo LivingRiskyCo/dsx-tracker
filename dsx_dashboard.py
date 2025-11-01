@@ -1122,6 +1122,46 @@ if page == "🎯 What's Next":
 
         upcoming_games = upcoming[status_series == 'UPCOMING'].copy()
 
+        # Also exclude games that are already in match history (double-check even if status says UPCOMING)
+        if not dsx_matches.empty and not upcoming_games.empty:
+            # Normalize opponent names for matching
+            def normalize_opponent_name(name):
+                if pd.isna(name):
+                    return ""
+                return ' '.join(str(name).strip().split()).lower()
+            
+            # Create set of completed match dates + opponents for fast lookup
+            completed_match_keys = set()
+            for _, match in dsx_matches.iterrows():
+                match_date = pd.to_datetime(match.get('Date'), errors='coerce')
+                if pd.notna(match_date):
+                    opp_name = normalize_opponent_name(str(match.get('Opponent', '')))
+                    completed_match_keys.add((match_date.date(), opp_name))
+            
+            # Filter out games where date + opponent matches a completed match
+            def is_already_played(row):
+                game_date = pd.to_datetime(row.get('Date'), errors='coerce')
+                if pd.notna(game_date):
+                    opp_name = normalize_opponent_name(str(row.get('Opponent', '')))
+                    if (game_date.date(), opp_name) in completed_match_keys:
+                        return False
+                    # Also check fuzzy match by opponent name only (same date, similar opponent name)
+                    for match_date, match_opp in completed_match_keys:
+                        if match_date == game_date.date():
+                            # Check if opponent names are similar (70% word overlap)
+                            opp_words = set(opp_name.split())
+                            match_words = set(match_opp.split())
+                            if opp_words and match_words:
+                                overlap = len(opp_words & match_words) / max(len(opp_words), len(match_words))
+                                if overlap > 0.7:
+                                    return False
+                return True
+            
+            try:
+                upcoming_games = upcoming_games[upcoming_games.apply(is_already_played, axis=1)]
+            except Exception:
+                pass  # If filtering fails, continue with status-based filter
+
         # Ensure dates parse and filter to future dates (>= today)
         try:
             upcoming_games['Date_Parsed'] = pd.to_datetime(upcoming_games['Date'], errors='coerce')
