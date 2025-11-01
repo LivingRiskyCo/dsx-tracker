@@ -124,12 +124,18 @@ def verify_tournament_coverage():
     if os.path.exists("Opponents_of_Opponents.csv"):
         try:
             opp_opp_df = pd.read_csv("Opponents_of_Opponents.csv", index_col=False)
+            # Handle both column name formats
+            opponent_col = 'DSX_Opponent' if 'DSX_Opponent' in opp_opp_df.columns else 'Opponent'
+            their_opponent_col = 'Opponent_of_Opponent' if 'Opponent_of_Opponent' in opp_opp_df.columns else 'TheirOpponent'
+            
             for _, row in opp_opp_df.iterrows():
-                opponent = row.get('Opponent', '')
-                their_opponent = row.get('TheirOpponent', '')
-                if opponent not in all_opponents_opponents:
-                    all_opponents_opponents[opponent] = set()
-                all_opponents_opponents[opponent].add(their_opponent)
+                opponent = row.get(opponent_col, '')
+                their_opponent = row.get(their_opponent_col, '')
+                # Filter out score strings like "4 - 4" or "-"
+                if opponent and their_opponent and not their_opponent.strip().startswith(('-', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9')):
+                    if opponent not in all_opponents_opponents:
+                        all_opponents_opponents[opponent] = set()
+                    all_opponents_opponents[opponent].add(their_opponent)
         except Exception as e:
             print(f"[ERROR] Error loading Opponents_of_Opponents.csv: {e}")
     
