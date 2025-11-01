@@ -5385,7 +5385,38 @@ elif page == "📊 Team Analysis":
         try:
             matches = pd.read_csv("DSX_Matches_Fall2025.csv")
             for opp in matches['Opponent'].dropna().unique():
-                if opp not in teams_with_data:
+                # Try to match opponent to division data first (with aliases and fuzzy matching)
+                opp_resolved = resolve_alias(opp)
+                opp_normalized = normalize_name(opp_resolved)
+                
+                matched_to_division = False
+                # Check if already in teams_with_data (exact match or alias)
+                for team in teams_with_data:
+                    if team == opp or team == opp_resolved:
+                        matched_to_division = True
+                        break
+                    if normalize_name(team) == opp_normalized:
+                        matched_to_division = True
+                        break
+                
+                # If not matched to division data, try fuzzy matching in df
+                if not matched_to_division and not df.empty:
+                    opp_normalized = normalize_name(opp_resolved)
+                    opp_words = [w for w in opp_normalized.split() if len(w) > 3]
+                    
+                    for idx, row in df.iterrows():
+                        team_normalized = normalize_name(str(row.get('Team', '')))
+                        team_words = [w for w in team_normalized.split() if len(w) > 3]
+                        
+                        match_score = sum(1 for word in opp_words if word in team_normalized)
+                        match_score += sum(1 for word in team_words if word in opp_normalized)
+                        
+                        if match_score >= 2:
+                            matched_to_division = True
+                            break
+                
+                # Only create basic opponent entry if NOT matched to division data
+                if not matched_to_division and opp not in teams_with_data:
                     # Create a basic opponent entry with limited data
                     opp_matches = matches[matches['Opponent'] == opp]
                     opp_w = len(opp_matches[opp_matches['Outcome'] == 'W'])
