@@ -818,7 +818,9 @@ if page == "🎯 What's Next":
         
         # Analyze last 7 games for form trends (tournaments typically 3-4 games)
         if len(dsx_matches) >= 3:
-            last_7_games = dsx_matches.tail(7)
+            # Sort by date descending (most recent first) before taking last 7
+            dsx_matches_sorted = dsx_matches.sort_values('Date', ascending=False).reset_index(drop=True)
+            last_7_games = dsx_matches_sorted.head(7)  # Get most recent 7 (head because sorted descending)
             
             # Calculate form metrics
             form_wins = len(last_7_games[last_7_games['Outcome'] == 'W'])
