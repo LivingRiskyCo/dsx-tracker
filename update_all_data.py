@@ -135,10 +135,10 @@ def main():
         "Club Ohio Opponents' Opponents - Tournament-Specific"
     ))
 
-    # 9. Validate Tournament Coverage
+    # 9. Analyze Comprehensive Coverage
     updates.append(run_script(
-        "verify_all_tournament_opponents.py",
-        "Validate Tournament Opponents Coverage"
+        "comprehensive_opponents_coverage.py",
+        "Comprehensive Opponents Coverage Analysis"
     ))
 
     # Print Summary
