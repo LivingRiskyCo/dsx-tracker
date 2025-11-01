@@ -20,7 +20,7 @@ print()
 for _, game in upcoming.iterrows():
     print(f"[DATE] {game['Date']}: {game['Opponent']}")
     print(f"   Location: {game['Location']}")
-    print(f"   League: {game['League']}")
+    print(f"   Tournament: {game['Tournament']}")
     print()
 
 print("=" * 70)

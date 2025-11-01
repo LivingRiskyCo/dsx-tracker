@@ -113,7 +113,7 @@ def analyze_coverage():
         print(f"\n{tournament}:")
         print(f"  Opponents: {len(tour_opponents)}")
         print(f"  With division data: {opp_with_division} ({opp_with_division/len(tour_opponents)*100:.1f}%)")
-        print(f"  With opponents-of-opponents data: {opp_with_opp_coverage} ({opp_with_opp_coverage/len(tour_opponents)*100:.1f}%)")
+        print(f"  With opponents-of-opponents data: {opp_with_opp} ({opp_with_opp/len(tour_opponents)*100:.1f}%)")
 
     # 5. Overall summary
     total_opp_with_division = sum(r['division_coverage'] for r in coverage_report)
