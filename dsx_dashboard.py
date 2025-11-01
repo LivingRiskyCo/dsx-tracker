@@ -515,28 +515,92 @@ def get_opponent_three_stat_snapshot(opponent_name, all_divisions_df, dsx_matche
             h2h_ga_pg = h2h_ga / h2h_gp if h2h_gp > 0 else 0
             h2h_gd_pg = h2h_gd / h2h_gp if h2h_gp > 0 else 0
             
-            # Tournament-specific stats
+            # Tournament-specific stats from tournament division files (full tournament stats, not just H2H)
             tournaments_played = {}
+            tournament_files_map = {
+                '2025 Haunted Classic': ['Haunted_Classic_B08Orange_Division_Rankings.csv', 'Haunted_Classic_B08Black_Division_Rankings.csv'],
+                '2025 Club Ohio Fall Classic': ['Club_Ohio_Fall_Classic_2025_Division_Rankings.csv'],
+                'CU Fall Finale 2025': ['CU_Fall_Finale_2025_Division_Rankings.csv'],
+                'Grove City Fall Classic': []  # Add file if available
+            }
+            
+            # Get tournaments where DSX played this opponent
             for tour_name in h2h_games['Tournament'].unique():
                 if pd.notna(tour_name) and tour_name != 'N/A':
-                    tour_games = h2h_games[h2h_games['Tournament'] == tour_name]
-                    tour_gp = len(tour_games)
-                    tour_gf = pd.to_numeric(tour_games['GA'], errors='coerce').fillna(0).sum()
-                    tour_ga = pd.to_numeric(tour_games['GF'], errors='coerce').fillna(0).sum()
-                    tour_w = len(tour_games[tour_games['Outcome'] == 'L'])
-                    tour_l = len(tour_games[tour_games['Outcome'] == 'W'])
-                    tour_d = len(tour_games[tour_games['Outcome'] == 'D'])
-                    tour_pts = (tour_w * 3) + tour_d
-                    tour_ppg = tour_pts / tour_gp if tour_gp > 0 else 0
+                    # Look for tournament division file
+                    tour_files = tournament_files_map.get(tour_name, [])
                     
-                    tournaments_played[tour_name] = {
-                        'record': f"{tour_w}-{tour_l}-{tour_d}",
-                        'gp': tour_gp,
-                        'ppg': round(tour_ppg, 2),
-                        'gf_pg': round(tour_gf / tour_gp if tour_gp > 0 else 0, 2),
-                        'ga_pg': round(tour_ga / tour_gp if tour_gp > 0 else 0, 2),
-                        'gd_pg': round((tour_gf - tour_ga) / tour_gp if tour_gp > 0 else 0, 2)
-                    }
+                    # Try to find opponent in tournament division files
+                    tour_stats_found = False
+                    for tour_file in tour_files:
+                        if os.path.exists(tour_file):
+                            try:
+                                tour_df = pd.read_csv(tour_file, index_col=False)
+                                if not tour_df.empty:
+                                    # Try to match opponent in tournament file
+                                    opp_tour_row = tour_df[tour_df['Team'] == resolved_opp_name].copy()
+                                    if opp_tour_row.empty:
+                                        # Try normalized matching
+                                        opp_normalized = normalize_name_for_match(resolved_opp_name)
+                                        for idx, row in tour_df.iterrows():
+                                            if normalize_name_for_match(row['Team']) == opp_normalized:
+                                                opp_tour_row = tour_df.iloc[[idx]]
+                                                break
+                                    
+                                    if not opp_tour_row.empty:
+                                        tour_row = opp_tour_row.iloc[0]
+                                        tour_gp = safe_int(tour_row.get('GP', 0))
+                                        tour_w = safe_int(tour_row.get('W', 0))
+                                        tour_l = safe_int(tour_row.get('L', 0))
+                                        tour_d = safe_int(tour_row.get('D', 0))
+                                        
+                                        # Get GF/GA - handle totals vs per-game
+                                        tour_gf = float(tour_row.get('GF', 0))
+                                        tour_ga = float(tour_row.get('GA', 0))
+                                        if tour_gf > 10 or tour_gp > 2:  # Likely totals
+                                            tour_gf_pg = tour_gf / tour_gp if tour_gp > 0 else 0
+                                            tour_ga_pg = tour_ga / tour_gp if tour_gp > 0 else 0
+                                        else:
+                                            tour_gf_pg = tour_gf
+                                            tour_ga_pg = tour_ga
+                                        
+                                        tour_gd_pg = (tour_gf_pg - tour_ga_pg)
+                                        tour_pts = (tour_w * 3) + tour_d
+                                        tour_ppg = tour_pts / tour_gp if tour_gp > 0 else 0
+                                        
+                                        tournaments_played[tour_name] = {
+                                            'record': f"{tour_w}-{tour_l}-{tour_d}",
+                                            'gp': tour_gp,
+                                            'ppg': round(tour_ppg, 2),
+                                            'gf_pg': round(tour_gf_pg, 2),
+                                            'ga_pg': round(tour_ga_pg, 2),
+                                            'gd_pg': round(tour_gd_pg, 2)
+                                        }
+                                        tour_stats_found = True
+                                        break
+                            except Exception as e:
+                                continue
+                    
+                    # If no tournament file found, fall back to H2H stats for that tournament
+                    if not tour_stats_found:
+                        tour_games = h2h_games[h2h_games['Tournament'] == tour_name]
+                        tour_gp = len(tour_games)
+                        tour_gf = pd.to_numeric(tour_games['GA'], errors='coerce').fillna(0).sum()
+                        tour_ga = pd.to_numeric(tour_games['GF'], errors='coerce').fillna(0).sum()
+                        tour_w = len(tour_games[tour_games['Outcome'] == 'L'])
+                        tour_l = len(tour_games[tour_games['Outcome'] == 'W'])
+                        tour_d = len(tour_games[tour_games['Outcome'] == 'D'])
+                        tour_pts = (tour_w * 3) + tour_d
+                        tour_ppg = tour_pts / tour_gp if tour_gp > 0 else 0
+                        
+                        tournaments_played[tour_name] = {
+                            'record': f"{tour_w}-{tour_l}-{tour_d}",
+                            'gp': tour_gp,
+                            'ppg': round(tour_ppg, 2),
+                            'gf_pg': round(tour_gf / tour_gp if tour_gp > 0 else 0, 2),
+                            'ga_pg': round(tour_ga / tour_gp if tour_gp > 0 else 0, 2),
+                            'gd_pg': round((tour_gf - tour_ga) / tour_gp if tour_gp > 0 else 0, 2)
+                        }
             
             snapshot['h2h'] = {
                 'record': f"{h2h_w}-{h2h_l}-{h2h_d}",
