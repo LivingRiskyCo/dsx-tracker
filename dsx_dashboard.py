@@ -4301,9 +4301,18 @@ elif page == "🏆 Division Rankings":
                 
                 # Calculate per-game stats for tournament teams
                 for idx, row in peer_df.iterrows():
-                    gp = pd.to_numeric(row.get('GP', 0), errors='coerce')
-                    if pd.isna(gp) or gp <= 0:
-                        continue  # Skip this row - it shouldn't be here but just in case
+                    try:
+                        gp_val = row.get('GP', 0)
+                        gp = pd.to_numeric(gp_val, errors='coerce')
+                        # Check if gp is valid (not NaN and > 0)
+                        if pd.isna(gp) if hasattr(pd, 'isna') else (gp != gp):
+                            continue  # Skip this row - invalid GP
+                        gp_float = float(gp)
+                        if gp_float <= 0:
+                            continue  # Skip this row - zero or negative GP
+                        gp = gp_float
+                    except (ValueError, TypeError, AttributeError):
+                        continue  # Skip this row - couldn't parse GP
                     
                     gf_val = pd.to_numeric(row.get('GF', 0), errors='coerce')
                     if pd.isna(gf_val):
