@@ -464,7 +464,10 @@ def get_opponent_three_stat_snapshot(opponent_name, all_divisions_df, dsx_matche
                     # It's an iterable, get first value
                     value = value[0] if len(value) > 0 else default
                 # Convert to float first (handles string numbers), then int
-                return int(float(value)) if value != value != value else default  # NaN check: value != value
+                # NaN check: NaN != NaN is True, so if value != value, it's NaN
+                if value != value:  # This is True for NaN
+                    return default
+                return int(float(value))
             except (ValueError, TypeError, IndexError):
                 return default
         
