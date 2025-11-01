@@ -123,17 +123,35 @@ def main():
         "Common Opponent Matrix & Comparisons"
     ))
     
+    # 7. Update Opponents' Opponents Data (Complete Dataset)
+    updates.append(run_script(
+        "fetch_opponent_opponents.py",
+        "Opponents' Opponents - Complete Dataset Builder"
+    ))
+
+    # 8. Update Club Ohio Opponents' Opponents Data
+    updates.append(run_script(
+        "fetch_club_ohio_opponents_opponents.py",
+        "Club Ohio Opponents' Opponents - Tournament-Specific"
+    ))
+
+    # 9. Validate Tournament Coverage
+    updates.append(run_script(
+        "verify_all_tournament_opponents.py",
+        "Validate Tournament Opponents Coverage"
+    ))
+
     # Print Summary
     print("\n" + "="*70)
     print("UPDATE SUMMARY")
     print("="*70)
-    
+
     successful = sum(updates)
     total = len(updates)
-    
+
     print(f"\nCompleted: {successful}/{total} update tasks")
     print(f"Finished: {datetime.now().strftime('%Y-%m-%d %I:%M %p')}")
-    
+
     if successful == total:
         print("\n[SUCCESS] All data sources updated successfully!")
         print("\nNext Steps:")
@@ -143,7 +161,7 @@ def main():
     else:
         print(f"\n[WARNING] {total - successful} update(s) failed or skipped")
         print("Check error messages above for details")
-    
+
     print("="*70 + "\n")
     
     return successful == total
