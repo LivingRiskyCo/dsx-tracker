@@ -911,6 +911,15 @@ if page == "🎯 What's Next":
                 date = game['Date']
                 tournament = game.get('Tournament', 'N/A')
                 
+                # Format date for display
+                if pd.notna(date):
+                    if isinstance(date, str):
+                        date_str = date
+                    else:
+                        date_str = pd.to_datetime(date).strftime('%m/%d/%Y')
+                else:
+                    date_str = 'N/A'
+                
                 # Color coding
                 if outcome == 'W':
                     color = "🟢"
@@ -925,7 +934,7 @@ if page == "🎯 What's Next":
                 col1, col2, col3, col4 = st.columns([2, 1, 1, 1])
                 
                 with col1:
-                    st.write(f"{color} **{date}**: {opponent}")
+                    st.write(f"{color} **{date_str}**: {opponent}")
                     st.caption(f"{tournament}")
                 
                 with col2:
@@ -5935,7 +5944,9 @@ elif page == "🎮 Game Predictions":
             match_history = pd.read_csv("DSX_Matches_Fall2025.csv")
             
             # Show last 7 games with predictions vs actual results (covers 2 tournaments)
-            recent_games = match_history.tail(7)
+            # Sort by date descending (most recent first)
+            match_history_sorted = match_history.sort_values('Date', ascending=False).reset_index(drop=True)
+            recent_games = match_history_sorted.head(7)  # Get most recent 7
             
             if not recent_games.empty:
                 st.markdown("**Last 7 Games - Prediction vs Reality:**")
