@@ -4178,6 +4178,8 @@ elif page == "🏆 Division Rankings":
         
         if tournament_teams:
             tournament_df = pd.concat(tournament_teams, ignore_index=True)
+            # Reset index to ensure no duplicates
+            tournament_df = tournament_df.reset_index(drop=True)
             # Normalize column names (handle lowercase/capitalized variations)
             col_mapping = {}
             for col in tournament_df.columns:
@@ -4211,6 +4213,8 @@ elif page == "🏆 Division Rankings":
             # Remove DSX from tournament data (we'll add our own stats)
             if 'Team' in tournament_df.columns:
                 try:
+                    # Reset index first to avoid duplicate index issues
+                    tournament_df = tournament_df.reset_index(drop=True)
                     # Convert Team column to string, handling all edge cases
                     # First ensure it's a proper Series
                     team_series = tournament_df['Team'].copy()
@@ -4220,6 +4224,8 @@ elif page == "🏆 Division Rankings":
                     if len(team_series) > 0:
                         mask = team_series.str.contains('DSX', case=False, na=False)
                         tournament_df = tournament_df[~mask].copy()
+                        # Reset index after filtering
+                        tournament_df = tournament_df.reset_index(drop=True)
                 except Exception as e:
                     # If anything goes wrong, skip DSX filtering but continue
                     # The app should still work without this filter
@@ -4227,8 +4233,16 @@ elif page == "🏆 Division Rankings":
             
             # Filter out teams with empty or missing team names
             if 'Team' in tournament_df.columns:
-                tournament_df = tournament_df[tournament_df['Team'].notna()].copy()
-                tournament_df = tournament_df[tournament_df['Team'].astype(str).str.strip() != ''].copy()
+                try:
+                    # Reset index to avoid duplicate index issues
+                    tournament_df = tournament_df.reset_index(drop=True)
+                    tournament_df = tournament_df[tournament_df['Team'].notna()].copy()
+                    tournament_df = tournament_df.reset_index(drop=True)
+                    tournament_df = tournament_df[tournament_df['Team'].astype(str).str.strip() != ''].copy()
+                    tournament_df = tournament_df.reset_index(drop=True)
+                except Exception as e:
+                    # If filtering fails, continue with original data
+                    pass
             
             # Filter out teams with zero games played (they haven't started tournament yet)
             if 'GP' in tournament_df.columns:
