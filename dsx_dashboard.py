@@ -122,9 +122,9 @@ st.markdown("""
     @media (max-width: 768px) {
         /* Larger tap targets for game day */
         .stButton button {
-            min-height: 60px !important;
-            font-size: 18px !important;
-            padding: 12px !important;
+            min-height: 80px !important;
+            font-size: 20px !important;
+            padding: 16px !important;
         }
         
         /* Compact timer display */
@@ -134,7 +134,7 @@ st.markdown("""
         
         /* Hide keyboard on dropdowns - prevents iOS zoom */
         select {
-            font-size: 16px !important;
+            font-size: 18px !important;
         }
         
         /* Scrollable event log */
@@ -157,9 +157,30 @@ st.markdown("""
         }
         
         .stRadio label {
-            padding: 10px !important;
-            font-size: 16px !important;
+            padding: 12px !important;
+            font-size: 18px !important;
+            min-height: 60px !important;
         }
+        
+        /* Large buttons in dialogs - mobile optimized */
+        .live-game-dialog button {
+            min-height: 80px !important;
+            font-size: 20px !important;
+            padding: 16px !important;
+        }
+        
+        /* Player selection buttons - grid layout */
+        .player-select-btn {
+            min-height: 80px !important;
+            font-size: 18px !important;
+            padding: 12px !important;
+        }
+    }
+    
+    /* Large buttons for desktop too - better game day experience */
+    .live-game-dialog button {
+        min-height: 70px !important;
+        font-size: 18px !important;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -2027,6 +2048,12 @@ elif page == "🎮 Live Game Tracker":
         st.session_state.current_half = 1
     if 'last_update' not in st.session_state:
         st.session_state.last_update = None
+    if 'timer_start_time' not in st.session_state:
+        st.session_state.timer_start_time = None
+    if 'total_paused_time' not in st.session_state:
+        st.session_state.total_paused_time = 0
+    if 'pause_start_time' not in st.session_state:
+        st.session_state.pause_start_time = None
     if 'starting_lineup' not in st.session_state:
         st.session_state.starting_lineup = []
     if 'bench_players' not in st.session_state:
@@ -2064,8 +2091,147 @@ elif page == "🎮 Live Game Tracker":
             if st.session_state.events:
                 pd.DataFrame(st.session_state.events).to_csv('live_game_events.csv', index=False)
     
-    def add_event_tracker(event_type, player=None, assist=None, notes=""):
-        elapsed = (25 * 60) - st.session_state.time_remaining
+    def update_player_stats_live(event_type, player=None, assist=None, pass_to=None, pass_complete=None):
+        """Update player_stats.csv in real-time during game"""
+        try:
+            # Read current stats
+            if os.path.exists("player_stats.csv"):
+                stats_df = pd.read_csv("player_stats.csv", index_col=False)
+            else:
+                # Create empty stats file if doesn't exist
+                stats_df = pd.DataFrame(columns=['PlayerNumber', 'PlayerName', 'GamesPlayed', 'Goals', 'Assists', 'Shots', 'PassesComplete', 'PassesIncomplete', 'MinutesPlayed', 'Notes'])
+            
+            # Get roster to map player names to numbers
+            if os.path.exists("roster.csv"):
+                roster_df = pd.read_csv("roster.csv", index_col=False)
+            else:
+                roster_df = pd.DataFrame()
+            
+            # Helper to find player number from name
+            def get_player_number(player_name):
+                if player_name and not pd.isna(player_name):
+                    # Try to extract number from "#5 Name" format
+                    if '#' in str(player_name):
+                        try:
+                            num = int(str(player_name).split('#')[1].split(' ')[0])
+                            return num
+                        except:
+                            pass
+                    # Try direct match on PlayerName
+                    if not roster_df.empty:
+                        player_name_str = str(player_name).split(' ')[-1] if ' ' in str(player_name) else str(player_name)
+                        match = roster_df[roster_df['PlayerName'].str.contains(player_name_str, case=False, na=False)]
+                        if not match.empty:
+                            return int(match.iloc[0]['PlayerNumber'])
+                return None
+            
+            # Update stats based on event type
+            players_to_update = []
+            
+            if event_type == 'DSX_GOAL' and player:
+                player_num = get_player_number(player)
+                if player_num:
+                    players_to_update.append({'num': player_num, 'stat': 'Goals', 'value': 1})
+            
+            if assist and event_type == 'DSX_GOAL':
+                assist_num = get_player_number(assist)
+                if assist_num:
+                    players_to_update.append({'num': assist_num, 'stat': 'Assists', 'value': 1})
+            
+            if event_type == 'SHOT' and player:
+                player_num = get_player_number(player)
+                if player_num:
+                    players_to_update.append({'num': player_num, 'stat': 'Shots', 'value': 1})
+            
+            if event_type in ['PASS_COMPLETE', 'PASS_INCOMPLETE'] and player:
+                player_num = get_player_number(player)
+                if player_num:
+                    if event_type == 'PASS_COMPLETE':
+                        players_to_update.append({'num': player_num, 'stat': 'PassesComplete', 'value': 1})
+                    else:
+                        players_to_update.append({'num': player_num, 'stat': 'PassesIncomplete', 'value': 1})
+            
+            # Update stats for each player
+            for update in players_to_update:
+                player_num = update['num']
+                stat_name = update['stat']
+                stat_value = update['value']
+                
+                # Ensure player exists in stats
+                if 'PlayerNumber' in stats_df.columns:
+                    stats_df['PlayerNumber'] = stats_df['PlayerNumber'].astype(str).str.strip()
+                else:
+                    stats_df['PlayerNumber'] = ''
+                
+                player_row = stats_df[stats_df['PlayerNumber'].astype(str) == str(player_num)]
+                
+                if player_row.empty:
+                    # Create new row for player
+                    player_name = ""
+                    if not roster_df.empty:
+                        player_match = roster_df[roster_df['PlayerNumber'].astype(str) == str(player_num)]
+                        if not player_match.empty:
+                            player_name = player_match.iloc[0]['PlayerName']
+                    
+                    new_row = {
+                        'PlayerNumber': str(player_num),
+                        'PlayerName': player_name,
+                        'GamesPlayed': 1,  # Assume this game
+                        'Goals': 0,
+                        'Assists': 0,
+                        'Shots': 0,
+                        'PassesComplete': 0,
+                        'PassesIncomplete': 0,
+                        'MinutesPlayed': 0,
+                        'Notes': ''
+                    }
+                    new_row[stat_name] = stat_value
+                    stats_df = pd.concat([stats_df, pd.DataFrame([new_row])], ignore_index=True)
+                else:
+                    # Update existing row
+                    idx = player_row.index[0]
+                    # Ensure stat column exists
+                    if stat_name not in stats_df.columns:
+                        stats_df[stat_name] = 0
+                    # Update stat
+                    current_value = pd.to_numeric(stats_df.at[idx, stat_name], errors='coerce') or 0
+                    stats_df.at[idx, stat_name] = current_value + stat_value
+            
+            # Ensure all stat columns exist (add if missing, fill NaN with 0)
+            required_cols = ['Shots', 'PassesComplete', 'PassesIncomplete']
+            for col in required_cols:
+                if col not in stats_df.columns:
+                    stats_df[col] = 0
+                # Fill NaN with 0 for existing rows
+                stats_df[col] = pd.to_numeric(stats_df[col], errors='coerce').fillna(0).astype(int)
+            
+            # Ensure other numeric columns are properly typed
+            numeric_cols = ['GamesPlayed', 'Goals', 'Assists', 'MinutesPlayed']
+            for col in numeric_cols:
+                if col in stats_df.columns:
+                    stats_df[col] = pd.to_numeric(stats_df[col], errors='coerce').fillna(0).astype(int)
+            
+            # Write updated stats back to CSV
+            stats_df.to_csv("player_stats.csv", index=False)
+            
+        except Exception as e:
+            # Don't break game tracking if stats update fails
+            st.warning(f"⚠️ Stats update failed: {str(e)}")
+    
+    def add_event_tracker(event_type, player=None, assist=None, notes="", pass_to=None, pass_complete=None):
+        # Calculate elapsed time from game start (more accurate)
+        if 'game_data' in st.session_state and st.session_state.game_data:
+            half_length = st.session_state.game_data.get('half_length', 25) * 60
+        else:
+            half_length = 25 * 60
+        
+        # Calculate elapsed time in current half
+        elapsed = (half_length - st.session_state.time_remaining)
+        
+        # If in second half, add first half time
+        if st.session_state.current_half == 2:
+            elapsed += half_length
+        
         event = {
             'timestamp': format_time(elapsed),
             'half': st.session_state.current_half,
@@ -2073,9 +2239,21 @@ elif page == "🎮 Live Game Tracker":
             'player': player,
             'assist': assist,
             'notes': notes,
-            'time': datetime.now().strftime('%H:%M:%S')
+            'time': datetime.now().strftime('%H:%M:%S'),
+            'time_remaining': st.session_state.time_remaining
         }
+        
+        # Add pass-specific fields
+        if pass_to:
+            event['pass_to'] = pass_to
+        if pass_complete is not None:
+            event['pass_complete'] = pass_complete
+        
         st.session_state.events.insert(0, event)
+        
+        # Update player stats immediately
+        update_player_stats_live(event_type, player, assist, pass_to, pass_complete)
+        
         return event
     
     def get_score_tracker():
@@ -2372,34 +2550,70 @@ elif page == "🎮 Live Game Tracker":
             col_a, col_b, col_c = st.columns(3)
             with col_a:
                 if st.button("💾 Save Lineup", use_container_width=True):
-                    # Save lineup to CSV
+                    # Save lineup to CSV with formation info
                     lineup_data = []
                     for pos, player in st.session_state.lineup.items():
-                        if pos != 'subs' and player and player != "Empty":
+                        if pos != 'subs' and player and player != "Empty" and player != "Select Player...":
                             lineup_data.append({
                                 'Position': pos,
                                 'Player': player,
-                                'Status': 'Starting'
+                                'Status': 'Starting',
+                                'Formation': formation  # Save formation too
                             })
                     
-                    lineup_df = pd.DataFrame(lineup_data)
-                    lineup_df.to_csv("current_lineup.csv", index=False)
-                    st.success("✅ Lineup saved!")
+                    if lineup_data:
+                        lineup_df = pd.DataFrame(lineup_data)
+                        lineup_df.to_csv("current_lineup.csv", index=False)
+                        st.success(f"✅ Lineup saved! ({len(lineup_data)} players)")
+                    else:
+                        st.warning("⚠️ No players selected to save!")
             
             with col_b:
                 if st.button("📂 Load Lineup", use_container_width=True):
                     try:
                         saved_lineup = pd.read_csv("current_lineup.csv")
-                        # Load lineup into session state
-                        for _, row in saved_lineup.iterrows():
-                            if row['Status'] == 'Starting':
-                                for pos in positions:
-                                    if st.session_state.lineup.get(pos) is None:
-                                        st.session_state.lineup[pos] = row['Player']
-                                        break
-                        st.success("✅ Lineup loaded! Refresh to see changes.")
+                        
+                        if saved_lineup.empty:
+                            st.warning("⚠️ Saved lineup file is empty!")
+                        else:
+                            # Clear current lineup first
+                            for pos in positions:
+                                st.session_state.lineup[pos] = None
+                            
+                            # Load saved players into their saved positions
+                            loaded_count = 0
+                            saved_positions = saved_lineup['Position'].tolist() if 'Position' in saved_lineup.columns else []
+                            
+                            for _, row in saved_lineup.iterrows():
+                                if row.get('Status') == 'Starting' or 'Status' not in row:
+                                    saved_pos = str(row.get('Position', ''))
+                                    saved_player = str(row.get('Player', ''))
+                                    
+                                    # If saved position exists in current formation, use it
+                                    if saved_pos in positions:
+                                        st.session_state.lineup[saved_pos] = saved_player
+                                        loaded_count += 1
+                                    else:
+                                        # Position doesn't exist in current formation - find first empty position
+                                        for pos in positions:
+                                            if st.session_state.lineup.get(pos) is None:
+                                                st.session_state.lineup[pos] = saved_player
+                                                loaded_count += 1
+                                                break
+                            
+                            if loaded_count > 0:
+                                # Check if saved formation matches current formation
+                                saved_formation = saved_lineup['Formation'].iloc[0] if 'Formation' in saved_lineup.columns else None
+                                if saved_formation and saved_formation != formation:
+                                    st.warning(f"⚠️ Saved lineup was from '{saved_formation}' formation. Positions may not match perfectly.")
+                                st.success(f"✅ Lineup loaded! ({loaded_count} players) - Refresh page to see changes.")
+                                st.rerun()
+                            else:
+                                st.error("❌ No players loaded. Check saved lineup file.")
                     except FileNotFoundError:
-                        st.warning("No saved lineup found.")
+                        st.warning("⚠️ No saved lineup found. Save a lineup first!")
+                    except Exception as e:
+                        st.error(f"❌ Error loading lineup: {str(e)}")
             
             with col_c:
                 if st.button("🔄 Reset Lineup", use_container_width=True):
@@ -2454,6 +2668,18 @@ elif page == "🎮 Live Game Tracker":
         
         # Timer
         half_text = "FIRST HALF" if st.session_state.current_half == 1 else "SECOND HALF"
+        
+        # Calculate current time remaining (based on elapsed time since start)
+        current_time = time.time()
+        if st.session_state.timer_running and st.session_state.timer_start_time:
+            # Calculate elapsed time since timer started, minus paused time
+            elapsed = current_time - st.session_state.timer_start_time - st.session_state.total_paused_time
+            if st.session_state.pause_start_time:
+                # Currently paused, subtract current pause time
+                elapsed -= (current_time - st.session_state.pause_start_time)
+            st.session_state.time_remaining = max(0, int((game_data['half_length'] * 60) - elapsed))
+        
+        # Display timer
         st.markdown(f"""
         <div style="font-size: 72px; font-weight: bold; text-align: center; padding: 30px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 20px; color: white; margin: 20px 0;">
             ⏱️ {half_text}<br>
@@ -2467,8 +2693,24 @@ elif page == "🎮 Live Game Tracker":
         with col1:
             if st.button("▶️ Start" if not st.session_state.timer_running else "⏸️ Pause", 
                          use_container_width=True):
-                st.session_state.timer_running = not st.session_state.timer_running
-                st.session_state.last_update = time.time()
+                if not st.session_state.timer_running:
+                    # Starting timer
+                    st.session_state.timer_running = True
+                    if not st.session_state.timer_start_time:
+                        # First start - initialize
+                        st.session_state.timer_start_time = current_time
+                        st.session_state.total_paused_time = 0
+                        st.session_state.pause_start_time = None
+                    else:
+                        # Resuming from pause
+                        if st.session_state.pause_start_time:
+                            st.session_state.total_paused_time += (current_time - st.session_state.pause_start_time)
+                            st.session_state.pause_start_time = None
+                else:
+                    # Pausing timer
+                    st.session_state.timer_running = False
+                    st.session_state.pause_start_time = current_time
+                save_live_game_state()
                 st.rerun()
         
         # Show timer status
@@ -2481,6 +2723,9 @@ elif page == "🎮 Live Game Tracker":
                     st.session_state.current_half = 2
                     st.session_state.time_remaining = game_data['half_length'] * 60
                     st.session_state.timer_running = False
+                    st.session_state.timer_start_time = None
+                    st.session_state.total_paused_time = 0
+                    st.session_state.pause_start_time = None
                     add_event_tracker('HALF_TIME', notes="Half time break")
                     save_live_game_state()
                     st.rerun()
@@ -2489,6 +2734,9 @@ elif page == "🎮 Live Game Tracker":
             if st.button("🔄 Reset Timer", use_container_width=True):
                 st.session_state.time_remaining = game_data['half_length'] * 60
                 st.session_state.timer_running = False
+                st.session_state.timer_start_time = None
+                st.session_state.total_paused_time = 0
+                st.session_state.pause_start_time = None
                 st.rerun()
         
         with col4:
@@ -2501,42 +2749,53 @@ elif page == "🎮 Live Game Tracker":
             if st.button("🔄 Refresh", use_container_width=True):
                 st.rerun()
         
-        # Manual pause/resume for injuries/timeouts only
-        if st.session_state.timer_running:
-            col6, col7 = st.columns(2)
-            with col6:
-                if st.button("⏸️ Pause (Injury)", use_container_width=True, help="Pause timer for injuries or timeouts"):
-                    st.session_state.timer_running = False
-                    st.session_state.last_update = time.time()
-                    st.rerun()
-            with col7:
-                if st.button("▶️ Resume", use_container_width=True, help="Resume timer after injury timeout"):
-                    st.session_state.timer_running = True
-                    st.session_state.last_update = time.time()
-                    st.rerun()
+        # Auto-save every 15 seconds for live viewing (non-blocking)
+        if 'last_auto_save' not in st.session_state:
+            st.session_state.last_auto_save = current_time
+        if current_time - st.session_state.last_auto_save > 15:
+            save_live_game_state()
+            st.session_state.last_auto_save = current_time
         
-        # Update timer - Runs continuously like real soccer clock
-        if st.session_state.timer_running:
-            if st.session_state.last_update:
-                elapsed = time.time() - st.session_state.last_update
-                st.session_state.time_remaining = max(0, st.session_state.time_remaining - int(elapsed))
-            st.session_state.last_update = time.time()
+        # Check if half is complete
+        if st.session_state.timer_running and st.session_state.time_remaining <= 0:
+            st.session_state.timer_running = False
+            st.session_state.timer_start_time = None
+            st.session_state.total_paused_time = 0
+            st.session_state.pause_start_time = None
+            save_live_game_state()
+            st.balloons()
+            st.success(f"{half_text} Complete!")
+        
+        # Auto-refresh timer when running (optimized for Streamlit Cloud)
+        # Only refresh if timer is running and we haven't just interacted
+        if st.session_state.timer_running and st.session_state.time_remaining > 0:
+            # Track last refresh to avoid excessive reruns
+            if 'last_timer_refresh' not in st.session_state:
+                st.session_state.last_timer_refresh = current_time
             
-            # Auto-save every 15 seconds for live viewing
-            if 'last_auto_save' not in st.session_state:
-                st.session_state.last_auto_save = time.time()
-            if time.time() - st.session_state.last_auto_save > 15:
+            # Refresh every 2-3 seconds (reduced from 1s to avoid Streamlit Cloud rate limits)
+            time_since_refresh = current_time - st.session_state.last_timer_refresh
+            refresh_interval = 2.0  # 2 seconds - reduces refresh rate by 50%
+            
+            # Safety check: don't refresh if too many refreshes in short time
+            if 'refresh_count' not in st.session_state:
+                st.session_state.refresh_count = 0
+            if 'refresh_window_start' not in st.session_state:
+                st.session_state.refresh_window_start = current_time
+            
+            # Reset refresh counter every 10 seconds
+            if current_time - st.session_state.refresh_window_start > 10:
+                st.session_state.refresh_count = 0
+                st.session_state.refresh_window_start = current_time
+            
+            # Only refresh if interval passed and not too many refreshes
+            if time_since_refresh >= refresh_interval and st.session_state.refresh_count < 5:
+                st.session_state.last_timer_refresh = current_time
+                st.session_state.refresh_count += 1
+                # Save state before refresh
                 save_live_game_state()
-                st.session_state.last_auto_save = time.time()
-            
-            if st.session_state.time_remaining > 0:
-                time.sleep(1)
+                # Refresh page to update timer display
                 st.rerun()
-            else:
-                st.session_state.timer_running = False
-                save_live_game_state()
-                st.balloons()
-                st.success(f"{half_text} Complete!")
         
         st.markdown("---")
         
@@ -2548,17 +2807,28 @@ elif page == "🎮 Live Game Tracker":
         with col1:
             if st.button("⚽ DSX GOAL", use_container_width=True, type="primary", key="dsx_goal_btn"):
                 st.session_state.show_goal_dialog = True
+                # Reset timer refresh to prevent auto-refresh during dialog
+                if 'last_timer_refresh' in st.session_state:
+                    st.session_state.last_timer_refresh = current_time
+                save_live_game_state()
                 st.rerun()
         
         with col2:
             if st.button("🥅 OPP GOAL", use_container_width=True, key="opp_goal_btn"):
                 add_event_tracker('OPP_GOAL')
+                # Reset timer refresh
+                if 'last_timer_refresh' in st.session_state:
+                    st.session_state.last_timer_refresh = current_time
                 save_live_game_state()
                 st.rerun()
         
         with col3:
-            if st.button("🎯 SHOT", use_container_width=True, key="shot_btn"):
-                st.session_state.show_shot_dialog = True
+            if st.button("🎯 SHOT/PASS", use_container_width=True, key="shot_pass_btn"):
+                st.session_state.show_action_selector = True
+                # Reset timer refresh
+                if 'last_timer_refresh' in st.session_state:
+                    st.session_state.last_timer_refresh = current_time
+                save_live_game_state()
                 st.rerun()
         
         col4, col5, col6 = st.columns(3)
@@ -2566,17 +2836,25 @@ elif page == "🎮 Live Game Tracker":
         with col4:
             if st.button("🧤 SAVE", use_container_width=True, key="save_btn"):
                 st.session_state.show_save_dialog = True
+                if 'last_timer_refresh' in st.session_state:
+                    st.session_state.last_timer_refresh = current_time
+                save_live_game_state()
                 st.rerun()
         
         with col5:
             if st.button("⚠️ CORNER", use_container_width=True, key="corner_btn"):
                 add_event_tracker('CORNER')
+                if 'last_timer_refresh' in st.session_state:
+                    st.session_state.last_timer_refresh = current_time
                 save_live_game_state()
                 st.rerun()
         
         with col6:
             if st.button("🔄 SUB", use_container_width=True, key="sub_btn"):
                 st.session_state.show_sub_dialog = True
+                if 'last_timer_refresh' in st.session_state:
+                    st.session_state.last_timer_refresh = current_time
+                save_live_game_state()
                 st.rerun()
         
         col7, col8, col9 = st.columns(3)
@@ -2586,6 +2864,9 @@ elif page == "🎮 Live Game Tracker":
                 if st.session_state.events:
                     last_event = st.session_state.events.pop(0)
                     st.success(f"✅ Undid: {last_event['type']}")
+                    if 'last_timer_refresh' in st.session_state:
+                        st.session_state.last_timer_refresh = current_time
+                    save_live_game_state()
                     st.rerun()
                 else:
                     st.error("No events to undo!")
@@ -2593,14 +2874,20 @@ elif page == "🎮 Live Game Tracker":
         with col8:
             if st.button("📝 NOTE", use_container_width=True, key="note_btn"):
                 st.session_state.show_note_dialog = True
+                if 'last_timer_refresh' in st.session_state:
+                    st.session_state.last_timer_refresh = current_time
+                save_live_game_state()
                 st.rerun()
         
         with col9:
             if st.button("🚨 TIMEOUT", use_container_width=True, key="timeout_btn"):
                 add_event_tracker('TIMEOUT', notes="Injury/timeout")
+                if 'last_timer_refresh' in st.session_state:
+                    st.session_state.last_timer_refresh = current_time
                 save_live_game_state()
                 if st.session_state.timer_running:
                     st.session_state.timer_running = False
+                    st.session_state.pause_start_time = current_time
                 st.rerun()
         
         # Goalkeeper Actions Section
@@ -2611,21 +2898,33 @@ elif page == "🎮 Live Game Tracker":
         with gk_col1:
             if st.button("✋ CATCH", use_container_width=True, key="catch_btn"):
                 st.session_state.show_catch_dialog = True
+                if 'last_timer_refresh' in st.session_state:
+                    st.session_state.last_timer_refresh = current_time
+                save_live_game_state()
                 st.rerun()
         
         with gk_col2:
             if st.button("👊 PUNCH", use_container_width=True, key="punch_btn"):
                 st.session_state.show_punch_dialog = True
+                if 'last_timer_refresh' in st.session_state:
+                    st.session_state.last_timer_refresh = current_time
+                save_live_game_state()
                 st.rerun()
         
         with gk_col3:
             if st.button("🦶 DISTRIBUTION", use_container_width=True, key="dist_btn"):
                 st.session_state.show_dist_dialog = True
+                if 'last_timer_refresh' in st.session_state:
+                    st.session_state.last_timer_refresh = current_time
+                save_live_game_state()
                 st.rerun()
         
         with gk_col4:
             if st.button("🧹 CLEARANCE", use_container_width=True, key="clear_btn"):
                 st.session_state.show_clear_dialog = True
+                if 'last_timer_refresh' in st.session_state:
+                    st.session_state.last_timer_refresh = current_time
+                save_live_game_state()
                 st.rerun()
         
         # Dialogs (simplified for embedding)
@@ -2641,9 +2940,12 @@ elif page == "🎮 Live Game Tracker":
                 col1, col2 = st.columns(2)
                 with col1:
                     if st.form_submit_button("✅ RECORD", use_container_width=True, type="primary"):
-                        player_name = scorer.split(' ', 1)[1]
-                        assist_name = assist.split(' ', 1)[1] if assist != "None" else None
+                        player_name = scorer.split(' ', 1)[1] if ' ' in scorer else scorer
+                        assist_name = assist.split(' ', 1)[1] if assist != "None" and ' ' in assist else (None if assist == "None" else assist)
                         add_event_tracker('DSX_GOAL', player=player_name, assist=assist_name, notes=notes)
+                        # Stats are updated automatically in add_event_tracker()
+                        if 'last_timer_refresh' in st.session_state:
+                            st.session_state.last_timer_refresh = time.time()
                         save_live_game_state()
                         st.session_state.show_goal_dialog = False
                         st.rerun()
@@ -2652,48 +2954,332 @@ elif page == "🎮 Live Game Tracker":
                         st.session_state.show_goal_dialog = False
                         st.rerun()
         
+        # Action Selector Dialog (Shot or Pass)
+        if 'show_action_selector' in st.session_state and st.session_state.show_action_selector:
+            st.markdown('<div class="live-game-dialog">', unsafe_allow_html=True)
+            st.subheader("🎯 Select Action")
+            
+            col1, col2 = st.columns(2)
+            with col1:
+                if st.button("⚽ SHOT", use_container_width=True, type="primary", key="select_shot_btn"):
+                    st.session_state.show_action_selector = False
+                    st.session_state.show_shot_dialog = True
+                    if 'last_timer_refresh' in st.session_state:
+                        st.session_state.last_timer_refresh = time.time()
+                    st.rerun()
+            
+            with col2:
+                if st.button("➡️ PASS", use_container_width=True, type="primary", key="select_pass_btn"):
+                    st.session_state.show_action_selector = False
+                    st.session_state.show_pass_dialog = True
+                    if 'last_timer_refresh' in st.session_state:
+                        st.session_state.last_timer_refresh = time.time()
+                    st.rerun()
+            
+            col_cancel = st.columns(1)[0]
+            with col_cancel:
+                if st.button("❌ Cancel", use_container_width=True, key="cancel_action_selector_btn"):
+                    st.session_state.show_action_selector = False
+                    st.rerun()
+            st.markdown('</div>', unsafe_allow_html=True)
+        
         # Shot dialog
         if 'show_shot_dialog' in st.session_state and st.session_state.show_shot_dialog:
-            with st.form("shot_form"):
-                st.subheader("🎯 SHOT ON GOAL")
-                on_field_players = roster_tracker[roster_tracker['PlayerNumber'].isin(st.session_state.on_field)]
-                shooter = st.selectbox("Who took the shot?", [f"#{int(row['PlayerNumber'])} {row['PlayerName']}" 
-                                                               for _, row in on_field_players.iterrows()])
-                
-                # Shot outcome
-                st.write("**Outcome:**")
-                shot_outcome = st.radio("outcome", 
-                    ["⚽ On Target", "❌ Off Target", "🛡️ Blocked"], 
-                    horizontal=True, label_visibility="collapsed")
-                
-                # Shot type
-                st.write("**Type:**")
-                shot_type = st.radio("type", 
-                    ["👟 Right Foot", "👟 Left Foot", "🤕 Header"], 
-                    horizontal=True, label_visibility="collapsed")
-                
-                # Shot location
-                st.write("**Location:**")
-                shot_location = st.radio("location", 
-                    ["⬆️ Top", "⬇️ Bottom", "⬅️ Left", "➡️ Right", "🎯 Center"], 
-                    horizontal=True, label_visibility="collapsed")
-                
-                notes = st.text_input("Notes (optional)")
-                col1, col2 = st.columns(2)
-                with col1:
-                    if st.form_submit_button("✅ RECORD", use_container_width=True, type="primary"):
-                        player_name = shooter.split(' ', 1)[1]
-                        shot_details = f"{shot_outcome} | {shot_type} | {shot_location}"
+            st.markdown('<div class="live-game-dialog">', unsafe_allow_html=True)
+            st.subheader("⚽ SHOT ON GOAL")
+            on_field_players = roster_tracker[roster_tracker['PlayerNumber'].isin(st.session_state.on_field)]
+            
+            # Initialize shot selections if not set
+            if 'shot_player' not in st.session_state:
+                st.session_state.shot_player = None
+            if 'shot_outcome' not in st.session_state:
+                st.session_state.shot_outcome = None
+            if 'shot_type' not in st.session_state:
+                st.session_state.shot_type = None
+            if 'shot_location' not in st.session_state:
+                st.session_state.shot_location = None
+            
+            # Shooter - Large Button Grid
+            st.write("**Who took the shot?**")
+            if on_field_players.empty:
+                st.warning("No players on field!")
+            else:
+                num_cols = min(3, len(on_field_players))
+                shooter_cols = st.columns(num_cols)
+                for idx, (_, row) in enumerate(on_field_players.iterrows()):
+                    with shooter_cols[idx % num_cols]:
+                        player_display = f"#{int(row['PlayerNumber'])} {row['PlayerName']}"
+                        if st.button(player_display, use_container_width=True,
+                                   type="primary" if st.session_state.shot_player == player_display else "secondary",
+                                   key=f"shot_player_{int(row['PlayerNumber'])}"):
+                            st.session_state.shot_player = player_display
+                            st.rerun()
+            
+            if st.session_state.shot_player:
+                st.success(f"✅ Shooter: {st.session_state.shot_player}")
+            
+            st.markdown("---")
+            
+            # Shot Outcome - Large Box Buttons
+            st.write("**Outcome:**")
+            outcome_cols = st.columns(3)
+            with outcome_cols[0]:
+                if st.button("⚽ ON TARGET", use_container_width=True,
+                           type="primary" if st.session_state.shot_outcome == "⚽ On Target" else "secondary",
+                           key="shot_outcome_target"):
+                    st.session_state.shot_outcome = "⚽ On Target"
+                    st.rerun()
+            with outcome_cols[1]:
+                if st.button("❌ OFF TARGET", use_container_width=True,
+                           type="primary" if st.session_state.shot_outcome == "❌ Off Target" else "secondary",
+                           key="shot_outcome_off"):
+                    st.session_state.shot_outcome = "❌ Off Target"
+                    st.rerun()
+            with outcome_cols[2]:
+                if st.button("🛡️ BLOCKED", use_container_width=True,
+                           type="primary" if st.session_state.shot_outcome == "🛡️ Blocked" else "secondary",
+                           key="shot_outcome_blocked"):
+                    st.session_state.shot_outcome = "🛡️ Blocked"
+                    st.rerun()
+            
+            if st.session_state.shot_outcome:
+                st.success(f"✅ Outcome: {st.session_state.shot_outcome}")
+            
+            st.markdown("---")
+            
+            # Shot Type - Large Box Buttons
+            st.write("**Type:**")
+            type_cols = st.columns(3)
+            with type_cols[0]:
+                if st.button("👟 RIGHT FOOT", use_container_width=True,
+                           type="primary" if st.session_state.shot_type == "👟 Right Foot" else "secondary",
+                           key="shot_type_right"):
+                    st.session_state.shot_type = "👟 Right Foot"
+                    st.rerun()
+            with type_cols[1]:
+                if st.button("👟 LEFT FOOT", use_container_width=True,
+                           type="primary" if st.session_state.shot_type == "👟 Left Foot" else "secondary",
+                           key="shot_type_left"):
+                    st.session_state.shot_type = "👟 Left Foot"
+                    st.rerun()
+            with type_cols[2]:
+                if st.button("🤕 HEADER", use_container_width=True,
+                           type="primary" if st.session_state.shot_type == "🤕 Header" else "secondary",
+                           key="shot_type_header"):
+                    st.session_state.shot_type = "🤕 Header"
+                    st.rerun()
+            
+            if st.session_state.shot_type:
+                st.success(f"✅ Type: {st.session_state.shot_type}")
+            
+            st.markdown("---")
+            
+            # Shot Location - Large Box Buttons
+            st.write("**Location:**")
+            loc_cols = st.columns(5)
+            locations = [
+                ("⬆️ TOP", "⬆️ Top"),
+                ("⬇️ BOTTOM", "⬇️ Bottom"),
+                ("⬅️ LEFT", "⬅️ Left"),
+                ("➡️ RIGHT", "➡️ Right"),
+                ("🎯 CENTER", "🎯 Center")
+            ]
+            for idx, (btn_text, display_text) in enumerate(locations):
+                with loc_cols[idx]:
+                    if st.button(btn_text, use_container_width=True,
+                               type="primary" if st.session_state.shot_location == display_text else "secondary",
+                               key=f"shot_location_{idx}"):
+                        st.session_state.shot_location = display_text
+                        st.rerun()
+            
+            if st.session_state.shot_location:
+                st.success(f"✅ Location: {st.session_state.shot_location}")
+            
+            st.markdown("---")
+            
+            # Notes (optional)
+            if 'shot_notes' not in st.session_state:
+                st.session_state.shot_notes = ""
+            notes = st.text_input("Notes (optional)", value=st.session_state.shot_notes, key="shot_notes_input")
+            if notes != st.session_state.shot_notes:
+                st.session_state.shot_notes = notes
+            
+            st.markdown("---")
+            
+            # Record and Cancel buttons
+            record_col1, record_col2 = st.columns(2)
+            with record_col1:
+                if st.button("✅ RECORD SHOT", use_container_width=True, type="primary", key="record_shot_btn"):
+                    if st.session_state.shot_player and st.session_state.shot_outcome and st.session_state.shot_type and st.session_state.shot_location:
+                        player_name = st.session_state.shot_player.split(' ', 1)[1] if ' ' in st.session_state.shot_player else st.session_state.shot_player
+                        shot_details = f"{st.session_state.shot_outcome} | {st.session_state.shot_type} | {st.session_state.shot_location}"
                         if notes:
                             shot_details += f" | {notes}"
                         add_event_tracker('SHOT', player=player_name, notes=shot_details)
+                        # Reset selections
+                        st.session_state.shot_player = None
+                        st.session_state.shot_outcome = None
+                        st.session_state.shot_type = None
+                        st.session_state.shot_location = None
+                        st.session_state.shot_notes = ""
+                        if 'last_timer_refresh' in st.session_state:
+                            st.session_state.last_timer_refresh = time.time()
                         save_live_game_state()
                         st.session_state.show_shot_dialog = False
                         st.rerun()
-                with col2:
-                    if st.form_submit_button("❌ Cancel", use_container_width=True):
-                        st.session_state.show_shot_dialog = False
+                    else:
+                        st.warning("⚠️ Please select Player, Outcome, Type, and Location!")
+            
+            with record_col2:
+                if st.button("❌ Cancel", use_container_width=True, key="cancel_shot_btn"):
+                    # Reset selections
+                    st.session_state.shot_player = None
+                    st.session_state.shot_outcome = None
+                    st.session_state.shot_type = None
+                    st.session_state.shot_location = None
+                    st.session_state.shot_notes = ""
+                    st.session_state.show_shot_dialog = False
+                    st.rerun()
+            
+            st.markdown('</div>', unsafe_allow_html=True)
+        
+        # Pass dialog
+        if 'show_pass_dialog' in st.session_state and st.session_state.show_pass_dialog:
+            st.markdown('<div class="live-game-dialog">', unsafe_allow_html=True)
+            st.subheader("➡️ PASS")
+            on_field_players = roster_tracker[roster_tracker['PlayerNumber'].isin(st.session_state.on_field)]
+            
+            # Initialize selected players if not set
+            if 'pass_from_player' not in st.session_state:
+                st.session_state.pass_from_player = None
+            if 'pass_to_player' not in st.session_state:
+                st.session_state.pass_to_player = None
+            if 'pass_complete_status' not in st.session_state:
+                st.session_state.pass_complete_status = None
+            
+            # From Player - Large Button Grid
+            st.write("**From Player:**")
+            if on_field_players.empty:
+                st.warning("No players on field!")
+            else:
+                # Create grid of large player buttons (2-3 columns on mobile)
+                num_cols = min(3, len(on_field_players))
+                from_cols = st.columns(num_cols)
+                for idx, (_, row) in enumerate(on_field_players.iterrows()):
+                    with from_cols[idx % num_cols]:
+                        player_display = f"#{int(row['PlayerNumber'])} {row['PlayerName']}"
+                        if st.button(player_display, use_container_width=True, 
+                                   type="primary" if st.session_state.pass_from_player == player_display else "secondary",
+                                   key=f"pass_from_{int(row['PlayerNumber'])}"):
+                            st.session_state.pass_from_player = player_display
+                            st.rerun()
+            
+            # Show selected from player
+            if st.session_state.pass_from_player:
+                st.success(f"✅ From: {st.session_state.pass_from_player}")
+            
+            st.markdown("---")
+            
+            # To Player - Large Button Grid
+            st.write("**To Player:**")
+            if on_field_players.empty:
+                st.warning("No players on field!")
+            else:
+                # Create grid of large player buttons
+                to_cols = st.columns(num_cols)
+                for idx, (_, row) in enumerate(on_field_players.iterrows()):
+                    with to_cols[idx % num_cols]:
+                        player_display = f"#{int(row['PlayerNumber'])} {row['PlayerName']}"
+                        # Don't allow same player for from and to
+                        if st.session_state.pass_from_player and player_display == st.session_state.pass_from_player:
+                            st.button(f"⚠️ {player_display}", use_container_width=True, disabled=True, 
+                                    key=f"pass_to_disabled_{int(row['PlayerNumber'])}")
+                        else:
+                            if st.button(player_display, use_container_width=True,
+                                       type="primary" if st.session_state.pass_to_player == player_display else "secondary",
+                                       key=f"pass_to_{int(row['PlayerNumber'])}"):
+                                st.session_state.pass_to_player = player_display
+                                st.rerun()
+            
+            # Show selected to player
+            if st.session_state.pass_to_player:
+                st.success(f"✅ To: {st.session_state.pass_to_player}")
+            
+            st.markdown("---")
+            
+            # Complete/Incomplete - Large Box Buttons
+            st.write("**Pass Result:**")
+            result_col1, result_col2 = st.columns(2)
+            with result_col1:
+                if st.button("✅ COMPLETE", use_container_width=True, 
+                           type="primary" if st.session_state.pass_complete_status == "Complete" else "secondary",
+                           key="pass_complete_btn"):
+                    st.session_state.pass_complete_status = "Complete"
+                    st.rerun()
+            
+            with result_col2:
+                if st.button("❌ INCOMPLETE", use_container_width=True,
+                           type="primary" if st.session_state.pass_complete_status == "Incomplete" else "secondary",
+                           key="pass_incomplete_btn"):
+                    st.session_state.pass_complete_status = "Incomplete"
+                    st.rerun()
+            
+            # Show selected status
+            if st.session_state.pass_complete_status:
+                status_text = "✅ Complete" if st.session_state.pass_complete_status == "Complete" else "❌ Incomplete"
+                st.success(f"✅ Result: {status_text}")
+            
+            st.markdown("---")
+            
+            # Notes (optional)
+            if 'pass_notes' not in st.session_state:
+                st.session_state.pass_notes = ""
+            notes = st.text_input("Notes (optional)", value=st.session_state.pass_notes, 
+                                 placeholder="e.g., through ball, cross, etc.",
+                                 key="pass_notes_input")
+            if notes != st.session_state.pass_notes:
+                st.session_state.pass_notes = notes
+            
+            st.markdown("---")
+            
+            # Record and Cancel buttons
+            record_col1, record_col2 = st.columns(2)
+            with record_col1:
+                if st.button("✅ RECORD PASS", use_container_width=True, type="primary", key="record_pass_btn"):
+                    if st.session_state.pass_from_player and st.session_state.pass_to_player and st.session_state.pass_complete_status:
+                        player_from_name = st.session_state.pass_from_player.split(' ', 1)[1] if ' ' in st.session_state.pass_from_player else st.session_state.pass_from_player
+                        player_to_name = st.session_state.pass_to_player.split(' ', 1)[1] if ' ' in st.session_state.pass_to_player else st.session_state.pass_to_player
+                        pass_complete = (st.session_state.pass_complete_status == "Complete")
+                        event_type = 'PASS_COMPLETE' if pass_complete else 'PASS_INCOMPLETE'
+                        pass_notes = f"To: {player_to_name}"
+                        if notes:
+                            pass_notes += f" | {notes}"
+                        add_event_tracker(event_type, player=player_from_name, pass_to=player_to_name, 
+                                         pass_complete=pass_complete, notes=pass_notes)
+                        # Reset selections
+                        st.session_state.pass_from_player = None
+                        st.session_state.pass_to_player = None
+                        st.session_state.pass_complete_status = None
+                        st.session_state.pass_notes = ""
+                        if 'last_timer_refresh' in st.session_state:
+                            st.session_state.last_timer_refresh = time.time()
+                        save_live_game_state()
+                        st.session_state.show_pass_dialog = False
                         st.rerun()
+                    else:
+                        st.warning("⚠️ Please select From Player, To Player, and Pass Result!")
+            
+            with record_col2:
+                if st.button("❌ Cancel", use_container_width=True, key="cancel_pass_btn"):
+                    # Reset selections
+                    st.session_state.pass_from_player = None
+                    st.session_state.pass_to_player = None
+                    st.session_state.pass_complete_status = None
+                    st.session_state.pass_notes = ""
+                    st.session_state.show_pass_dialog = False
+                    st.rerun()
+            
+            st.markdown('</div>', unsafe_allow_html=True)
         
         # Save dialog
         if 'show_save_dialog' in st.session_state and st.session_state.show_save_dialog:
