@@ -236,7 +236,63 @@ def load_division_data():
     # Combine all divisions
     if all_divisions:
         combined = pd.concat(all_divisions, ignore_index=True)
-        # Remove duplicates based on Team name
+        
+        # Prioritize tournament data for teams DSX has played in tournaments
+        # Load DSX match history to identify tournament opponents
+        tournament_opponents = set()
+        tournament_files = [
+            "Haunted_Classic_B08Orange_Division_Rankings.csv",
+            "Haunted_Classic_B08Black_Division_Rankings.csv",
+            "CU_Fall_Finale_2025_Division_Rankings.csv",
+            "Club_Ohio_Fall_Classic_2025_Division_Rankings.csv",
+        ]
+        
+        try:
+            matches = pd.read_csv("DSX_Matches_Fall2025.csv", index_col=False)
+            if not matches.empty and 'Tournament' in matches.columns:
+                # Get opponents from tournament games
+                tournament_matches = matches[matches['Tournament'].notna()]
+                if not tournament_matches.empty:
+                    tournament_opponents = set([resolve_alias(str(opp)) for opp in tournament_matches['Opponent'].dropna().unique()])
+        except:
+            pass
+        
+        # If we have tournament opponents, prioritize tournament file data for those teams
+        if tournament_opponents:
+            # Split into tournament and non-tournament rows
+            tournament_rows = []
+            non_tournament_rows = []
+            
+            for idx, row in combined.iterrows():
+                team_name = str(row.get('Team', ''))
+                team_resolved = resolve_alias(team_name)
+                
+                # Check if this team is a tournament opponent
+                is_tournament_opponent = False
+                for opp in tournament_opponents:
+                    if normalize_name(opp) == normalize_name(team_resolved):
+                        is_tournament_opponent = True
+                        break
+                
+                # Check if this row is from a tournament file
+                source_file = str(row.get('League', '')) + str(row.get('SourceURL', ''))
+                is_tournament_file = any(tf in source_file for tf in ['Haunted Classic', 'CU Fall Finale', 'Club Ohio Fall Classic'])
+                
+                if is_tournament_opponent and is_tournament_file:
+                    tournament_rows.append((idx, row))
+                else:
+                    non_tournament_rows.append((idx, row))
+            
+            # Combine: tournament rows first, then non-tournament
+            # When duplicates are removed, tournament rows take precedence
+            if tournament_rows:
+                tournament_df = pd.DataFrame([r for _, r in tournament_rows])
+                non_tournament_df = pd.DataFrame([r for _, r in non_tournament_rows])
+                
+                # Combine with tournament data first (so it's kept when removing duplicates)
+                combined = pd.concat([tournament_df, non_tournament_df], ignore_index=True)
+        
+        # Remove duplicates based on Team name (keeping first = tournament data if prioritized)
         combined = combined.drop_duplicates(subset=['Team'], keep='first')
         return combined
     
@@ -259,6 +315,9 @@ TEAM_NAME_ALIASES = {
     # BSA Celtic City aliases (for MVYSA B09-3 division)
     normalize_name("BSA Celtic City"): "BSA Celtic City",
     normalize_name("BSA Celtic City 2018"): "BSA Celtic City",
+    # Worthington United name variations
+    normalize_name("Worthington United Worthington United 94 2018 Boys White"): "Worthington United Worthington United 2018 Boys White",
+    normalize_name("Worthington United 94 2018 Boys White"): "Worthington United Worthington United 2018 Boys White",
 }
 
 def resolve_alias(team_name: str) -> str:
