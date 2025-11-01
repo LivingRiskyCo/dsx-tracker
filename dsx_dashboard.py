@@ -4498,9 +4498,25 @@ elif page == "🏆 Division Rankings":
                     # If concat fails, just use peer_df without DSX (shouldn't happen but safe)
                     pass
                 
-                # Sort by PPG then Strength Index
-                peer_df = peer_df.sort_values(['PPG', 'StrengthIndex'], ascending=[False, False]).reset_index(drop=True)
-                peer_df['Rank'] = range(1, len(peer_df) + 1)
+                # Sort by PPG then Strength Index (safely check columns exist)
+                try:
+                    peer_df = peer_df.reset_index(drop=True)
+                    sort_cols = []
+                    if 'PPG' in peer_df.columns:
+                        sort_cols.append('PPG')
+                    if 'StrengthIndex' in peer_df.columns:
+                        sort_cols.append('StrengthIndex')
+                    
+                    if sort_cols:
+                        peer_df = peer_df.sort_values(sort_cols, ascending=[False] * len(sort_cols)).reset_index(drop=True)
+                    else:
+                        peer_df = peer_df.reset_index(drop=True)
+                    
+                    peer_df['Rank'] = range(1, len(peer_df) + 1)
+                except Exception as e:
+                    # If sorting fails, just assign ranks in order
+                    peer_df = peer_df.reset_index(drop=True)
+                    peer_df['Rank'] = range(1, len(peer_df) + 1)
                 
                 # Final check: ensure no empty team names made it through
                 try:
