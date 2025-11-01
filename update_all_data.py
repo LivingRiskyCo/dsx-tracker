@@ -135,7 +135,13 @@ def main():
         "Club Ohio Opponents' Opponents - Tournament-Specific"
     ))
 
-    # 9. Analyze Comprehensive Coverage
+    # 9. Update All Analytics and Strength Indexes
+    updates.append(run_script(
+        "update_all_analytics_and_strength_indexes.py",
+        "Recalculate All Strength Indexes and Analytics"
+    ))
+
+    # 10. Analyze Comprehensive Coverage
     updates.append(run_script(
         "comprehensive_opponents_coverage.py",
         "Comprehensive Opponents Coverage Analysis"
