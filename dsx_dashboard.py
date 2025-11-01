@@ -4488,8 +4488,15 @@ elif page == "🏆 Division Rankings":
                     pass
                 
                 # Add DSX to peer group
-                dsx_peer_row = dsx_row.copy()
-                peer_df = pd.concat([peer_df, dsx_peer_row], ignore_index=True)
+                try:
+                    # Reset indexes before concat to avoid duplicate index errors
+                    peer_df = peer_df.reset_index(drop=True)
+                    dsx_peer_row = dsx_row.copy().reset_index(drop=True)
+                    peer_df = pd.concat([peer_df, dsx_peer_row], ignore_index=True)
+                    peer_df = peer_df.reset_index(drop=True)
+                except Exception as e:
+                    # If concat fails, just use peer_df without DSX (shouldn't happen but safe)
+                    pass
                 
                 # Sort by PPG then Strength Index
                 peer_df = peer_df.sort_values(['PPG', 'StrengthIndex'], ascending=[False, False]).reset_index(drop=True)
