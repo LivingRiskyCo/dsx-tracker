@@ -4285,11 +4285,19 @@ elif page == "🏆 Division Rankings":
                 peer_df = tournament_df.copy()
                 
                 # Filter out any rows with missing team names or GP=0 (shouldn't happen but double-check)
-                peer_df = peer_df[
-                    (peer_df['Team'].notna()) & 
-                    (peer_df['Team'].astype(str).str.strip() != '') &
-                    (peer_df['GP'] > 0)
-                ].copy()
+                try:
+                    peer_df = peer_df.reset_index(drop=True)
+                    if 'Team' in peer_df.columns and 'GP' in peer_df.columns and len(peer_df) > 0:
+                        # Ensure Team column is string type
+                        team_series = peer_df['Team'].fillna('').astype(str)
+                        # Create safe filter conditions
+                        team_not_empty = (team_series.str.strip() != '')
+                        gp_valid = (peer_df['GP'] > 0)
+                        peer_df = peer_df[team_not_empty & gp_valid].copy()
+                        peer_df = peer_df.reset_index(drop=True)
+                except Exception as e:
+                    # If filtering fails, just use what we have
+                    pass
                 
                 # Calculate per-game stats for tournament teams
                 for idx, row in peer_df.iterrows():
@@ -4334,11 +4342,19 @@ elif page == "🏆 Division Rankings":
                         peer_df.at[idx, 'StrengthIndex'] = round(0.7 * ppg_norm + 0.3 * gdpg_norm, 1)
                 
                 # Final cleanup: remove any rows with missing team names or invalid data
-                peer_df = peer_df[
-                    (peer_df['Team'].notna()) & 
-                    (peer_df['Team'].astype(str).str.strip() != '') &
-                    (peer_df['GP'] > 0)
-                ].copy()
+                try:
+                    peer_df = peer_df.reset_index(drop=True)
+                    if 'Team' in peer_df.columns and 'GP' in peer_df.columns and len(peer_df) > 0:
+                        # Ensure Team column is string type
+                        team_series = peer_df['Team'].fillna('').astype(str)
+                        # Create safe filter conditions
+                        team_not_empty = (team_series.str.strip() != '')
+                        gp_valid = (peer_df['GP'] > 0)
+                        peer_df = peer_df[team_not_empty & gp_valid].copy()
+                        peer_df = peer_df.reset_index(drop=True)
+                except Exception as e:
+                    # If filtering fails, just use what we have
+                    pass
                 
                 # Add DSX to peer group
                 dsx_peer_row = dsx_row.copy()
@@ -4349,10 +4365,18 @@ elif page == "🏆 Division Rankings":
                 peer_df['Rank'] = range(1, len(peer_df) + 1)
                 
                 # Final check: ensure no empty team names made it through
-                peer_df = peer_df[
-                    (peer_df['Team'].notna()) & 
-                    (peer_df['Team'].astype(str).str.strip() != '')
-                ].copy()
+                try:
+                    peer_df = peer_df.reset_index(drop=True)
+                    if 'Team' in peer_df.columns and len(peer_df) > 0:
+                        # Ensure Team column is string type
+                        team_series = peer_df['Team'].fillna('').astype(str)
+                        # Create safe filter condition
+                        team_not_empty = (team_series.str.strip() != '')
+                        peer_df = peer_df[team_not_empty].copy()
+                        peer_df = peer_df.reset_index(drop=True)
+                except Exception as e:
+                    # If filtering fails, just use what we have
+                    pass
                 
                 # Get DSX rank in peer group
                 dsx_peer_rank = peer_df[peer_df['IsDSX'] == True]
