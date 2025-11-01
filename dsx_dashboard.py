@@ -452,9 +452,25 @@ def get_opponent_three_stat_snapshot(opponent_name, all_divisions_df, dsx_matche
         else:
             opp_gd_pg = opp_gd
         
-        w = int(opp_full.get('W', 0))
-        l = int(opp_full.get('L', 0))
-        d = int(opp_full.get('D', 0))
+        # Safely convert W/L/D to int, handling NaN and various types
+        def safe_int(value, default=0):
+            if pd.isna(value):
+                return default
+            try:
+                if hasattr(value, 'iloc'):
+                    # It's a Series, get first value
+                    value = value.iloc[0] if len(value) > 0 else default
+                if hasattr(value, '__iter__') and not isinstance(value, (str, bytes)):
+                    # It's an iterable, get first value
+                    value = value[0] if len(value) > 0 else default
+                # Convert to float first (handles string numbers), then int
+                return int(float(value)) if value != value != value else default  # NaN check: value != value
+            except (ValueError, TypeError, IndexError):
+                return default
+        
+        w = safe_int(opp_full.get('W', 0))
+        l = safe_int(opp_full.get('L', 0))
+        d = safe_int(opp_full.get('D', 0))
         pts = (w * 3) + d
         opp_ppg = pts / gp if gp > 0 else 0
         
