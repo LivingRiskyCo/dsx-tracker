@@ -4245,18 +4245,35 @@ elif page == "🏆 Division Rankings":
                     pass
             
             # Filter out teams with zero games played (they haven't started tournament yet)
-            if 'GP' in tournament_df.columns:
-                tournament_df['GP'] = pd.to_numeric(tournament_df['GP'], errors='coerce').fillna(0)
-            else:
-                tournament_df['GP'] = 0
-            tournament_df = tournament_df[tournament_df['GP'] > 0].copy()
+            try:
+                if 'GP' in tournament_df.columns and len(tournament_df) > 0:
+                    # Ensure GP column is a Series before converting
+                    gp_series = tournament_df['GP'].copy()
+                    tournament_df['GP'] = pd.to_numeric(gp_series, errors='coerce').fillna(0)
+                    # Reset index before filtering
+                    tournament_df = tournament_df.reset_index(drop=True)
+                    tournament_df = tournament_df[tournament_df['GP'] > 0].copy()
+                    tournament_df = tournament_df.reset_index(drop=True)
+                else:
+                    # If no GP column, create one with 1 to keep all teams
+                    tournament_df['GP'] = 1
+            except Exception as e:
+                # If GP processing fails, just set GP to 1 for all teams
+                tournament_df['GP'] = 1
             
             # Double-check: remove any rows where GP is still 0 or team name is empty
-            tournament_df = tournament_df[
-                (tournament_df['GP'] > 0) & 
-                (tournament_df['Team'].notna()) & 
-                (tournament_df['Team'].astype(str).str.strip() != '')
-            ].copy()
+            try:
+                tournament_df = tournament_df.reset_index(drop=True)
+                if 'Team' in tournament_df.columns and 'GP' in tournament_df.columns and len(tournament_df) > 0:
+                    tournament_df = tournament_df[
+                        (tournament_df['GP'] > 0) & 
+                        (tournament_df['Team'].notna()) & 
+                        (tournament_df['Team'].astype(str).str.strip() != '')
+                    ].copy()
+                    tournament_df = tournament_df.reset_index(drop=True)
+            except Exception as e:
+                # If filtering fails, just continue with what we have
+                pass
             
             # Get DSX strength for peer filtering
             dsx_si = dsx_row.iloc[0]['StrengthIndex'] if not dsx_row.empty else 0
