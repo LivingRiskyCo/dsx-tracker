@@ -200,11 +200,199 @@ else:
     
     # Timer and controls
     half_text = "FIRST HALF" if st.session_state.current_half == 1 else "SECOND HALF"
+    timer_status = "running" if st.session_state.timer_running else "paused"
+    timer_color = "#667eea" if st.session_state.timer_running else "#ff6b6b"
+
     st.markdown(f"""
-    <div class="timer-display">
+    <div class="timer-display" style="background: linear-gradient(135deg, {timer_color} 0%, #764ba2 100%); transition: background 0.3s ease;">
         ⏱️ {half_text}<br>
-        {format_time(st.session_state.time_remaining)}
+        <span id="timer-display">{format_time(st.session_state.time_remaining)}</span>
     </div>
+
+    <script>
+    // Smooth countdown timer like TeamSnap
+    let timeRemaining = {st.session_state.time_remaining};
+    let timerStatus = "{timer_status}";
+    let timerDisplay = document.getElementById('timer-display');
+    let timerContainer = timerDisplay.parentElement;
+    let lastMinuteAlerted = false;
+    let halftimeAlerted = false;
+
+    function formatTime(seconds) {{
+        const mins = Math.floor(seconds / 60);
+        const secs = seconds % 60;
+        return mins.toString().padStart(2, '0') + ':' + secs.toString().padStart(2, '0');
+    }}
+
+    // Audio feedback functions
+    function playBeep(frequency = 800, duration = 200, type = 'sine') {{
+        try {{
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+
+            oscillator.frequency.setValueAtTime(frequency, audioContext.currentTime);
+            oscillator.type = type;
+
+            gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + duration / 1000);
+
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + duration / 1000);
+        }} catch (e) {{
+            console.log('Audio not supported');
+        }}
+    }}
+
+    function playStartSound() {{
+        playBeep(1000, 300, 'sine');
+        setTimeout(() => playBeep(1200, 200, 'sine'), 150);
+    }}
+
+    function playPauseSound() {{
+        playBeep(600, 400, 'triangle');
+    }}
+
+    function playLastMinuteAlert() {{
+        playBeep(1500, 150, 'square');
+        setTimeout(() => playBeep(1500, 150, 'square'), 200);
+        setTimeout(() => playBeep(1500, 150, 'square'), 400);
+    }}
+
+    function playHalftimeSound() {{
+        playBeep(800, 500, 'sawtooth');
+        setTimeout(() => playBeep(1000, 500, 'sawtooth'), 300);
+    }}
+
+    function playEndGameSound() {{
+        playBeep(600, 800, 'sawtooth');
+        setTimeout(() => playBeep(800, 600, 'sawtooth'), 400);
+        setTimeout(() => playBeep(1000, 400, 'sawtooth'), 800);
+    }}
+
+    function updateTimer() {{
+        if (timerStatus === "running" && timeRemaining > 0) {{
+            timeRemaining--;
+            timerDisplay.textContent = formatTime(timeRemaining);
+
+            // Visual feedback when time is low
+            if (timeRemaining <= 60) {{  // Last minute
+                timerContainer.style.background = "linear-gradient(135deg, #ff4757 0%, #ff3838 100%)";
+                timerContainer.style.animation = "pulse 1s infinite";
+
+                // Alert once when entering last minute
+                if (!lastMinuteAlerted) {{
+                    playLastMinuteAlert();
+                    lastMinuteAlerted = true;
+                }}
+            }} else if (timeRemaining <= 300) {{  // Last 5 minutes
+                timerContainer.style.background = "linear-gradient(135deg, #ffa726 0%, #fb8c00 100%)";
+            }}
+
+            // Halftime alert (when 5 seconds left in first half)
+            if (timeRemaining === 5 && "{st.session_state.current_half}" === "1" && !halftimeAlerted) {{
+                playHalftimeSound();
+                halftimeAlerted = true;
+            }}
+
+            // Auto-refresh page when timer hits zero
+            if (timeRemaining === 0) {{
+                playEndGameSound();
+                setTimeout(() => {{
+                    window.location.reload();
+                }}, 2000);
+            }}
+        }}
+    }}
+
+    // Play start sound when timer begins
+    if (timerStatus === "running") {{
+        setTimeout(playStartSound, 100);
+    }}
+
+    // Add pause sound to pause button (wait for DOM to load)
+    setTimeout(() => {{
+        const buttons = document.querySelectorAll('button');
+        buttons.forEach(button => {{
+            if (button.textContent.includes('⏸️ Pause') || button.textContent.includes('▶️ Start')) {{
+                button.addEventListener('click', () => {{
+                    if (button.textContent.includes('⏸️ Pause')) {{
+                        setTimeout(playPauseSound, 100);
+                    }} else if (button.textContent.includes('▶️ Start')) {{
+                        setTimeout(playStartSound, 100);
+                    }}
+                }});
+            }}
+        }});
+    }}, 500);
+
+    // Update every second for smooth countdown
+    setInterval(updateTimer, 1000);
+
+    // Enhanced visual effects like TeamSnap
+    const style = document.createElement('style');
+    style.textContent = `
+        @keyframes pulse {{
+            0% {{ transform: scale(1); opacity: 1; }}
+            50% {{ transform: scale(1.03); opacity: 0.95; }}
+            100% {{ transform: scale(1); opacity: 1; }}
+        }}
+
+        @keyframes breathing {{
+            0% {{ transform: scale(1); }}
+            25% {{ transform: scale(1.005); }}
+            50% {{ transform: scale(1); }}
+            75% {{ transform: scale(0.995); }}
+            100% {{ transform: scale(1); }}
+        }}
+
+        @keyframes runningGlow {{
+            0% {{ box-shadow: 0 0 20px rgba(102, 126, 234, 0.3); }}
+            50% {{ box-shadow: 0 0 30px rgba(102, 126, 234, 0.6); }}
+            100% {{ box-shadow: 0 0 20px rgba(102, 126, 234, 0.3); }}
+        }}
+
+        .timer-running {{
+            animation: runningGlow 2s infinite ease-in-out;
+        }}
+
+        .timer-paused {{
+            opacity: 0.8;
+            animation: breathing 4s infinite ease-in-out;
+        }}
+
+        .timer-low-time {{
+            animation: pulse 1s infinite ease-in-out;
+        }}
+    `;
+    document.head.appendChild(style);
+
+    // Apply visual states
+    function updateTimerVisuals() {{
+        if (timerStatus === "running") {{
+            timerContainer.classList.add('timer-running');
+            timerContainer.classList.remove('timer-paused');
+        }} else {{
+            timerContainer.classList.add('timer-paused');
+            timerContainer.classList.remove('timer-running');
+        }}
+
+        if (timeRemaining <= 60) {{
+            timerContainer.classList.add('timer-low-time');
+        }} else {{
+            timerContainer.classList.remove('timer-low-time');
+        }}
+    }}
+
+    // Initial visual state
+    updateTimerVisuals();
+
+    // Update visuals when status changes
+    setInterval(updateTimerVisuals, 100);
+    </script>
     """, unsafe_allow_html=True)
     
     # Timer controls
@@ -242,20 +430,7 @@ else:
         if st.button("🔄 Refresh", use_container_width=True):
             st.rerun()
     
-    # Update timer if running
-    if st.session_state.timer_running:
-        if st.session_state.last_update:
-            elapsed = time.time() - st.session_state.last_update
-            st.session_state.time_remaining = max(0, st.session_state.time_remaining - int(elapsed))
-        st.session_state.last_update = time.time()
-        
-        if st.session_state.time_remaining > 0:
-            time.sleep(1)
-            st.rerun()
-        else:
-            st.session_state.timer_running = False
-            st.balloons()
-            st.success(f"{half_text} Complete!")
+    # Timer now runs smoothly via JavaScript - no Python sleep/rerun needed!
     
     st.markdown("---")
     

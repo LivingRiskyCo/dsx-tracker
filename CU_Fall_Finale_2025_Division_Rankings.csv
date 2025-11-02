@@ -1,9 +1,9 @@
-rank,team,gp,w,l,d,gf,ga,gd,pts,ppg,strength_index,gf_pg,ga_pg,gd_pg,source_url,division,league,bracket
-1,STAR Rush B2018 Blue,0,0,0,0,0,0,0,0,0.0,50.0,0.0,0.0,0.0,https://example.com/cu-fall-finale-2025,U8 Boys Platinum,CU Fall Finale,A
-2,CULM 18/19B Aberdeen,0,0,0,0,0,0,0,0,0.0,50.0,0.0,0.0,0.0,https://example.com/cu-fall-finale-2025,U8 Boys Platinum,CU Fall Finale,A
-3,CUSE 18/19B Arsenal,0,0,0,0,0,0,0,0,0.0,50.0,0.0,0.0,0.0,https://example.com/cu-fall-finale-2025,U8 Boys Platinum,CU Fall Finale,A
-4,LouCity Academy 18 Purple,0,0,0,0,0,0,0,0,0.0,50.0,0.0,0.0,0.0,https://example.com/cu-fall-finale-2025,U8 Boys Platinum,CU Fall Finale,A
-1,Cincinnati Elite FC B18 Elite,0,0,0,0,0,0,0,0,0.0,50.0,0.0,0.0,0.0,https://example.com/cu-fall-finale-2025,U8 Boys Platinum,CU Fall Finale,B
-2,CUSM 18/19B Andorra,0,0,0,0,0,0,0,0,0.0,50.0,0.0,0.0,0.0,https://example.com/cu-fall-finale-2025,U8 Boys Platinum,CU Fall Finale,B
-3,FC Storm B18 Loveland Orange,0,0,0,0,0,0,0,0,0.0,50.0,0.0,0.0,0.0,https://example.com/cu-fall-finale-2025,U8 Boys Platinum,CU Fall Finale,B
-4,KHJR NKY B18-1,0,0,0,0,0,0,0,0,0.0,50.0,0.0,0.0,0.0,https://example.com/cu-fall-finale-2025,U8 Boys Platinum,CU Fall Finale,B
+rank,team,gp,w,l,d,gf,ga,gd,pts,ppg,strength_index,gf_pg,ga_pg,gd_pg,source_url,division,league,bracket,last_updated
+1,STAR Rush B2018 Blue,0,0,0,0,0,0,0,0,0.0,50.0,0.0,0.0,0.0,https://example.com/cu-fall-finale-2025,U8 Boys Platinum,CU Fall Finale,A,2025-11-01 19:23:29
+2,CULM 18/19B Aberdeen,0,0,0,0,0,0,0,0,0.0,50.0,0.0,0.0,0.0,https://example.com/cu-fall-finale-2025,U8 Boys Platinum,CU Fall Finale,A,2025-11-01 19:23:29
+3,CUSE 18/19B Arsenal,0,0,0,0,0,0,0,0,0.0,50.0,0.0,0.0,0.0,https://example.com/cu-fall-finale-2025,U8 Boys Platinum,CU Fall Finale,A,2025-11-01 19:23:29
+4,LouCity Academy 18 Purple,0,0,0,0,0,0,0,0,0.0,50.0,0.0,0.0,0.0,https://example.com/cu-fall-finale-2025,U8 Boys Platinum,CU Fall Finale,A,2025-11-01 19:23:29
+1,Cincinnati Elite FC B18 Elite,0,0,0,0,0,0,0,0,0.0,50.0,0.0,0.0,0.0,https://example.com/cu-fall-finale-2025,U8 Boys Platinum,CU Fall Finale,B,2025-11-01 19:23:29
+2,CUSM 18/19B Andorra,0,0,0,0,0,0,0,0,0.0,50.0,0.0,0.0,0.0,https://example.com/cu-fall-finale-2025,U8 Boys Platinum,CU Fall Finale,B,2025-11-01 19:23:29
+3,FC Storm B18 Loveland Orange,0,0,0,0,0,0,0,0,0.0,50.0,0.0,0.0,0.0,https://example.com/cu-fall-finale-2025,U8 Boys Platinum,CU Fall Finale,B,2025-11-01 19:23:29
+4,KHJR NKY B18-1,0,0,0,0,0,0,0,0,0.0,50.0,0.0,0.0,0.0,https://example.com/cu-fall-finale-2025,U8 Boys Platinum,CU Fall Finale,B,2025-11-01 19:23:29
