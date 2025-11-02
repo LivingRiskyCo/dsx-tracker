@@ -60,7 +60,7 @@ def main():
         print("CU FALL FINALE 2025 UPDATE COMPLETE")
         print("="*60)
         print()
-        print("✅ Tournament data updated successfully")
+        print("[OK] Tournament data updated successfully")
         print("📊 Teams tracked: 8 teams in U8 Boys Platinum Division")
         print("🏆 Tournament: CU Fall Finale 2025")
         print("📅 Dates: October 25-26, 2025")
@@ -76,7 +76,7 @@ def main():
         print("="*60)
         print()
         print("❌ Failed to update tournament data")
-        print("💡 Check internet connection and try again")
+        print("[INFO] Check internet connection and try again")
         print()
         print("="*60)
 

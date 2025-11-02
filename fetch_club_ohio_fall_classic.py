@@ -205,7 +205,7 @@ def main():
         print("="*60)
         print()
         print("[ERROR] Failed to update tournament data")
-        print("💡 Check internet connection and try again")
+        print("[INFO] Check internet connection and try again")
         print()
         print("="*60)
 
