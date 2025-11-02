@@ -211,12 +211,27 @@ else:
 
     <script>
     // Smooth countdown timer like TeamSnap
-    let timeRemaining = {st.session_state.time_remaining};
-    let timerStatus = "{timer_status}";
+    // Use a global variable to persist timer state across page reruns
+    if (typeof window.dsxTimer === 'undefined') {{
+        window.dsxTimer = {{
+            timeRemaining: {st.session_state.time_remaining},
+            timerStatus: "{timer_status}",
+            lastMinuteAlerted: false,
+            halftimeAlerted: false,
+            lastUpdateTime: Date.now()
+        }};
+    }} else {{
+        // Update from Python state if it changed
+        window.dsxTimer.timeRemaining = {st.session_state.time_remaining};
+        window.dsxTimer.timerStatus = "{timer_status}";
+    }}
+
+    let timeRemaining = window.dsxTimer.timeRemaining;
+    let timerStatus = window.dsxTimer.timerStatus;
     let timerDisplay = document.getElementById('timer-display');
     let timerContainer = timerDisplay.parentElement;
-    let lastMinuteAlerted = false;
-    let halftimeAlerted = false;
+    let lastMinuteAlerted = window.dsxTimer.lastMinuteAlerted;
+    let halftimeAlerted = window.dsxTimer.halftimeAlerted;
 
     function formatTime(seconds) {{
         const mins = Math.floor(seconds / 60);
@@ -278,6 +293,9 @@ else:
             timeRemaining--;
             timerDisplay.textContent = formatTime(timeRemaining);
 
+            // Save state back to global variable
+            window.dsxTimer.timeRemaining = timeRemaining;
+
             // Visual feedback when time is low
             if (timeRemaining <= 60) {{  // Last minute
                 timerContainer.style.background = "linear-gradient(135deg, #ff4757 0%, #ff3838 100%)";
@@ -287,6 +305,7 @@ else:
                 if (!lastMinuteAlerted) {{
                     playLastMinuteAlert();
                     lastMinuteAlerted = true;
+                    window.dsxTimer.lastMinuteAlerted = true;
                 }}
             }} else if (timeRemaining <= 300) {{  // Last 5 minutes
                 timerContainer.style.background = "linear-gradient(135deg, #ffa726 0%, #fb8c00 100%)";
@@ -296,6 +315,7 @@ else:
             if (timeRemaining === 5 && "{st.session_state.current_half}" === "1" && !halftimeAlerted) {{
                 playHalftimeSound();
                 halftimeAlerted = true;
+                window.dsxTimer.halftimeAlerted = true;
             }}
 
             // Auto-refresh page when timer hits zero
@@ -307,6 +327,9 @@ else:
             }}
         }}
     }}
+
+    // Immediately update display with current time
+    timerDisplay.textContent = formatTime(timeRemaining);
 
     // Play start sound when timer begins
     if (timerStatus === "running") {{
