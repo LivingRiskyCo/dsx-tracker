@@ -3176,12 +3176,116 @@ elif page == "🎮 Live Game Tracker":
         </div>
 
         <script>
-        // Auto-refresh the page every second when timer is running for smooth updates
-        if ("{timer_status}" === "running") {{
-            setTimeout(function() {{
-                window.location.reload();
-            }}, 1000);
-        }}
+        (function() {{
+            // Initialize timer state in window object (persists across Streamlit reruns)
+            if (typeof window.dsxTimerState === 'undefined') {{
+                window.dsxTimerState = {{
+                    timeRemaining: {st.session_state.time_remaining},
+                    timerStatus: "{timer_status}",
+                    startTime: null,
+                    lastSyncTime: Date.now(),
+                    syncInterval: 15000  // Sync with Python every 15 seconds
+                }};
+            }} else {{
+                // Update from Python state (when status changes or after sync interval)
+                const timeSinceSync = Date.now() - window.dsxTimerState.lastSyncTime;
+                if (timeSinceSync >= window.dsxTimerState.syncInterval || 
+                    window.dsxTimerState.timerStatus !== "{timer_status}") {{
+                    window.dsxTimerState.timeRemaining = {st.session_state.time_remaining};
+                    window.dsxTimerState.timerStatus = "{timer_status}";
+                    window.dsxTimerState.lastSyncTime = Date.now();
+                    
+                    // Reset start time if timer just started
+                    if ("{timer_status}" === "running" && window.dsxTimerState.timerStatus !== "running") {{
+                        window.dsxTimerState.startTime = Date.now();
+                    }}
+                }}
+            }}
+            
+            const timerDisplay = document.getElementById('timer-display');
+            const timerContainer = timerDisplay.parentElement;
+            let lastMinuteAlerted = false;
+            let halftimeAlerted = false;
+            
+            function formatTime(seconds) {{
+                const mins = Math.floor(seconds / 60);
+                const secs = seconds % 60;
+                return mins.toString().padStart(2, '0') + ':' + secs.toString().padStart(2, '0');
+            }}
+            
+            function updateTimer() {{
+                const state = window.dsxTimerState;
+                
+                // Update time remaining if timer is running
+                if (state.timerStatus === "running" && state.timeRemaining > 0) {{
+                    // Decrement by 1 second (setInterval runs every 1000ms)
+                    state.timeRemaining = Math.max(0, state.timeRemaining - 1);
+                }}
+                
+                // Update display
+                timerDisplay.textContent = formatTime(state.timeRemaining);
+                
+                // Visual feedback when time is low
+                if (state.timeRemaining <= 60) {{
+                    timerContainer.style.background = "linear-gradient(135deg, #ff4757 0%, #ff3838 100%)";
+                    timerContainer.style.animation = "pulse 1s infinite";
+                    
+                    if (!lastMinuteAlerted) {{
+                        lastMinuteAlerted = true;
+                        // Optional: play alert sound
+                    }}
+                }} else if (state.timeRemaining <= 300) {{
+                    timerContainer.style.background = "linear-gradient(135deg, #ffa726 0%, #fb8c00 100%)";
+                }} else {{
+                    timerContainer.style.background = "linear-gradient(135deg, #667eea 0%, #764ba2 100%)";
+                }}
+                
+                // Auto-sync with Python periodically (triggers Streamlit rerun)
+                if (state.timerStatus === "running" && state.timeRemaining > 0) {{
+                    const timeSinceSync = Date.now() - state.lastSyncTime;
+                    if (timeSinceSync >= state.syncInterval) {{
+                        // Trigger Streamlit rerun to sync with Python state
+                        setTimeout(function() {{
+                            // Use Streamlit's rerun mechanism
+                            if (window.parent.streamlitApi) {{
+                                window.parent.streamlitApi.rerun();
+                            }} else {{
+                                // Fallback: reload page for sync
+                                window.location.reload();
+                            }}
+                        }}, 100);
+                    }}
+                }}
+                
+                // Check for end of half/game
+                if (state.timeRemaining === 0 && state.timerStatus === "running") {{
+                    // Trigger Streamlit rerun to handle end of half
+                    setTimeout(function() {{
+                        window.location.reload();
+                    }}, 1000);
+                }}
+            }}
+            
+            // Update display immediately
+            timerDisplay.textContent = formatTime(window.dsxTimerState.timeRemaining);
+            
+            // Start smooth countdown interval (updates every second)
+            setInterval(updateTimer, 1000);
+            
+            // Add CSS for pulse animation
+            if (!document.getElementById('dsx-timer-styles')) {{
+                const style = document.createElement('style');
+                style.id = 'dsx-timer-styles';
+                style.textContent = `
+                    @keyframes pulse {{
+                        0% {{ transform: scale(1); opacity: 1; }}
+                        50% {{ transform: scale(1.03); opacity: 0.95; }}
+                        100% {{ transform: scale(1); opacity: 1; }}
+                    }}
+                `;
+                document.head.appendChild(style);
+            }}
+        }})();
         </script>
         """
 
@@ -3294,35 +3398,24 @@ elif page == "🎮 Live Game Tracker":
             st.balloons()
             st.success(f"{half_text} Complete!")
         
-        # Auto-refresh timer when running (optimized for Streamlit Cloud)
-        # Only refresh if timer is running and we haven't just interacted
+        # Auto-sync timer state with Python (JavaScript handles smooth countdown)
+        # Only sync periodically to avoid excessive Streamlit reruns
+        # JavaScript timer updates display every second, Python syncs every 15 seconds
         if st.session_state.timer_running and st.session_state.time_remaining > 0:
-            # Track last refresh to avoid excessive reruns
-            if 'last_timer_refresh' not in st.session_state:
-                st.session_state.last_timer_refresh = current_time
+            # Track last sync to avoid excessive reruns
+            if 'last_timer_sync' not in st.session_state:
+                st.session_state.last_timer_sync = current_time
             
-            # Refresh every 2-3 seconds (reduced from 1s to avoid Streamlit Cloud rate limits)
-            time_since_refresh = current_time - st.session_state.last_timer_refresh
-            refresh_interval = 2.0  # 2 seconds - reduces refresh rate by 50%
+            # Sync every 15 seconds (JavaScript handles smooth countdown between syncs)
+            time_since_sync = current_time - st.session_state.last_timer_sync
+            sync_interval = 15.0  # 15 seconds - Python syncs, JavaScript updates smoothly
             
-            # Safety check: don't refresh if too many refreshes in short time
-            if 'refresh_count' not in st.session_state:
-                st.session_state.refresh_count = 0
-            if 'refresh_window_start' not in st.session_state:
-                st.session_state.refresh_window_start = current_time
-            
-            # Reset refresh counter every 10 seconds
-            if current_time - st.session_state.refresh_window_start > 10:
-                st.session_state.refresh_count = 0
-                st.session_state.refresh_window_start = current_time
-            
-            # Only refresh if interval passed and not too many refreshes
-            if time_since_refresh >= refresh_interval and st.session_state.refresh_count < 5:
-                st.session_state.last_timer_refresh = current_time
-                st.session_state.refresh_count += 1
-                # Save state before refresh
+            # Only sync if interval passed (JavaScript timer handles the smooth countdown)
+            if time_since_sync >= sync_interval:
+                st.session_state.last_timer_sync = current_time
+                # Save state before sync
                 save_live_game_state()
-                # Refresh page to update timer display
+                # Trigger sync (JavaScript will update from Python state)
                 st.rerun()
         
         st.markdown("---")
