@@ -3372,133 +3372,11 @@ elif page == "🎮 Live Game Tracker":
                 save_live_game_state()
                 st.rerun()
         
-        col5, col6, col7 = st.columns(3)
-        
-        with col5:
-            if st.button("🧤 SAVE", use_container_width=True, key="save_btn"):
-                st.session_state.show_save_dialog = True
-                if 'last_timer_refresh' in st.session_state:
-                    st.session_state.last_timer_refresh = current_time
-                save_live_game_state()
-                st.rerun()
-        
-        with col6:
-            if st.button("⚠️ CORNER", use_container_width=True, key="corner_btn"):
-                add_event_tracker('CORNER')
-                if 'last_timer_refresh' in st.session_state:
-                    st.session_state.last_timer_refresh = current_time
-                save_live_game_state()
-                st.rerun()
-        
-        with col7:
-            if st.button("🔄 SUB", use_container_width=True, key="sub_btn"):
-                st.session_state.show_sub_dialog = True
-                if 'last_timer_refresh' in st.session_state:
-                    st.session_state.last_timer_refresh = current_time
-                save_live_game_state()
-                st.rerun()
-        
-        col7, col8, col9 = st.columns(3)
-        
-        with col7:
-            if st.button("↩️ UNDO", use_container_width=True, type="secondary", key="undo_btn"):
-                if st.session_state.events:
-                    last_event = st.session_state.events.pop(0)
-                    st.success(f"✅ Undid: {last_event['type']}")
-                    if 'last_timer_refresh' in st.session_state:
-                        st.session_state.last_timer_refresh = current_time
-                    save_live_game_state()
-                    st.rerun()
-                else:
-                    st.error("No events to undo!")
-        
-        with col8:
-            if st.button("📝 NOTE", use_container_width=True, key="note_btn"):
-                st.session_state.show_note_dialog = True
-                if 'last_timer_refresh' in st.session_state:
-                    st.session_state.last_timer_refresh = current_time
-                save_live_game_state()
-                st.rerun()
-        
-        with col9:
-            if st.button("🚨 TIMEOUT", use_container_width=True, key="timeout_btn"):
-                add_event_tracker('TIMEOUT', notes="Injury/timeout")
-                if 'last_timer_refresh' in st.session_state:
-                    st.session_state.last_timer_refresh = current_time
-                save_live_game_state()
-                if st.session_state.timer_running:
-                    st.session_state.timer_running = False
-                    st.session_state.pause_start_time = current_time
-                st.rerun()
-        
-        # Goalkeeper Actions Section
-        st.markdown("---")
-        st.markdown("### 🧤 Goalkeeper Actions")
-        gk_col1, gk_col2, gk_col3, gk_col4 = st.columns(4)
-        
-        with gk_col1:
-            if st.button("✋ CATCH", use_container_width=True, key="catch_btn"):
-                st.session_state.show_catch_dialog = True
-                if 'last_timer_refresh' in st.session_state:
-                    st.session_state.last_timer_refresh = current_time
-                save_live_game_state()
-                st.rerun()
-        
-        with gk_col2:
-            if st.button("👊 PUNCH", use_container_width=True, key="punch_btn"):
-                st.session_state.show_punch_dialog = True
-                if 'last_timer_refresh' in st.session_state:
-                    st.session_state.last_timer_refresh = current_time
-                save_live_game_state()
-                st.rerun()
-        
-        with gk_col3:
-            if st.button("🦶 DISTRIBUTION", use_container_width=True, key="dist_btn"):
-                st.session_state.show_dist_dialog = True
-                if 'last_timer_refresh' in st.session_state:
-                    st.session_state.last_timer_refresh = current_time
-                save_live_game_state()
-                st.rerun()
-        
-        with gk_col4:
-            if st.button("🧹 CLEARANCE", use_container_width=True, key="clear_btn"):
-                st.session_state.show_clear_dialog = True
-                if 'last_timer_refresh' in st.session_state:
-                    st.session_state.last_timer_refresh = current_time
-                save_live_game_state()
-                st.rerun()
-        
-        # Dialogs (simplified for embedding)
-        if 'show_goal_dialog' in st.session_state and st.session_state.show_goal_dialog:
-            with st.form("goal_form"):
-                st.subheader("⚽ DSX GOAL!")
-                on_field_players = roster_tracker[roster_tracker['PlayerNumber'].isin(st.session_state.on_field)]
-                scorer = st.selectbox("Who scored?", [f"#{int(row['PlayerNumber'])} {row['PlayerName']}" 
-                                                       for _, row in on_field_players.iterrows()])
-                assist = st.selectbox("Assisted by:", ["None"] + [f"#{int(row['PlayerNumber'])} {row['PlayerName']}" 
-                                                                   for _, row in on_field_players.iterrows()])
-                notes = st.text_input("Notes (optional)")
-                col1, col2 = st.columns(2)
-                with col1:
-                    if st.form_submit_button("✅ RECORD", use_container_width=True, type="primary"):
-                        player_name = scorer.split(' ', 1)[1] if ' ' in scorer else scorer
-                        assist_name = assist.split(' ', 1)[1] if assist != "None" and ' ' in assist else (None if assist == "None" else assist)
-                        add_event_tracker('DSX_GOAL', player=player_name, assist=assist_name, notes=notes)
-                        # Stats are updated automatically in add_event_tracker()
-                        if 'last_timer_refresh' in st.session_state:
-                            st.session_state.last_timer_refresh = time.time()
-                        save_live_game_state()
-                        st.session_state.show_goal_dialog = False
-                        st.rerun()
-                with col2:
-                    if st.form_submit_button("❌ Cancel", use_container_width=True):
-                        st.session_state.show_goal_dialog = False
-                        st.rerun()
-        
-        # Shot dialog (with auto-save on each selection)
+        # Player selection area - appears between SHOT/PASS and SAVE/CORNER/SUB rows
+        # SHOT and PASS dialogs appear here (below their buttons)
         if 'show_shot_dialog' in st.session_state and st.session_state.show_shot_dialog:
             st.markdown('<div class="live-game-dialog">', unsafe_allow_html=True)
-            st.subheader("⚽ SHOT ON GOAL")
+            st.subheader("🎯 SHOT ON GOAL")
             on_field_players = roster_tracker[roster_tracker['PlayerNumber'].isin(st.session_state.on_field)]
             
             # Initialize shot selections if not set
@@ -3799,7 +3677,7 @@ elif page == "🎮 Live Game Tracker":
             
             st.markdown('</div>', unsafe_allow_html=True)
         
-        # Save dialog
+        # Save dialog - appears above SAVE/CORNER/SUB buttons
         if 'show_save_dialog' in st.session_state and st.session_state.show_save_dialog:
             with st.form("save_form"):
                 st.subheader("🧤 GOALKEEPER SAVE")
@@ -3836,7 +3714,7 @@ elif page == "🎮 Live Game Tracker":
                         st.session_state.show_save_dialog = False
                         st.rerun()
         
-        # Sub dialog
+        # Sub dialog - appears above SAVE/CORNER/SUB buttons
         if 'show_sub_dialog' in st.session_state and st.session_state.show_sub_dialog:
             with st.form("sub_form"):
                 st.subheader("🔄 SUBSTITUTION")
@@ -3872,6 +3750,135 @@ elif page == "🎮 Live Game Tracker":
                     if st.form_submit_button("❌ Cancel", use_container_width=True):
                         st.session_state.show_sub_dialog = False
                         st.rerun()
+        
+        col5, col6, col7 = st.columns(3)
+        
+        with col5:
+            if st.button("🧤 SAVE", use_container_width=True, key="save_btn"):
+                st.session_state.show_save_dialog = True
+                if 'last_timer_refresh' in st.session_state:
+                    st.session_state.last_timer_refresh = current_time
+                save_live_game_state()
+                st.rerun()
+        
+        with col6:
+            if st.button("⚠️ CORNER", use_container_width=True, key="corner_btn"):
+                add_event_tracker('CORNER')
+                if 'last_timer_refresh' in st.session_state:
+                    st.session_state.last_timer_refresh = current_time
+                save_live_game_state()
+                st.rerun()
+        
+        with col7:
+            if st.button("🔄 SUB", use_container_width=True, key="sub_btn"):
+                st.session_state.show_sub_dialog = True
+                if 'last_timer_refresh' in st.session_state:
+                    st.session_state.last_timer_refresh = current_time
+                save_live_game_state()
+                st.rerun()
+        
+        col7, col8, col9 = st.columns(3)
+        
+        with col7:
+            if st.button("↩️ UNDO", use_container_width=True, type="secondary", key="undo_btn"):
+                if st.session_state.events:
+                    last_event = st.session_state.events.pop(0)
+                    st.success(f"✅ Undid: {last_event['type']}")
+                    if 'last_timer_refresh' in st.session_state:
+                        st.session_state.last_timer_refresh = current_time
+                    save_live_game_state()
+                    st.rerun()
+                else:
+                    st.error("No events to undo!")
+        
+        with col8:
+            if st.button("📝 NOTE", use_container_width=True, key="note_btn"):
+                st.session_state.show_note_dialog = True
+                if 'last_timer_refresh' in st.session_state:
+                    st.session_state.last_timer_refresh = current_time
+                save_live_game_state()
+                st.rerun()
+        
+        with col9:
+            if st.button("🚨 TIMEOUT", use_container_width=True, key="timeout_btn"):
+                add_event_tracker('TIMEOUT', notes="Injury/timeout")
+                if 'last_timer_refresh' in st.session_state:
+                    st.session_state.last_timer_refresh = current_time
+                save_live_game_state()
+                if st.session_state.timer_running:
+                    st.session_state.timer_running = False
+                    st.session_state.pause_start_time = current_time
+                st.rerun()
+        
+        # Goalkeeper Actions Section
+        st.markdown("---")
+        st.markdown("### 🧤 Goalkeeper Actions")
+        gk_col1, gk_col2, gk_col3, gk_col4 = st.columns(4)
+        
+        with gk_col1:
+            if st.button("✋ CATCH", use_container_width=True, key="catch_btn"):
+                st.session_state.show_catch_dialog = True
+                if 'last_timer_refresh' in st.session_state:
+                    st.session_state.last_timer_refresh = current_time
+                save_live_game_state()
+                st.rerun()
+        
+        with gk_col2:
+            if st.button("👊 PUNCH", use_container_width=True, key="punch_btn"):
+                st.session_state.show_punch_dialog = True
+                if 'last_timer_refresh' in st.session_state:
+                    st.session_state.last_timer_refresh = current_time
+                save_live_game_state()
+                st.rerun()
+        
+        with gk_col3:
+            if st.button("🦶 DISTRIBUTION", use_container_width=True, key="dist_btn"):
+                st.session_state.show_dist_dialog = True
+                if 'last_timer_refresh' in st.session_state:
+                    st.session_state.last_timer_refresh = current_time
+                save_live_game_state()
+                st.rerun()
+        
+        with gk_col4:
+            if st.button("🧹 CLEARANCE", use_container_width=True, key="clear_btn"):
+                st.session_state.show_clear_dialog = True
+                if 'last_timer_refresh' in st.session_state:
+                    st.session_state.last_timer_refresh = current_time
+                save_live_game_state()
+                st.rerun()
+        
+        # Dialogs (simplified for embedding)
+        if 'show_goal_dialog' in st.session_state and st.session_state.show_goal_dialog:
+            with st.form("goal_form"):
+                st.subheader("⚽ DSX GOAL!")
+                on_field_players = roster_tracker[roster_tracker['PlayerNumber'].isin(st.session_state.on_field)]
+                scorer = st.selectbox("Who scored?", [f"#{int(row['PlayerNumber'])} {row['PlayerName']}" 
+                                                       for _, row in on_field_players.iterrows()])
+                assist = st.selectbox("Assisted by:", ["None"] + [f"#{int(row['PlayerNumber'])} {row['PlayerName']}" 
+                                                                   for _, row in on_field_players.iterrows()])
+                notes = st.text_input("Notes (optional)")
+                col1, col2 = st.columns(2)
+                with col1:
+                    if st.form_submit_button("✅ RECORD", use_container_width=True, type="primary"):
+                        player_name = scorer.split(' ', 1)[1] if ' ' in scorer else scorer
+                        assist_name = assist.split(' ', 1)[1] if assist != "None" and ' ' in assist else (None if assist == "None" else assist)
+                        add_event_tracker('DSX_GOAL', player=player_name, assist=assist_name, notes=notes)
+                        # Stats are updated automatically in add_event_tracker()
+                        if 'last_timer_refresh' in st.session_state:
+                            st.session_state.last_timer_refresh = time.time()
+                        save_live_game_state()
+                        st.session_state.show_goal_dialog = False
+                        st.rerun()
+                with col2:
+                    if st.form_submit_button("❌ Cancel", use_container_width=True):
+                        st.session_state.show_goal_dialog = False
+                        st.rerun()
+        
+        # Dialogs have been moved to appear between button rows for better UX
+        # SHOT, PASS, SAVE, SUB dialogs now appear between their respective button rows
+        # Only Goalkeeper dialogs (Catch, Punch, Distribution, Clearance) remain below
+        
+        # Goalkeeper Actions Section - Dialogs appear below
         
         # Catch dialog
         if 'show_catch_dialog' in st.session_state and st.session_state.show_catch_dialog:
