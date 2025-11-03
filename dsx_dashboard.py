@@ -6088,9 +6088,37 @@ elif page == "📊 Ohio U8/U9 Rankings":
     
     st.markdown("---")
     
-    # Load appropriate rankings
+    # Load appropriate rankings - default to 3+ games to show ALL teams
     if age_group == "U8 Boys (2018)":
-        ranking_file = "Rankings_2018_Teams_6Plus_Games.csv" if os.path.exists("Rankings_2018_Teams_6Plus_Games.csv") else "Rankings_2018_Teams_3Plus_Games.csv"
+        # Check which files exist
+        file_3plus = "Rankings_2018_Teams_3Plus_Games.csv"
+        file_6plus = "Rankings_2018_Teams_6Plus_Games.csv"
+        
+        if os.path.exists(file_3plus):
+            ranking_file = file_3plus
+            teams_with_3plus = len(pd.read_csv(file_3plus))
+        else:
+            ranking_file = file_6plus if os.path.exists(file_6plus) else None
+            teams_with_3plus = 0
+        
+        if os.path.exists(file_6plus):
+            teams_with_6plus = len(pd.read_csv(file_6plus))
+        else:
+            teams_with_6plus = 0
+        
+        # Add filter option for minimum games
+        min_games_filter = st.radio(
+            "Minimum Games:",
+            ["3+ Games (All Teams)", "6+ Games (Full Seasons Only)"],
+            horizontal=True,
+            key="u8_min_games_filter"
+        )
+        
+        if "6+" in min_games_filter and os.path.exists(file_6plus):
+            ranking_file = file_6plus
+        else:
+            ranking_file = file_3plus
+        
         age_label = "U8 Boys (2018 Birth Year)"
     else:
         ranking_file = "Rankings_2017_Teams_3Plus_Games.csv"
