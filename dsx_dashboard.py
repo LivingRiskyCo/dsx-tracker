@@ -1088,7 +1088,7 @@ with st.sidebar:
     
     page = st.radio(
         "Navigation",
-        ["🎯 What's Next", "📅 Team Schedule", "🎮 Live Game Tracker", "📺 Watch Live Game", "💬 Team Chat", "🏆 Division Rankings", "📊 Team Analysis", "👥 Player Stats", "📅 Match History", "📝 Game Log", "🔍 Opponent Intel", "🎮 Game Predictions", "📊 Benchmarking", "📋 Full Analysis", "📖 Quick Start Guide", "⚙️ Data Manager"]
+        ["🎯 What's Next", "📅 Team Schedule", "🎮 Live Game Tracker", "📺 Watch Live Game", "💬 Team Chat", "🏆 Division Rankings", "📊 Ohio U8/U9 Rankings", "📊 Team Analysis", "👥 Player Stats", "📅 Match History", "📝 Game Log", "🔍 Opponent Intel", "🎮 Game Predictions", "📊 Benchmarking", "📋 Full Analysis", "📖 Quick Start Guide", "⚙️ Data Manager"]
     )
     
     st.markdown("---")
@@ -9409,6 +9409,32 @@ elif page == "⚙️ Data Manager":
         
         st.markdown("---")
         st.subheader("🔍 Discovered Ohio Tournaments (2018 Boys)")
+        
+        col1, col2 = st.columns([3, 1])
+        with col1:
+            st.write("**Real-Time Tournament Discovery**")
+            st.caption("Automatically discover and track new U8/U9 Boys tournaments from GotSport")
+        with col2:
+            if st.button("🔍 Run Discovery", use_container_width=True, type="primary"):
+                import subprocess
+                import sys
+                try:
+                    with st.spinner("Discovering tournaments (this may take a few minutes)..."):
+                        result = subprocess.run([sys.executable, "discover_ohio_tournaments_2018_boys.py"], 
+                                               capture_output=True, text=True, timeout=300)
+                        if result.returncode == 0:
+                            st.success("✅ Tournament discovery complete! Check files below.")
+                            st.cache_data.clear()
+                            st.rerun()
+                        else:
+                            st.warning(f"Discovery completed with warnings. Check output for details.")
+                            if result.stdout:
+                                st.code(result.stdout[-500:])  # Show last 500 chars
+                except subprocess.TimeoutExpired:
+                    st.error("Discovery timed out. It may still be running in background.")
+                except Exception as e:
+                    st.error(f"Error: {str(e)}")
+        
         discovered_files = [
             ("Ohio Tournaments 2018 Boys Discovered", "Ohio_Tournaments_2018_Boys_Discovered_20251102.csv", "All discovered teams with GotSport links"),
             ("Ohio Tournaments Summary", "Ohio_Tournaments_Summary_20251102.csv", "Tournament summary"),
@@ -9417,22 +9443,37 @@ elif page == "⚙️ Data Manager":
         for name, fname, desc in discovered_files:
             exists = os.path.exists(fname)
             if exists:
-                st.markdown(f"**{name}** - {desc}")
-                st.caption(f"📁 {fname} - {desc}")
-                try:
-                    df = pd.read_csv(fname)
-                    st.info(f"✅ {len(df)} rows - Click GotSport links to view team data")
-                    # Show sample with clickable links
-                    if 'SourceURL' in df.columns:
-                        sample_df = df[['Team', 'EventID', 'GroupID', 'SourceURL']].head(10)
-                        for idx, row in sample_df.iterrows():
-                            st.markdown(f"  • [{row['Team']}]({row['SourceURL']}) - Event {row['EventID']}, Group {row['GroupID']}")
-                    else:
-                        st.dataframe(df.head(10), use_container_width=True, hide_index=True)
-                except Exception as e:
-                    st.warning(f"Could not load {fname}: {e}")
+                with st.expander(f"📊 {name} - {desc}", expanded=False):
+                    try:
+                        df = pd.read_csv(fname)
+                        st.info(f"✅ {len(df)} rows - Click GotSport links to view team data")
+                        # Show sample with clickable links
+                        if 'SourceURL' in df.columns:
+                            # Show top 20 teams with clickable links
+                            sample_df = df[['Team', 'EventID', 'GroupID', 'SourceURL']].head(20).copy()
+                            for idx, row in sample_df.iterrows():
+                                team_name = str(row['Team'])
+                                source_url = str(row['SourceURL'])
+                                event_id = row['EventID']
+                                group_id = row['GroupID']
+                                st.markdown(f"  • [{team_name}]({source_url}) - Event {event_id}, Group {group_id}")
+                            if len(df) > 20:
+                                st.caption(f"... and {len(df) - 20} more teams. Download full file below.")
+                        else:
+                            st.dataframe(df.head(20), use_container_width=True, hide_index=True)
+                        
+                        # Download button
+                        with open(fname, 'rb') as f:
+                            st.download_button(
+                                f"📥 Download {fname}",
+                                f,
+                                file_name=fname,
+                                key=f"download_{fname}_discovered"
+                            )
+                    except Exception as e:
+                        st.warning(f"Could not load {fname}: {e}")
             else:
-                st.warning(f"❌ {fname} not found")
+                st.warning(f"❌ {fname} not found - Run discovery to generate it")
 
         st.markdown("---")
         st.subheader("🔌 Update Scripts & Sources")
