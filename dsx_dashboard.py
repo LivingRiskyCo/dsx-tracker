@@ -11,6 +11,7 @@ from datetime import datetime, timedelta
 import os
 import time
 import sys
+import re
 
 # Page configuration
 st.set_page_config(
@@ -328,6 +329,163 @@ def resolve_alias(team_name: str) -> str:
     key = normalize_name(team_name)
     return TEAM_NAME_ALIASES.get(key, team_name)
 
+def get_opponent_coverage_info_from_matches(extracted_matches_df, opponent_name):
+    """Get coverage information for an opponent from extracted matches"""
+    if extracted_matches_df.empty:
+        return {'has_extracted_data': False, 'match_count': 0}
+    
+    # Normalize opponent name
+    def normalize_team_name(name):
+        if pd.isna(name):
+            return ""
+        normalized = ' '.join(str(name).strip().split()).lower()
+        normalized = re.sub(r'[^a-z0-9\s]', '', normalized)
+        return normalized.strip()
+    
+    opp_normalized = normalize_team_name(opponent_name)
+    match_count = 0
+    
+    for _, match in extracted_matches_df.iterrows():
+        match_team = str(match.get('Team', '')).strip()
+        match_opp = str(match.get('Opponent', '')).strip()
+        
+        if not match_team or not match_opp:
+            continue
+        
+        match_team_norm = normalize_team_name(match_team)
+        match_opp_norm = normalize_team_name(match_opp)
+        
+        if (opp_normalized in match_team_norm or 
+            match_team_norm in opp_normalized or
+            opp_normalized in match_opp_norm or
+            match_opp_norm in opp_normalized):
+            match_count += 1
+    
+    return {
+        'has_extracted_data': match_count > 0,
+        'match_count': match_count
+    }
+
+def calculate_team_stats_from_extracted_matches(extracted_matches_df, team_name):
+    """Calculate team statistics from extracted opponent-of-opponent matches"""
+    if extracted_matches_df.empty:
+        return None
+    
+    # Normalize team name for matching
+    def normalize_team_name(name):
+        if pd.isna(name):
+            return ""
+        normalized = ' '.join(str(name).strip().split()).lower()
+        normalized = re.sub(r'[^a-z0-9\s]', '', normalized)
+        return normalized.strip()
+    
+    target_normalized = normalize_team_name(team_name)
+    team_matches = []
+    
+    for _, match in extracted_matches_df.iterrows():
+        match_team = str(match.get('Team', '')).strip()
+        match_opp = str(match.get('Opponent', '')).strip()
+        
+        if not match_team or not match_opp:
+            continue
+        
+        match_team_norm = normalize_team_name(match_team)
+        match_opp_norm = normalize_team_name(match_opp)
+        
+        # Check if this match involves our target team
+        if (target_normalized in match_team_norm or 
+            match_team_norm in target_normalized or
+            target_normalized in match_opp_norm or
+            match_opp_norm in target_normalized):
+            
+            # Determine if team was home or away
+            is_home = target_normalized in match_team_norm or match_team_norm in target_normalized
+            
+            # Get score
+            gf = match.get('GF')
+            ga = match.get('GA')
+            
+            # If GF/GA not directly available, try to parse from Score
+            if pd.isna(gf) or pd.isna(ga):
+                score = str(match.get('Score', ''))
+                score_match = re.search(r'(\d+)\s*[-:]\s*(\d+)', score)
+                if score_match:
+                    if is_home:
+                        gf = int(score_match.group(1))
+                        ga = int(score_match.group(2))
+                    else:
+                        gf = int(score_match.group(2))
+                        ga = int(score_match.group(1))
+            
+            # Get result
+            result = match.get('Result')
+            if pd.isna(result):
+                if gf is not None and ga is not None:
+                    if gf > ga:
+                        result = 'W'
+                    elif ga > gf:
+                        result = 'L'
+                    else:
+                        result = 'D'
+            
+            team_matches.append({
+                'Opponent': match_opp if is_home else match_team,
+                'GF': gf if not pd.isna(gf) else None,
+                'GA': ga if not pd.isna(ga) else None,
+                'Result': result,
+            })
+    
+    if not team_matches:
+        return None
+    
+    # Calculate stats
+    matches_df = pd.DataFrame(team_matches)
+    
+    # Filter out matches without valid scores
+    valid_matches = matches_df[
+        (matches_df['GF'].notna()) & 
+        (matches_df['GA'].notna()) &
+        (matches_df['Result'].notna())
+    ].copy()
+    
+    if valid_matches.empty:
+        return None
+    
+    gp = len(valid_matches)
+    w = len(valid_matches[valid_matches['Result'] == 'W'])
+    l = len(valid_matches[valid_matches['Result'] == 'L'])
+    d = len(valid_matches[valid_matches['Result'] == 'D'])
+    
+    gf_total = valid_matches['GF'].sum()
+    ga_total = valid_matches['GA'].sum()
+    gd_total = gf_total - ga_total
+    
+    pts = (w * 3) + d
+    ppg = pts / gp if gp > 0 else 0
+    gf_pg = gf_total / gp if gp > 0 else 0
+    ga_pg = ga_total / gp if gp > 0 else 0
+    gd_pg = gd_total / gp if gp > 0 else 0
+    
+    # Calculate Strength Index
+    ppg_norm = max(0.0, min(3.0, ppg)) / 3.0 * 100.0
+    gdpg_norm = (max(-5.0, min(5.0, gd_pg)) + 5.0) / 10.0 * 100.0
+    strength_index = round(0.7 * ppg_norm + 0.3 * gdpg_norm, 1)
+    
+    return {
+        'GP': gp,
+        'W': w,
+        'L': l,
+        'D': d,
+        'GF': round(gf_pg, 2),  # Per game
+        'GA': round(ga_pg, 2),  # Per game
+        'GD': round(gd_pg, 2),   # Per game
+        'Pts': pts,
+        'PPG': round(ppg, 2),
+        'StrengthIndex': strength_index,
+        'Source': 'Extracted Matches',
+        'MatchCount': gp
+    }
+
 def get_opponent_three_stat_snapshot(opponent_name, all_divisions_df, dsx_matches):
     """
     Generate a three-stat snapshot for an opponent:
@@ -335,10 +493,35 @@ def get_opponent_three_stat_snapshot(opponent_name, all_divisions_df, dsx_matche
     2. Tournament Stats (if we played them in a tournament)
     3. Head-to-Head vs DSX
     
-    Returns: dict with keys 'league', 'tournament', 'h2h' or None if no data
+    Returns: dict with keys 'league', 'tournament', 'h2h', 'extracted_data' or None if no data
     """
     if all_divisions_df.empty and (dsx_matches is None or dsx_matches.empty):
+        # Try to load extracted matches as fallback
+        try:
+            extracted_matches = pd.read_csv('Opponents_of_Opponents_Matches_Expanded.csv')
+            if not extracted_matches.empty:
+                # Calculate stats from extracted matches
+                stats = calculate_team_stats_from_extracted_matches(extracted_matches, opponent_name)
+                if stats:
+                    snapshot = {
+                        'league': None,
+                        'tournament': None,
+                        'h2h': None,
+                        'extracted_data': stats,
+                        'has_extracted_data': True
+                    }
+                    return snapshot
+        except:
+            pass
         return None
+    
+    snapshot = {
+        'league': None,
+        'tournament': None,
+        'h2h': None,
+        'extracted_data': None,
+        'has_extracted_data': False
+    }
     
     snapshot = {
         'league': None,
@@ -679,9 +862,13 @@ def display_opponent_three_stat_snapshot(snapshot, opponent_name):
     - Tournament Stats (if available)
     - Head-to-Head vs DSX
     """
-    if not snapshot or not any(snapshot.values()):
+    if not snapshot or not any([snapshot.get('league'), snapshot.get('tournament'), snapshot.get('h2h'), snapshot.get('extracted_data')]):
         st.info(f"📊 Scouting data not yet available for {opponent_name}")
         return
+    
+    # Show coverage boost indicator if we have extracted data
+    if snapshot.get('has_extracted_data') or snapshot.get('extracted_data'):
+        st.success(f"✅ **Enhanced Coverage**: Using {snapshot.get('extracted_data', {}).get('MatchCount', snapshot.get('league', {}).get('gp', 0))} games from opponent-of-opponent tracking")
     
     st.markdown("---")
     st.subheader("📊 Three-Stat Snapshot")
@@ -7527,12 +7714,48 @@ elif page == "🔍 Opponent Intel":
             
             st.markdown("---")
             
+            # Check for opponent-of-opponent coverage
+            try:
+                extracted_matches = pd.read_csv('Opponents_of_Opponents_Matches_Expanded.csv')
+                opp_coverage = get_opponent_coverage_info_from_matches(extracted_matches, selected_opp)
+                if opp_coverage.get('has_extracted_data'):
+                    st.success(f"✅ **Enhanced Coverage Available**: {opp_coverage['match_count']} games from opponent-of-opponent tracking")
+            except:
+                pass
+            
             # Opponent Weakness Detection
             st.subheader("🎯 Opponent Weakness Analysis")
             
             # Load division data to get opponent's full stats
             all_divisions_df = load_division_data()
             opp_division_data = all_divisions_df[all_divisions_df['Team'] == selected_opp]
+            
+            # If no division data, try extracted matches
+            if opp_division_data.empty:
+                try:
+                    extracted_matches = pd.read_csv('Opponents_of_Opponents_Matches_Expanded.csv')
+                    if not extracted_matches.empty:
+                        extracted_stats = calculate_team_stats_from_extracted_matches(extracted_matches, selected_opp)
+                        if extracted_stats:
+                            # Create a mock division data row from extracted stats
+                            opp_division_data = pd.DataFrame([{
+                                'Team': selected_opp,
+                                'GP': extracted_stats['GP'],
+                                'W': extracted_stats['W'],
+                                'L': extracted_stats['L'],
+                                'D': extracted_stats['D'],
+                                'GF': extracted_stats['GF'],
+                                'GA': extracted_stats['GA'],
+                                'GD': extracted_stats['GD'],
+                                'Pts': extracted_stats['Pts'],
+                                'PPG': extracted_stats['PPG'],
+                                'StrengthIndex': extracted_stats['StrengthIndex'],
+                                'League': 'Extracted Match Data',
+                                'Division': f"{extracted_stats['MatchCount']} games from opponent-of-opponent tracking"
+                            }])
+                            st.info(f"📊 Using {extracted_stats['MatchCount']} games from opponent-of-opponent tracking for analysis")
+                except:
+                    pass
             
             if not opp_division_data.empty:
                 opp_full_stats = opp_division_data.iloc[0]
