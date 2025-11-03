@@ -1678,18 +1678,18 @@ if page == "🎯 What's Next":
                             st.info(f"⚖️ **Win Probability: {win_prob}%**")
                         
                         st.write(f"Draw: {draw_prob}% | Loss: {loss_prob}%")
-                            
-                            # Opponent's Three-Stat Snapshot (League Season + Tournament + H2H vs DSX)
-                            try:
-                                dsx_matches_for_snapshot = pd.read_csv("DSX_Matches_Fall2025.csv", index_col=False)
-                            except:
-                                dsx_matches_for_snapshot = pd.DataFrame()
-                            
-                            opponent_snapshot = get_opponent_three_stat_snapshot(opponent, all_divisions_df, dsx_matches_for_snapshot)
-                            if opponent_snapshot:
-                                display_opponent_three_stat_snapshot(opponent_snapshot, opponent)
-                            else:
-                                st.info(f"📊 Scouting data not yet available for {opponent}")
+                        
+                        # Opponent's Three-Stat Snapshot (League Season + Tournament + H2H vs DSX)
+                        try:
+                            dsx_matches_for_snapshot = pd.read_csv("DSX_Matches_Fall2025.csv", index_col=False)
+                        except:
+                            dsx_matches_for_snapshot = pd.DataFrame()
+                        
+                        opponent_snapshot = get_opponent_three_stat_snapshot(opponent, all_divisions_df, dsx_matches_for_snapshot)
+                        if opponent_snapshot:
+                            display_opponent_three_stat_snapshot(opponent_snapshot, opponent)
+                        else:
+                            st.info(f"📊 Scouting data not yet available for {opponent}")
                     else:
                         st.warning("Opponent data not available. Run data update to get predictions.")
                 
