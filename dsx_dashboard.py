@@ -237,6 +237,10 @@ def load_division_data():
     if all_divisions:
         combined = pd.concat(all_divisions, ignore_index=True)
         
+        # Exclude DSX from division data - DSX stats should come from match history, not division files
+        # (Division files may have tournament-only stats for DSX, which would be misleading)
+        combined = combined[~combined['Team'].str.contains('DSX', case=False, na=False)]
+        
         # Prioritize tournament data for teams DSX has played in tournaments
         # Load DSX match history to identify tournament opponents
         tournament_opponents = set()
