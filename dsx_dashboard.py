@@ -5355,7 +5355,7 @@ elif page == "🏆 Division Rankings":
                 st.markdown("---")
                 
                 # Rankings table
-                st.subheader(f"📊 Rankings - DSX vs {len(opponent_df)} Opponents")
+                st.subheader(f"📊 Rankings - DSX vs {len(opponent_df)} Opponents (2018+ teams only)")
                 st.caption("Ranked by Points Per Game (PPG), then Strength Index. All stats shown are per-game averages for fair comparison.")
                 
                 # Format the dataframe for display
