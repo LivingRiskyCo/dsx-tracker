@@ -3735,8 +3735,8 @@ elif page == "🎮 Live Game Tracker":
                     st.session_state.pass_complete_status = "Incomplete"
                     # Auto-update existing pass event
                     _update_last_pass_event()
-                        save_live_game_state()
-                        st.rerun()
+                    save_live_game_state()
+                    st.rerun()
         
             # Show selected status
             if st.session_state.pass_complete_status:
@@ -3761,7 +3761,7 @@ elif page == "🎮 Live Game Tracker":
                 # Final update before closing
                 if st.session_state.pass_from_player and st.session_state.pass_to_player:
                     _update_last_pass_event()
-                        save_live_game_state()
+                    save_live_game_state()
                 # Reset selections
                 st.session_state.pass_from_player = None
                 st.session_state.pass_to_player = None
@@ -3770,7 +3770,7 @@ elif page == "🎮 Live Game Tracker":
                 st.session_state.show_pass_dialog = False
                 if 'last_timer_refresh' in st.session_state:
                     st.session_state.last_timer_refresh = time.time()
-                        st.rerun()
+                st.rerun()
         
             st.markdown('</div>', unsafe_allow_html=True)
         
