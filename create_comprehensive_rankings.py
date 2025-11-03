@@ -22,7 +22,7 @@ def normalize_team_name(team_name):
         return ""
     name = str(team_name).strip()
     
-    # Remove duplicate "Club Ohio" prefix
+    # Remove duplicate "Club Ohio" prefix (e.g., "Club Ohio Club Ohio West" -> "Club Ohio West")
     name = re.sub(r'^Club\s+Ohio\s+Club\s+Ohio\s+', 'Club Ohio ', name, flags=re.IGNORECASE)
     
     # Remove common suffixes for matching
@@ -31,6 +31,7 @@ def normalize_team_name(team_name):
     normalized = re.sub(r'\s+b18\s*$', '', normalized)
     normalized = re.sub(r'\s+u8\s*$', '', normalized)
     normalized = re.sub(r'\s+boys\s*$', '', normalized)
+    normalized = re.sub(r'\s+', ' ', normalized)  # Normalize whitespace
     
     return normalized
 
@@ -69,26 +70,66 @@ def team_names_match(name1, name2):
     if name1 == name2:
         return True
     
+    # Normalize both names first (this handles "Club Ohio Club Ohio" -> "Club Ohio")
+    norm1 = normalize_team_name(name1)
+    norm2 = normalize_team_name(name2)
+    
+    # Exact normalized match
+    if norm1 == norm2:
+        return True
+    
     # Check aliases
     resolved1 = resolve_alias(name1)
     resolved2 = resolve_alias(name2)
     if resolved1 == resolved2 and resolved1:
         return True
     
-    # Normalized match
-    norm1 = normalize_team_name(name1)
-    norm2 = normalize_team_name(name2)
-    
     # Check if one normalized name contains the other (but not too short)
     if len(norm1) > 10 and len(norm2) > 10:
         if norm1 in norm2 or norm2 in norm1:
             # Check for distinguishing suffixes like "II" vs no "II"
-            if " ii" in name1.lower() or " 2" in name1.lower():
-                if " ii" not in name2.lower() and " 2" not in name2.lower():
+            name1_lower = name1.lower()
+            name2_lower = name2.lower()
+            if (" ii" in name1_lower or " 2" in name1_lower or "ii" in name1_lower):
+                if " ii" not in name2_lower and " 2" not in name2_lower and "ii" not in name2_lower:
                     return False
-            if " ii" in name2.lower() or " 2" in name2.lower():
-                if " ii" not in name1.lower() and " 2" not in name1.lower():
+            if (" ii" in name2_lower or " 2" in name2_lower or "ii" in name2_lower):
+                if " ii" not in name1_lower and " 2" not in name1_lower and "ii" not in name1_lower:
                     return False
+            return True
+    
+    # Additional fuzzy matching: check if key parts match (club name + age indicator)
+    def extract_key_parts(name):
+        """Extract key identifying parts of team name"""
+        parts = []
+        # Age/year indicators
+        year_match = re.search(r'(201[6-9]|u[89]|b[0-9]{2}|bu[0-9]{2})', name, re.I)
+        if year_match:
+            parts.append(year_match.group(1).lower())
+        # First 2-3 words (club name)
+        words = name.split()
+        if len(words) >= 2:
+            # Skip "Club Ohio" if it appears twice
+            if len(words) >= 4 and words[0].lower() == 'club' and words[1].lower() == 'ohio' and words[2].lower() == 'club':
+                parts.extend([w.lower() for w in words[3:6]])
+            else:
+                parts.extend([w.lower() for w in words[:3]])
+        return parts
+    
+    parts1 = extract_key_parts(name1)
+    parts2 = extract_key_parts(name2)
+    
+    if parts1 and parts2:
+        common = set(parts1) & set(parts2)
+        # If they share at least 2 key parts, likely the same team
+        if len(common) >= 2:
+            # Still check for distinguishing suffixes
+            name1_lower = name1.lower()
+            name2_lower = name2.lower()
+            if (" ii" in name1_lower or " 2" in name1_lower) and (" ii" not in name2_lower and " 2" not in name2_lower):
+                return False
+            if (" ii" in name2_lower or " 2" in name2_lower) and (" ii" not in name1_lower and " 2" not in name1_lower):
+                return False
             return True
     
     return False
