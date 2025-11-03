@@ -8744,6 +8744,45 @@ elif page == "⚙️ Data Manager":
     st.title("⚙️ Data Manager")
     
     st.info("✏️ Edit your data directly! Changes are saved when you click the save button.")
+
+    with st.expander("📚 Data Sources & Interpretation Guide", expanded=False):
+        st.markdown(
+            """
+            ### What data do we use?
+            - **Match History (DSX)**: `DSX_Matches_Fall2025.csv`
+              - Source of truth for DSX results. Used for DSX stats, trends, predictions, and H2H.
+            - **Division/Tournament Rankings**: CSVs listed in `load_division_data()`
+              - Examples: `CPL_Fall_2025_Division_Rankings.csv`, `MVYSA_B09_3_Division_Rankings.csv`, `Club_Ohio_Fall_Classic_2025_Division_Rankings.csv`, `CU_Fall_Finale_2025_Division_Rankings.csv`, Haunted Classic files.
+              - Used to get opponents' season/tournament stats and Strength Index.
+            - **Opponent-of-Opponent Matches (Expanded coverage)**: `Opponents_of_Opponents_Matches_Expanded.csv`
+              - 6,029 matches discovered via GotSport scraping; used when division data is missing.
+            - **Discovered Ohio Tournaments (2018 Boys)**: `Ohio_Tournaments_2018_Boys_Discovered_20251102.csv` and `Ohio_Tournaments_Summary_20251102.csv`
+              - Discovery layer to find more leagues/tournaments and coverage gaps.
+            - **2017 Benchmarking (not in main rankings)**: `OCL_BU09_7v7_Stripes_Benchmarking_2017.csv`
+              - For comparison only; excluded from 2018 rankings.
+
+            ### How do we interpret and prioritize data?
+            - **Priority order for opponent stats**:
+              1) League/Division rankings (most representative)
+              2) Tournament division rankings (if only tournament exists)
+              3) Opponent-of-opponent extracted matches (coverage fallback)
+              4) DSX head-to-head only (last resort)
+            - **DSX is excluded** from division files; DSX stats always come from `DSX_Matches_Fall2025.csv`.
+            - **Aliasing & matching**: We normalize names and apply aliases (e.g., Worthington United variants) and fuzzy matching to unify teams across sources.
+            - **Strength Index (0–100)**: Weighted from Points-Per-Game and Goal Differential per game; bounded and scaled for comparability.
+            - **PPG / GF / GA / GD**: Per-game metrics; totals are converted to per-game when needed.
+
+            ### Where is this used in the app?
+            - **Opponent Intel / Predictions**: Uses division data; falls back to extracted matches; shows coverage indicator when using fallback.
+            - **Team Analysis / Full Analysis**: Enhances opponent set with extracted matches if missing from divisions.
+            - **Benchmarking**: Compares DSX to any tracked team; falls back to extracted matches if needed.
+
+            ### Refresh & caching
+            - Use **🔄 Refresh Data** to clear caches and reload CSVs.
+            - The **Division Rankings** page can regenerate rankings via `create_comprehensive_rankings.py`.
+            - The **update_all_data.py** workflow fetches new leagues/tournaments and recalculates analytics.
+            """
+        )
     
     # Game Settings Section (before tabs)
     st.markdown("---")
