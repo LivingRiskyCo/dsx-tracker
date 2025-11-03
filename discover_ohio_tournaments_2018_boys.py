@@ -27,9 +27,9 @@ KNOWN_OHIO_TOURNAMENTS = [
         'year': 2025
     },
     {
-        'name': 'CU Fall Finale',
-        'event_id': '45535',
-        'base_url': 'https://system.gotsport.com/org_event/events/45535',
+        'name': 'Cincinnati United Fall Finale',
+        'event_id': '40635',
+        'base_url': 'https://system.gotsport.com/org_event/events/40635',
         'year': 2025
     },
     {

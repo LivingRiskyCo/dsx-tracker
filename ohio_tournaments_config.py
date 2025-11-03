@@ -23,17 +23,18 @@ OHIO_TOURNAMENTS_CONFIG = [
         'notes': 'November 1-2, 2025 - Club Ohio Tournaments'
     },
     {
-        'name': 'CU Fall Finale',
-        'event_id': '45535',
+        'name': 'Cincinnati United Fall Finale',
+        'event_id': '40635',
         'year': 2025,
         'division_urls': [
-            'https://system.gotsport.com/org_event/events/45535/results?group=418537',
+            'https://system.gotsport.com/org_event/events/40635/results?age=8&gender=m',
+            'https://system.gotsport.com/org_event/events/40635/schedules?age=8&gender=m',
         ],
         'age_gender_filter': {
-            'age': 9,
+            'age': 8,
             'gender': 'm'
         },
-        'notes': 'Columbus United tournament'
+        'notes': 'Cincinnati United tournament - October 25-26, 2025 - Warren County Sports Complex & Voice of America Park'
     },
     {
         'name': 'Haunted Classic',
