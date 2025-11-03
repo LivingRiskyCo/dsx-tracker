@@ -20,7 +20,7 @@ OHIO_TOURNAMENTS_CONFIG = [
             'age': 9,
             'gender': 'm'
         },
-        'notes': 'November 1-2, 2025 - Club Ohio Tournaments'
+        'notes': 'November 1-2, 2025 - Club Ohio Tournaments - DSX played 3 matches'
     },
     {
         'name': 'Cincinnati United Fall Finale',
@@ -47,7 +47,51 @@ OHIO_TOURNAMENTS_CONFIG = [
             'age': 9,
             'gender': 'm'
         },
-        'notes': 'Halloween tournament'
+        'notes': 'Halloween tournament - October 18-19, 2025 - DSX played 3 matches'
+    },
+    {
+        'name': 'Dublin Charity Cup',
+        'event_id': None,  # Local tournament - no GotSport event page
+        'year': 2025,
+        'division_urls': [],
+        'age_gender_filter': {
+            'age': 8,
+            'gender': 'm'
+        },
+        'notes': 'Local tournament - August 9-16, 2025 - DSX played 2 matches - Division file: Dublin_Charity_Cup_2025_Division_Rankings.csv'
+    },
+    {
+        'name': 'Grove City Fall Classic',
+        'event_id': None,  # Local tournament - no GotSport event page
+        'year': 2025,
+        'division_urls': [],
+        'age_gender_filter': {
+            'age': 8,
+            'gender': 'm'
+        },
+        'notes': 'Local tournament - September 27-28, 2025 - DSX played 4 matches - Division file: Grove_City_Fall_Classic_2025_Division_Rankings.csv'
+    },
+    {
+        'name': 'Murfin Friendly Series',
+        'event_id': None,  # Friendly tournament - no GotSport event page
+        'year': 2025,
+        'division_urls': [],
+        'age_gender_filter': {
+            'age': 8,
+            'gender': 'm'
+        },
+        'notes': 'Friendly tournament - September 5-7, 2025 - DSX played 3 matches - Division file: Murfin_Friendly_Series_2025_Division_Rankings.csv'
+    },
+    {
+        'name': 'Obetz Futbol Cup',
+        'event_id': None,  # Local tournament - no GotSport event page found
+        'year': 2025,
+        'division_urls': [],
+        'age_gender_filter': {
+            'age': 8,
+            'gender': 'm'
+        },
+        'notes': 'Local tournament - August 30-31, 2025 - DSX played 3 matches - Location: Darree Fields - No division data available'
     },
 ]
 

@@ -226,6 +226,7 @@ def load_division_data():
         "Dublin_Charity_Cup_2025_Division_Rankings.csv",      # 2025 Dublin Charity Cup
         "Grove_City_Fall_Classic_2025_Division_Rankings.csv", # 2025 Grove City Fall Classic
         "Murfin_Friendly_Series_2025_Division_Rankings.csv",  # 2025 Murfin Friendly Series
+        "Obetz_Futbol_Cup_2025_Division_Rankings.csv",        # 2025 Obetz Futbol Cup
         # Note: OCL_BU09_7v7_Stripes_Benchmarking_2017.csv is NOT included here - it's for benchmarking only (2017 boys teams)
     ]
     
@@ -256,6 +257,7 @@ def load_division_data():
             "Dublin_Charity_Cup_2025_Division_Rankings.csv",
             "Grove_City_Fall_Classic_2025_Division_Rankings.csv",
             "Murfin_Friendly_Series_2025_Division_Rankings.csv",
+            "Obetz_Futbol_Cup_2025_Division_Rankings.csv",
         ]
         
         try:
@@ -4961,6 +4963,7 @@ elif page == "🏆 Division Rankings":
             "Dublin_Charity_Cup_2025_Division_Rankings.csv",
             "Grove_City_Fall_Classic_2025_Division_Rankings.csv",
             "Murfin_Friendly_Series_2025_Division_Rankings.csv",
+            "Obetz_Futbol_Cup_2025_Division_Rankings.csv",
         ]
         
         tournament_teams = []

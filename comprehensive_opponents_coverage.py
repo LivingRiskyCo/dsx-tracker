@@ -46,6 +46,7 @@ def analyze_coverage():
         "Dublin_Charity_Cup_2025_Division_Rankings.csv",
         "Grove_City_Fall_Classic_2025_Division_Rankings.csv",
         "Murfin_Friendly_Series_2025_Division_Rankings.csv",
+        "Obetz_Futbol_Cup_2025_Division_Rankings.csv",
     ]
 
     all_division_teams = set()

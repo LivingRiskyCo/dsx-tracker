@@ -19,6 +19,9 @@ import re
 from urllib.parse import urljoin, urlparse
 
 # Known Ohio tournament organizers on GotSport
+# Note: Some tournaments DSX played in (Dublin Charity Cup, Grove City Fall Classic, 
+# Murfin Friendly Series, Obetz Futbol Cup) are local/friendly tournaments without 
+# GotSport event pages, so they're not listed here for auto-discovery
 KNOWN_OHIO_TOURNAMENTS = [
     {
         'name': 'Club Ohio Fall Classic',
@@ -36,6 +39,18 @@ KNOWN_OHIO_TOURNAMENTS = [
         'name': 'Haunted Classic',
         'event_id': '418537',
         'base_url': 'https://system.gotsport.com/org_event/events/418537',
+        'year': 2025
+    },
+    {
+        'name': 'Toledo Cup',
+        'event_id': '43564',
+        'base_url': 'https://system.gotsport.com/org_event/events/43564',
+        'year': 2025
+    },
+    {
+        'name': 'Ohio Travel Cup',
+        'event_id': '46191',
+        'base_url': 'https://system.gotsport.com/org_event/events/46191',
         'year': 2025
     },
 ]
