@@ -1588,25 +1588,25 @@ if page == "🎯 What's Next":
                         dsx_prediction = round(pred_dsx_goals)
                         opp_prediction = round(pred_opp_goals)
                         
-                            # Calculate confidence based on range tightness and strength difference
+                        # Calculate confidence based on range tightness and strength difference
                         dsx_range = pred_dsx_high - pred_dsx_low
                         opp_range = pred_opp_high - pred_opp_low
                         avg_range = (dsx_range + opp_range) / 2
                         
-                            # Calculate percentage confidence based on multiple factors
-                            range_factor = max(0, 1 - (avg_range / 4.0))  # Tighter range = higher confidence
-                            strength_factor = min(1.0, abs(si_diff) / 20.0)  # Bigger strength difference = higher confidence
-                            data_factor = min(1.0, opp_gp / 5.0)  # More opponent data = higher confidence
-                            
-                            # Weighted confidence calculation
-                            confidence_pct = (range_factor * 0.4 + strength_factor * 0.4 + data_factor * 0.2) * 100
-                            confidence_pct = max(25, min(95, confidence_pct))  # Clamp between 25% and 95%
-                            
-                            if confidence_pct >= 75:
+                        # Calculate percentage confidence based on multiple factors
+                        range_factor = max(0, 1 - (avg_range / 4.0))  # Tighter range = higher confidence
+                        strength_factor = min(1.0, abs(si_diff) / 20.0)  # Bigger strength difference = higher confidence
+                        data_factor = min(1.0, opp_gp / 5.0)  # More opponent data = higher confidence
+                        
+                        # Weighted confidence calculation
+                        confidence_pct = (range_factor * 0.4 + strength_factor * 0.4 + data_factor * 0.2) * 100
+                        confidence_pct = max(25, min(95, confidence_pct))  # Clamp between 25% and 95%
+                        
+                        if confidence_pct >= 75:
                             confidence = "High"
                             confidence_color = "🟢"
                             confidence_style = "success"
-                            elif confidence_pct >= 60:
+                        elif confidence_pct >= 60:
                             confidence = "Medium"
                             confidence_color = "🟡"
                             confidence_style = "warning"
