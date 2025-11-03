@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import pandas as pd
 import os
+import re
 
 print("Creating comprehensive rankings CSV files...")
 print()
@@ -73,36 +74,103 @@ for file in division_files:
 if all_divisions:
     combined = pd.concat(all_divisions, ignore_index=True)
     
-    # Apply filters
-    combined = combined[~combined['Team'].str.contains('2017', case=False, na=False)]
-    combined = combined[~combined['Team'].str.contains('DSX', case=False, na=False)]  # Exclude DSX
+    # Exclude DSX from division data (we'll add it separately)
+    combined = combined[~combined['Team'].str.contains('DSX', case=False, na=False)]
     combined['GP'] = pd.to_numeric(combined['GP'], errors='coerce').fillna(0)
     combined = combined[combined['GP'] >= 3].copy()
     
-    # Add DSX if we have it
+    # Classify teams by age/year
+    def classify_team_age(team_name):
+        """Classify team as 2018, 2017, or 17/18 (mixed)"""
+        team_str = str(team_name).lower()
+        
+        # Check for mixed age indicators (17/18, B17/18, B18/17, etc.)
+        if re.search(r'17[/-]18|18[/-]17|b17[/-]18|b18[/-]17|17/18|18/17', team_str):
+            return '17/18'
+        # Check for 2017 indicators (2017, B17, U9)
+        elif re.search(r'2017|b17\b|u9\b', team_str) or '2017' in team_str:
+            return '2017'
+        # Check for 2018 indicators (2018, B18, U8)
+        elif re.search(r'2018|b18\b|u8\b|u08', team_str) or '2018' in team_str:
+            return '2018'
+        else:
+            # Default to 2018 if unclear
+            return '2018'
+    
+    # Add age classification column
+    combined['AgeGroup'] = combined['Team'].apply(classify_team_age)
+    
+    # Separate teams by age group
+    teams_2018 = combined[combined['AgeGroup'] == '2018'].copy()
+    teams_2017 = combined[combined['AgeGroup'] == '2017'].copy()
+    teams_17_18 = combined[combined['AgeGroup'] == '17/18'].copy()
+    
+    # Combine 17/18 teams with 2017 (as requested)
+    if not teams_17_18.empty:
+        teams_2017 = pd.concat([teams_2017, teams_17_18], ignore_index=True)
+    
+    # Add DSX to 2018 rankings if we have it
     if dsx_row:
         dsx_df = pd.DataFrame([dsx_row])
-        combined = pd.concat([combined, dsx_df], ignore_index=True)
+        teams_2018 = pd.concat([teams_2018, dsx_df], ignore_index=True)
     
-    # Sort and rank
-    combined = combined.sort_values(['PPG', 'StrengthIndex'], ascending=[False, False])
-    combined['Rank'] = range(1, len(combined) + 1)
+    # Sort and rank each age group
+    def rank_teams(df):
+        """Sort and rank teams by PPG and Strength Index"""
+        if df.empty:
+            return df
+        df = df.sort_values(['PPG', 'StrengthIndex'], ascending=[False, False])
+        df['Rank'] = range(1, len(df) + 1)
+        return df
+    
+    teams_2018 = rank_teams(teams_2018)
+    teams_2017 = rank_teams(teams_2017)
     
     # Ensure all required columns exist
     required_cols = ['Rank', 'Team', 'GP', 'W', 'D', 'L', 'GF', 'GA', 'GD', 'Pts', 'PPG', 'StrengthIndex']
     for col in required_cols:
-        if col not in combined.columns:
-            combined[col] = 0
+        if col not in teams_2018.columns:
+            teams_2018[col] = 0
+        if col not in teams_2017.columns:
+            teams_2017[col] = 0
     
-    # Save comprehensive rankings (all teams 3+ games)
-    output_file = 'Comprehensive_All_Teams_Rankings.csv'
-    combined[required_cols].to_csv(output_file, index=False)
-    print(f"[OK] Created {output_file}")
-    print(f"   Total teams: {len(combined)}")
+    # Save 2018 rankings (all teams 3+ games)
+    output_file_2018 = 'Rankings_2018_Teams_3Plus_Games.csv'
+    teams_2018[required_cols].to_csv(output_file_2018, index=False)
+    print(f"[OK] Created {output_file_2018}")
+    print(f"   Total 2018 teams: {len(teams_2018)}")
     print()
     
-    # Save top 93 teams (6+ games) - most accurate rankings
-    teams_6plus = combined[combined['GP'] >= 6].copy()
+    # Save 2017 rankings (includes 17/18 teams, all teams 3+ games)
+    output_file_2017 = 'Rankings_2017_Teams_3Plus_Games.csv'
+    teams_2017[required_cols].to_csv(output_file_2017, index=False)
+    print(f"[OK] Created {output_file_2017}")
+    print(f"   Total 2017 teams (including 17/18): {len(teams_2017)}")
+    print()
+    
+    # Save 2018 teams with 6+ games (most accurate)
+    teams_2018_6plus = teams_2018[teams_2018['GP'] >= 6].copy()
+    teams_2018_6plus = rank_teams(teams_2018_6plus)
+    
+    output_file_2018_6plus = 'Rankings_2018_Teams_6Plus_Games.csv'
+    teams_2018_6plus[required_cols].to_csv(output_file_2018_6plus, index=False)
+    print(f"[OK] Created {output_file_2018_6plus}")
+    print(f"   Total 2018 teams (6+ games): {len(teams_2018_6plus)}")
+    print()
+    
+    # Also create combined rankings for backward compatibility
+    combined_all = pd.concat([teams_2018, teams_2017], ignore_index=True)
+    combined_all = combined_all.sort_values(['PPG', 'StrengthIndex'], ascending=[False, False])
+    combined_all['Rank'] = range(1, len(combined_all) + 1)
+    
+    output_file = 'Comprehensive_All_Teams_Rankings.csv'
+    combined_all[required_cols].to_csv(output_file, index=False)
+    print(f"[OK] Created {output_file} (combined)")
+    print(f"   Total teams: {len(combined_all)}")
+    print()
+    
+    # Save top teams (6+ games) - most accurate rankings
+    teams_6plus = combined_all[combined_all['GP'] >= 6].copy()
     teams_6plus = teams_6plus.sort_values(['PPG', 'StrengthIndex'], ascending=[False, False])
     teams_6plus['Rank'] = range(1, len(teams_6plus) + 1)
     
@@ -127,4 +195,3 @@ if all_divisions:
     print("[OK] Rankings CSV files created successfully!")
 else:
     print("[ERROR] No division data found!")
-
