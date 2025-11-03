@@ -1632,13 +1632,13 @@ if page == "🎯 What's Next":
                         st.markdown("---")
                         if confidence_style == "success":
                             st.markdown(f"### 🎯 **Final Score: DSX {dsx_prediction}-{opp_prediction} {opponent}**")
-                                st.success(f"**{confidence_color} Confidence: {confidence} ({confidence_pct:.0f}%)** - Based on strength difference and data quality")
+                            st.success(f"**{confidence_color} Confidence: {confidence} ({confidence_pct:.0f}%)** - Based on strength difference and data quality")
                         elif confidence_style == "warning":
                             st.markdown(f"### 🎯 **Final Score: DSX {dsx_prediction}-{opp_prediction} {opponent}**")
-                                st.warning(f"**{confidence_color} Confidence: {confidence} ({confidence_pct:.0f}%)** - Based on strength difference and data quality")
+                            st.warning(f"**{confidence_color} Confidence: {confidence} ({confidence_pct:.0f}%)** - Based on strength difference and data quality")
                         else:
                             st.markdown(f"### 🎯 **Final Score: DSX {dsx_prediction}-{opp_prediction} {opponent}**")
-                                st.error(f"**{confidence_color} Confidence: {confidence} ({confidence_pct:.0f}%)** - Based on strength difference and data quality")
+                            st.error(f"**{confidence_color} Confidence: {confidence} ({confidence_pct:.0f}%)** - Based on strength difference and data quality")
                         
                         # Win probability based on final predicted score
                         st.markdown("---")
