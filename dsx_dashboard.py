@@ -223,6 +223,9 @@ def load_division_data():
         "CU_Fall_Finale_2025_Division_Rankings.csv",   # 2025 CU Fall Finale U8 Boys Platinum
         "Club_Ohio_Fall_Classic_2025_Division_Rankings.csv",   # 2025 Club Ohio Fall Classic U09B Select III
         "CPL_Fall_2025_Division_Rankings.csv",                # CPL Fall 2025 U9 divisions (multiple groups consolidated)
+        "Dublin_Charity_Cup_2025_Division_Rankings.csv",      # 2025 Dublin Charity Cup
+        "Grove_City_Fall_Classic_2025_Division_Rankings.csv", # 2025 Grove City Fall Classic
+        "Murfin_Friendly_Series_2025_Division_Rankings.csv",  # 2025 Murfin Friendly Series
         # Note: OCL_BU09_7v7_Stripes_Benchmarking_2017.csv is NOT included here - it's for benchmarking only (2017 boys teams)
     ]
     
@@ -250,6 +253,9 @@ def load_division_data():
             "Haunted_Classic_B08Black_Division_Rankings.csv",
             "CU_Fall_Finale_2025_Division_Rankings.csv",
             "Club_Ohio_Fall_Classic_2025_Division_Rankings.csv",
+            "Dublin_Charity_Cup_2025_Division_Rankings.csv",
+            "Grove_City_Fall_Classic_2025_Division_Rankings.csv",
+            "Murfin_Friendly_Series_2025_Division_Rankings.csv",
         ]
         
         try:
@@ -4952,6 +4958,9 @@ elif page == "🏆 Division Rankings":
             "Haunted_Classic_B08Black_Division_Rankings.csv",
             "Club_Ohio_Fall_Classic_2025_Division_Rankings.csv",
             "CU_Fall_Finale_2025_Division_Rankings.csv",
+            "Dublin_Charity_Cup_2025_Division_Rankings.csv",
+            "Grove_City_Fall_Classic_2025_Division_Rankings.csv",
+            "Murfin_Friendly_Series_2025_Division_Rankings.csv",
         ]
         
         tournament_teams = []

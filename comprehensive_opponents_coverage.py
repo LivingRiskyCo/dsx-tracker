@@ -43,6 +43,9 @@ def analyze_coverage():
         "CU_Fall_Finale_2025_Division_Rankings.csv",
         "Club_Ohio_Fall_Classic_2025_Division_Rankings.csv",
         "CPL_Fall_2025_Division_Rankings.csv",
+        "Dublin_Charity_Cup_2025_Division_Rankings.csv",
+        "Grove_City_Fall_Classic_2025_Division_Rankings.csv",
+        "Murfin_Friendly_Series_2025_Division_Rankings.csv",
     ]
 
     all_division_teams = set()
@@ -113,7 +116,7 @@ def analyze_coverage():
         print(f"\n{tournament}:")
         print(f"  Opponents: {len(tour_opponents)}")
         print(f"  With division data: {opp_with_division} ({opp_with_division/len(tour_opponents)*100:.1f}%)")
-        print(f"  With opponents-of-opponents data: {opp_with_opp} ({opp_with_opp/len(tour_opponents)*100:.1f}%)")
+        print(f"  With opponents-of-opponents data: {opp_with_opp_opp} ({opp_with_opp_opp/len(tour_opponents)*100:.1f}%)")
 
     # 5. Overall summary
     total_opp_with_division = sum(r['division_coverage'] for r in coverage_report)
@@ -124,7 +127,7 @@ def analyze_coverage():
     print("=" * 80)
     print(f"Total opponents faced: {total_opponents}")
     print(f"Opponents with division data: {total_opp_with_division} ({total_opp_with_division/total_opponents*100:.1f}%)")
-    print(f"Opponents with opponents-of-opponents data: {total_opp_with_opp_coverage} ({total_opp_with_opp_coverage/total_opponents*100:.1f}%)")
+    print(f"Opponents with opponents-of-opponents data: {total_opp_with_opp_opp} ({total_opp_with_opp_opp/total_opponents*100:.1f}%)")
     print(f"Teams tracked in division files: {len(all_division_teams)}")
     print(f"Opponents-of-opponents tracked: {len(all_opp_opp_teams)}")
 
@@ -134,19 +137,19 @@ def analyze_coverage():
     print("=" * 80)
 
     if total_opp_with_division < total_opponents * 0.8:
-        print("⚠️  Division data coverage is low. Consider:")
+        print("[WARNING] Division data coverage is low. Consider:")
         print("   - Adding more division fetch scripts")
         print("   - Expanding existing division coverage")
         print("   - Creating manual data entry for missing teams")
 
     if total_opp_with_opp_opp < total_opponents * 0.5:
-        print("⚠️  Opponents-of-opponents coverage is low. Consider:")
+        print("[WARNING] Opponents-of-opponents coverage is low. Consider:")
         print("   - Running opponents-of-opponents scripts for all tournaments")
         print("   - Creating systematic tracking for missing tournaments")
         print("   - Improving GotSport schedule parsing")
 
     if len(all_division_teams) < 100:
-        print("⚠️  Total division teams tracked is low. Consider:")
+        print("[WARNING] Total division teams tracked is low. Consider:")
         print("   - Adding more GotSport divisions to tracking")
         print("   - Including regional leagues and tournaments")
         print("   - Expanding to more age groups for benchmarking")

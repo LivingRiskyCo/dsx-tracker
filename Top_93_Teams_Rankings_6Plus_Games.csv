@@ -1,96 +1,94 @@
 Rank,Team,GP,W,D,L,GF,GA,GD,Pts,PPG,StrengthIndex
 1,Club Ohio Club Ohio East 18B Academy,6.0,6.0,0.0,0.0,6.0,0.83,5.17,18.0,3.0,100.0
-2,Grasshoppers FC Grasshoppers FC - 2018B Pool 1 Black,6.0,6.0,0.0,0.0,8.67,0.83,7.84,18.0,3.0,100.0
-3,Cincinnati United CUSE 17B Arsenal,8.0,8.0,0.0,0.0,54.0,10.0,44.0,24.0,3.0,100.0
-4,NKY Gunners Athletic Club NKY Gunners Athletic Club B17,8.0,8.0,0.0,0.0,44.0,4.0,40.0,24.0,3.0,100.0
-5,Lawrenceburg Greendale Soccer Club LGSC B17 Red Hawks,6.0,6.0,0.0,0.0,28.0,6.0,22.0,18.0,3.0,96.0
-6,Campbell Soccer Club (CSC) CSC U9B Enzweiler,8.0,7.0,1.0,0.0,58.0,2.0,56.0,22.0,2.75,94.2
-7,Campbell Soccer Club (CSC) CSC U9B Willoughby,7.0,6.0,1.0,0.0,38.0,7.0,31.0,19.0,2.7142857142857144,91.6
-8,Cincy SC Cincy SC B18/17 Premier,6.0,5.0,1.0,0.0,45.0,10.0,35.0,16.0,2.6666666666666665,92.2
-9,Grasshoppers FC Grasshoppers FC - 2018B Pool 1,8.0,7.0,0.0,1.0,7.38,1.75,5.63,21.0,2.63,91.4
-10,Cincinnati United CUSM 17B AS Roma,7.0,6.0,0.0,1.0,37.0,11.0,26.0,18.0,2.571428571428572,86.1
-11,Kings Hammer Soccer Club KHJR CINCY B17-2,7.0,6.0,0.0,1.0,41.0,17.0,24.0,18.0,2.571428571428572,85.3
-12,Lord's Gym Price Hill F.C. B17/18,6.0,5.0,0.0,1.0,26.0,10.0,16.0,15.0,2.5,81.3
-13,Lakota Futbol Club Lakota FC B17 Silver,8.0,6.0,1.0,1.0,50.0,10.0,40.0,19.0,2.375,85.4
-14,Lakota Futbol Club Lakota FC B17 Gray,7.0,5.0,1.0,1.0,36.0,10.0,26.0,16.0,2.2857142857142856,79.5
-15,Fairfield Optimist Soccer Club FOSC B17 White,8.0,6.0,0.0,2.0,29.0,20.0,9.0,18.0,2.25,82.5
-16,Lakota Futbol Club LFC B18 Black,8.0,6.0,0.0,2.0,34.0,12.0,22.0,18.0,2.25,75.8
-17,Total Futbol Academy(OH) TFA B17 Premier,8.0,6.0,0.0,2.0,40.0,24.0,16.0,18.0,2.25,73.5
-18,Locker Soccer Academy Locker Elite Como 2018 Boys,8.0,5.0,3.0,0.0,5.88,3.75,1.88,18.0,2.25,73.1
-19,Old Town Soccer Club OTSC 2018 Boys,6.0,4.0,1.0,1.0,3.67,2.33,1.33,13.0,2.17,69.6
-20,Cincinnati United CUSE 17B Barcelona,6.0,4.0,1.0,1.0,42.0,8.0,34.0,13.0,2.1666666666666665,80.6
-21,Cincinnati Elite FC Cincinnati Elite FC B17 Gold,6.0,4.0,1.0,1.0,18.0,10.0,8.0,13.0,2.1666666666666665,80.6
-22,Cincinnati West CWSC B17 Academy Red,7.0,5.0,0.0,2.0,22.0,14.0,8.0,15.0,2.142857142857143,80.0
-23,Springfield Thunder SC Navy B2017,7.0,5.0,0.0,2.0,0.0,0.0,0.0,15.0,2.14,64.9
-24,Cincinnati United CUSE 17B Fiorentina,8.0,5.0,2.0,1.0,29.0,20.0,9.0,17.0,2.125,79.6
-25,Lakota Futbol Club Lakota FC B17 Red,6.0,4.0,0.0,2.0,36.0,11.0,25.0,12.0,2.0,74.2
-26,Lawrenceburg Greendale Soccer Club LGSC B17 Predators,8.0,5.0,1.0,2.0,27.0,12.0,15.0,16.0,2.0,67.3
-27,Granville United FC Granville United FC 2018 Boys,8.0,5.0,1.0,2.0,5.5,3.63,1.25,16.0,2.0,65.4
-28,Grasshoppers FC Grasshoppers FC - 2018B Pool 2,6.0,4.0,0.0,2.0,3.0,2.0,1.0,12.0,2.0,64.7
-29,Total Futbol Academy(OH) TFA B17 Elite,6.0,4.0,0.0,2.0,20.0,19.0,1.0,12.0,2.0,64.7
-30,Club Oranje Club Oranje Raptors 2018 BU08 Oranje,8.0,5.0,0.0,3.0,3.5,3.13,0.37,15.0,1.88,60.0
-31,Sporting Columbus Sporting Columbus Boys 2018 I,8.0,5.0,0.0,3.0,3.0,3.13,-0.13,15.0,1.88,58.5
-32,Club Ohio Club Ohio West 18B Academy,7.0,4.0,1.0,2.0,2.86,2.57,0.29,13.0,1.86,59.3
-33,Cincinnati United CUSE 17B Everton,7.0,4.0,1.0,2.0,35.0,28.0,7.0,13.0,1.8571428571428568,73.3
-34,Cincy SC Cincy SC B17 Navy,6.0,3.0,2.0,1.0,27.0,16.0,11.0,11.0,1.8333333333333333,63.3
-35,Cincinnati United CUSM 17B Bologna,7.0,4.0,0.0,3.0,29.0,24.0,5.0,12.0,1.7142857142857142,70.0
-36,Lakota Futbol Club Lakota FC B17 White,7.0,3.0,3.0,1.0,22.0,16.0,6.0,12.0,1.7142857142857142,70.0
-37,Lawrenceburg Greendale Soccer Club LGSC B17 Tiger Fury,7.0,4.0,0.0,3.0,30.0,21.0,9.0,12.0,1.7142857142857142,70.0
-38,Cincinnati United CUSE 17B Chelsea,6.0,3.0,1.0,2.0,32.0,9.0,23.0,10.0,1.6666666666666667,65.4
-39,FC Storm FC Storm B17 Loveland Orange,6.0,3.0,1.0,2.0,26.0,11.0,15.0,10.0,1.6666666666666667,61.4
-40,Sporting Columbus Sporting Columbus Boys 2019,10.0,4.0,4.0,2.0,3.1,2.5,0.6,16.0,1.6,54.1
-41,Cincinnati Elite FC Cincinnati Elite FC B17 Elite,7.0,2.0,5.0,0.0,20.0,18.0,2.0,11.0,1.5714285714285714,57.7
-42,Mercury Mercury B18 Red,7.0,3.0,2.0,2.0,27.0,14.0,13.0,11.0,1.5714285714285714,57.2
-43,Locker Soccer Academy Locker Elite Cremonese 2018 Boys,7.0,3.0,2.0,2.0,4.71,4.43,0.29,11.0,1.57,52.5
-44,Kings Hammer New Albany KHJ1 New Albany B18,7.0,3.0,2.0,2.0,2.86,2.57,0.29,11.0,1.57,52.5
-45,Ohio Premier 2018 Boys Academy Dublin Grey,6.0,3.0,0.0,3.0,3.5,3.17,0.33,9.0,1.5,51.0
-46,Cincy SC Cincy SC B17 White,8.0,4.0,0.0,4.0,26.0,34.0,-8.0,12.0,1.5,35.0
-47,BSA Celtic 18B City,7.0,3.0,1.0,3.0,15.0,36.0,-21.0,10.0,1.43,39.4
-48,Cincy SC Cincy SC B17 Orange,7.0,3.0,1.0,3.0,28.0,30.0,-2.0,10.0,1.4285714285714286,42.3
-49,FC Storm FC Storm B17 IH Orange,7.0,3.0,1.0,3.0,20.0,22.0,-2.0,10.0,1.4285714285714286,42.3
-50,Cincinnati United CU Northwest 17B Atalanta,8.0,3.0,2.0,3.0,28.0,20.0,8.0,11.0,1.375,62.1
-51,Kings Hammer Soccer Club KHJR NKY B17-1,6.0,2.0,2.0,2.0,16.0,13.0,3.0,8.0,1.3333333333333333,55.1
-52,DSX Orange 2018,18.0,7.0,3.0,8.0,3.5,4.5,-1.0,24.0,1.3333333333333333,43.1
-53,SP Soccer Academy SP Soccer Academy 2018 Boys Blue,6.0,2.0,2.0,2.0,3.5,3.33,0.17,8.0,1.33,46.5
-54,Troy Rattlers B17/18,8.0,3.0,1.0,4.0,0.0,0.0,0.0,10.0,1.25,44.2
-55,Columbus United Columbus United B'18 Academy,6.0,2.0,1.0,3.0,2.33,3.83,-1.5,7.0,1.17,37.8
-56,Columbus Force SC Columbus Force 18B Blue,6.0,2.0,1.0,3.0,2.83,4.67,-1.84,7.0,1.17,36.8
-57,Kings Hammer Soccer Club KHJR CINCY B17-3,6.0,2.0,1.0,3.0,20.0,28.0,-8.0,7.0,1.1666666666666667,27.2
-58,Little Miami FC Little Miami FC 2018 Boys,8.0,3.0,0.0,5.0,25.0,48.0,-23.0,9.0,1.125,32.6
-59,Kings Hammer Soccer Club KHJR NKY B17-4,7.0,2.0,1.0,4.0,13.0,25.0,-12.0,7.0,1.0,33.2
-60,Northwest FC Northwest FC 2018B Academy Orange,6.0,2.0,0.0,4.0,3.0,5.0,-2.0,6.0,1.0,32.3
-61,Independence SC ISC B17 Koking,7.0,2.0,1.0,4.0,17.0,49.0,-32.0,7.0,1.0,24.6
-62,Elite FC Elite FC 2018 Boys Arsenal,8.0,2.0,1.0,5.0,1.38,3.0,-1.62,7.0,0.88,30.7
-63,Kings Hammer Soccer Club KHJR NKY B17-2,8.0,2.0,1.0,5.0,28.0,26.0,2.0,7.0,0.875,41.4
-64,Cincinnati United CULM 17B Aston Villa,8.0,2.0,1.0,5.0,15.0,26.0,-11.0,7.0,0.875,31.3
-65,Kolping SC Kolping SC B17/18 Orange,7.0,2.0,0.0,5.0,10.0,24.0,-14.0,6.0,0.8571428571428571,29.0
-66,Cincinnati United CUSE 17B Dortmund,7.0,1.0,3.0,3.0,16.0,19.0,-3.0,6.0,0.8571428571428571,26.0
-67,Cincinnati United CULM 17B Crystal Palace,7.0,1.0,3.0,3.0,11.0,20.0,-9.0,6.0,0.8571428571428571,20.0
-68,FC Storm FC Storm B17 IH White,7.0,1.0,3.0,3.0,13.0,19.0,-6.0,6.0,0.8571428571428571,20.0
-69,Worthington United Worthington United 94 2018 Boys Red,6.0,1.0,2.0,3.0,3.5,4.5,-0.67,5.0,0.83,32.4
-70,BSA Celtic 18B United,8.0,1.0,3.0,4.0,14.0,19.0,-5.0,6.0,0.75,17.5
-71,FC Storm FC Storm B17 Loveland White,7.0,1.0,2.0,4.0,14.0,29.0,-15.0,5.0,0.7142857142857143,25.2
-72,Cincinnati West CWSC B17 Academy Elite,7.0,1.0,2.0,4.0,12.0,30.0,-18.0,5.0,0.7142857142857143,24.0
-73,FC Dayton FC Dayton B17 Elite,7.0,1.0,2.0,4.0,10.0,36.0,-26.0,5.0,0.7142857142857143,20.5
-74,Cincinnati United CUSM 17B Cagliari,7.0,1.0,2.0,4.0,18.0,28.0,-10.0,5.0,0.7142857142857143,16.7
-75,Kings Hammer Soccer Club KHJR NKY B17-3,7.0,1.0,2.0,4.0,26.0,36.0,-10.0,5.0,0.7142857142857143,16.7
-76,Club Ohio Club Ohio East 19B Academy,6.0,1.0,1.0,4.0,3.0,4.5,-1.5,4.0,0.67,26.1
-77,Cincinnati United CUSM 17B Dinamo Zagreb,6.0,1.0,1.0,4.0,13.0,26.0,-13.0,4.0,0.6666666666666666,24.1
-78,Fairfield Optimist Soccer Club FOSC B17 Red,6.0,1.0,1.0,4.0,11.0,30.0,-19.0,4.0,0.6666666666666666,21.1
-79,Cincy SC Cincy SC B17 Elite,7.0,0.0,4.0,3.0,18.0,25.0,-7.0,4.0,0.5714285714285714,13.3
-80,Cincinnati United CUSE 17B Granada,8.0,1.0,1.0,6.0,8.0,27.0,-19.0,4.0,0.5,19.5
-81,FC Storm FC Storm B17 Loveland Blue,6.0,1.0,0.0,5.0,7.0,26.0,-19.0,3.0,0.5,17.2
-82,Cincinnati United CULM 17B Bournemouth,6.0,0.0,3.0,3.0,9.0,29.0,-20.0,3.0,0.5,16.7
-83,Barcelona United Barcelona United Elite 18B,6.0,1.0,0.0,5.0,1.67,6.17,-4.5,3.0,0.5,13.2
-84,Club Ohio Club Ohio West 19B Academy,7.0,1.0,0.0,6.0,1.57,3.43,-1.86,3.0,0.43,19.5
-85,Lakota Futbol Club LFC B18 Red,7.0,1.0,0.0,6.0,15.0,34.0,-19.0,3.0,0.4285714285714285,16.9
-86,Mercury Mercury B17 West,7.0,1.0,0.0,6.0,14.0,37.0,-23.0,3.0,0.4285714285714285,15.1
-87,Kolping SC Kolping SC B17/18 Orange B,7.0,1.0,0.0,6.0,10.0,40.0,-30.0,3.0,0.4285714285714285,12.1
-88,Oak Hills Youth Athletics Oak Hills Premier Boys 2018,8.0,1.0,0.0,7.0,11.0,54.0,-43.0,3.0,0.375,8.8
-89,FC Dayton FC Dayton B17 Navy,7.0,0.0,2.0,5.0,4.0,56.0,-52.0,2.0,0.2857142857142857,6.7
-90,Mercury Mercury B17 Red,8.0,0.0,2.0,6.0,8.0,40.0,-32.0,2.0,0.25,8.8
-91,Kings Hammer Soccer Club KHJR CINCY B17-1,8.0,0.0,2.0,6.0,8.0,58.0,-50.0,2.0,0.25,5.8
-92,Eclipse FC Eclipse FC Beasts,6.0,0.0,1.0,5.0,8.0,25.0,-17.0,1.0,0.1666666666666666,10.4
-93,Warrior White B17/18,8.0,0.0,1.0,7.0,0.0,0.0,0.0,1.0,0.13,18.0
-94,Worthington United Worthington United 94 2018 Boys White,7.0,0.0,0.0,7.0,1.14,3.43,-2.29,0.0,0.0,8.1
-95,FC Storm FC Storm B17 Loveland Black,6.0,0.0,0.0,6.0,4.0,42.0,-38.0,0.0,0.0,0.0
+2,Cincinnati United CUSE 17B Arsenal,8.0,8.0,0.0,0.0,54.0,10.0,44.0,24.0,3.0,100.0
+3,NKY Gunners Athletic Club NKY Gunners Athletic Club B17,8.0,8.0,0.0,0.0,44.0,4.0,40.0,24.0,3.0,100.0
+4,Lawrenceburg Greendale Soccer Club LGSC B17 Red Hawks,6.0,6.0,0.0,0.0,28.0,6.0,22.0,18.0,3.0,96.0
+5,Campbell Soccer Club (CSC) CSC U9B Enzweiler,8.0,7.0,1.0,0.0,58.0,2.0,56.0,22.0,2.75,94.2
+6,Campbell Soccer Club (CSC) CSC U9B Willoughby,7.0,6.0,1.0,0.0,38.0,7.0,31.0,19.0,2.7142857142857144,91.6
+7,Cincy SC Cincy SC B18/17 Premier,6.0,5.0,1.0,0.0,45.0,10.0,35.0,16.0,2.6666666666666665,92.2
+8,Grasshoppers FC Grasshoppers FC - 2018B Pool 1,8.0,7.0,0.0,1.0,7.38,1.75,5.63,21.0,2.63,91.4
+9,Cincinnati United CUSM 17B AS Roma,7.0,6.0,0.0,1.0,37.0,11.0,26.0,18.0,2.571428571428572,86.1
+10,Kings Hammer Soccer Club KHJR CINCY B17-2,7.0,6.0,0.0,1.0,41.0,17.0,24.0,18.0,2.571428571428572,85.3
+11,Lord's Gym Price Hill F.C. B17/18,6.0,5.0,0.0,1.0,26.0,10.0,16.0,15.0,2.5,81.3
+12,Lakota Futbol Club Lakota FC B17 Silver,8.0,6.0,1.0,1.0,50.0,10.0,40.0,19.0,2.375,85.4
+13,Lakota Futbol Club Lakota FC B17 Gray,7.0,5.0,1.0,1.0,36.0,10.0,26.0,16.0,2.2857142857142856,79.5
+14,Fairfield Optimist Soccer Club FOSC B17 White,8.0,6.0,0.0,2.0,29.0,20.0,9.0,18.0,2.25,82.5
+15,Lakota Futbol Club LFC B18 Black,8.0,6.0,0.0,2.0,34.0,12.0,22.0,18.0,2.25,75.8
+16,Total Futbol Academy(OH) TFA B17 Premier,8.0,6.0,0.0,2.0,40.0,24.0,16.0,18.0,2.25,73.5
+17,Locker Soccer Academy Locker Elite Como 2018 Boys,8.0,5.0,3.0,0.0,5.88,3.75,1.88,18.0,2.25,73.1
+18,Old Town Soccer Club OTSC 2018 Boys,6.0,4.0,1.0,1.0,3.67,2.33,1.33,13.0,2.17,69.6
+19,Cincinnati United CUSE 17B Barcelona,6.0,4.0,1.0,1.0,42.0,8.0,34.0,13.0,2.1666666666666665,80.6
+20,Cincinnati Elite FC Cincinnati Elite FC B17 Gold,6.0,4.0,1.0,1.0,18.0,10.0,8.0,13.0,2.1666666666666665,80.6
+21,Cincinnati West CWSC B17 Academy Red,7.0,5.0,0.0,2.0,22.0,14.0,8.0,15.0,2.142857142857143,80.0
+22,Springfield Thunder SC Navy B2017,7.0,5.0,0.0,2.0,0.0,0.0,0.0,15.0,2.14,64.9
+23,Cincinnati United CUSE 17B Fiorentina,8.0,5.0,2.0,1.0,29.0,20.0,9.0,17.0,2.125,79.6
+24,Lakota Futbol Club Lakota FC B17 Red,6.0,4.0,0.0,2.0,36.0,11.0,25.0,12.0,2.0,74.2
+25,Lawrenceburg Greendale Soccer Club LGSC B17 Predators,8.0,5.0,1.0,2.0,27.0,12.0,15.0,16.0,2.0,67.3
+26,Granville United FC Granville United FC 2018 Boys,8.0,5.0,1.0,2.0,5.5,3.63,1.25,16.0,2.0,65.4
+27,Grasshoppers FC Grasshoppers FC - 2018B Pool 2,6.0,4.0,0.0,2.0,3.0,2.0,1.0,12.0,2.0,64.7
+28,Total Futbol Academy(OH) TFA B17 Elite,6.0,4.0,0.0,2.0,20.0,19.0,1.0,12.0,2.0,64.7
+29,Club Oranje Club Oranje Raptors 2018 BU08 Oranje,8.0,5.0,0.0,3.0,3.5,3.13,0.37,15.0,1.88,60.0
+30,Sporting Columbus Sporting Columbus Boys 2018 I,8.0,5.0,0.0,3.0,3.0,3.13,-0.13,15.0,1.88,58.5
+31,Club Ohio West 18B Academy,7.0,4.0,1.0,2.0,2.86,2.57,0.29,13.0,1.86,59.3
+32,Cincinnati United CUSE 17B Everton,7.0,4.0,1.0,2.0,35.0,28.0,7.0,13.0,1.8571428571428568,73.3
+33,Cincy SC Cincy SC B17 Navy,6.0,3.0,2.0,1.0,27.0,16.0,11.0,11.0,1.8333333333333333,63.3
+34,Cincinnati United CUSM 17B Bologna,7.0,4.0,0.0,3.0,29.0,24.0,5.0,12.0,1.7142857142857142,70.0
+35,Lakota Futbol Club Lakota FC B17 White,7.0,3.0,3.0,1.0,22.0,16.0,6.0,12.0,1.7142857142857142,70.0
+36,Lawrenceburg Greendale Soccer Club LGSC B17 Tiger Fury,7.0,4.0,0.0,3.0,30.0,21.0,9.0,12.0,1.7142857142857142,70.0
+37,Cincinnati United CUSE 17B Chelsea,6.0,3.0,1.0,2.0,32.0,9.0,23.0,10.0,1.6666666666666667,65.4
+38,FC Storm FC Storm B17 Loveland Orange,6.0,3.0,1.0,2.0,26.0,11.0,15.0,10.0,1.6666666666666667,61.4
+39,Sporting Columbus Sporting Columbus Boys 2019,10.0,4.0,4.0,2.0,3.1,2.5,0.6,16.0,1.6,54.1
+40,Cincinnati Elite FC Cincinnati Elite FC B17 Elite,7.0,2.0,5.0,0.0,20.0,18.0,2.0,11.0,1.5714285714285714,57.7
+41,Mercury Mercury B18 Red,7.0,3.0,2.0,2.0,27.0,14.0,13.0,11.0,1.5714285714285714,57.2
+42,Locker Soccer Academy Locker Elite Cremonese 2018 Boys,7.0,3.0,2.0,2.0,4.71,4.43,0.29,11.0,1.57,52.5
+43,Kings Hammer New Albany KHJ1 New Albany B18,7.0,3.0,2.0,2.0,2.86,2.57,0.29,11.0,1.57,52.5
+44,Ohio Premier 2018 Boys Academy Dublin Grey,6.0,3.0,0.0,3.0,3.5,3.17,0.33,9.0,1.5,51.0
+45,Cincy SC Cincy SC B17 White,8.0,4.0,0.0,4.0,26.0,34.0,-8.0,12.0,1.5,35.0
+46,BSA Celtic 18B City,7.0,3.0,1.0,3.0,15.0,36.0,-21.0,10.0,1.43,39.4
+47,Cincy SC Cincy SC B17 Orange,7.0,3.0,1.0,3.0,28.0,30.0,-2.0,10.0,1.4285714285714286,42.3
+48,FC Storm FC Storm B17 IH Orange,7.0,3.0,1.0,3.0,20.0,22.0,-2.0,10.0,1.4285714285714286,42.3
+49,Cincinnati United CU Northwest 17B Atalanta,8.0,3.0,2.0,3.0,28.0,20.0,8.0,11.0,1.375,62.1
+50,Kings Hammer Soccer Club KHJR NKY B17-1,6.0,2.0,2.0,2.0,16.0,13.0,3.0,8.0,1.3333333333333333,55.1
+51,DSX Orange 2018,18.0,7.0,3.0,8.0,3.5,4.5,-1.0,24.0,1.3333333333333333,43.1
+52,SP Soccer Academy SP Soccer Academy 2018 Boys Blue,6.0,2.0,2.0,2.0,3.5,3.33,0.17,8.0,1.33,46.5
+53,Troy Rattlers B17/18,8.0,3.0,1.0,4.0,0.0,0.0,0.0,10.0,1.25,44.2
+54,Columbus United Columbus United B'18 Academy,6.0,2.0,1.0,3.0,2.33,3.83,-1.5,7.0,1.17,37.8
+55,Columbus Force SC Columbus Force 18B Blue,6.0,2.0,1.0,3.0,2.83,4.67,-1.84,7.0,1.17,36.8
+56,Kings Hammer Soccer Club KHJR CINCY B17-3,6.0,2.0,1.0,3.0,20.0,28.0,-8.0,7.0,1.1666666666666667,27.2
+57,Little Miami FC Little Miami FC 2018 Boys,8.0,3.0,0.0,5.0,25.0,48.0,-23.0,9.0,1.125,32.6
+58,Kings Hammer Soccer Club KHJR NKY B17-4,7.0,2.0,1.0,4.0,13.0,25.0,-12.0,7.0,1.0,33.2
+59,Northwest FC Northwest FC 2018B Academy Orange,6.0,2.0,0.0,4.0,3.0,5.0,-2.0,6.0,1.0,32.3
+60,Independence SC ISC B17 Koking,7.0,2.0,1.0,4.0,17.0,49.0,-32.0,7.0,1.0,24.6
+61,Elite FC Elite FC 2018 Boys Arsenal,8.0,2.0,1.0,5.0,1.38,3.0,-1.62,7.0,0.88,30.7
+62,Kings Hammer Soccer Club KHJR NKY B17-2,8.0,2.0,1.0,5.0,28.0,26.0,2.0,7.0,0.875,41.4
+63,Cincinnati United CULM 17B Aston Villa,8.0,2.0,1.0,5.0,15.0,26.0,-11.0,7.0,0.875,31.3
+64,Kolping SC Kolping SC B17/18 Orange,7.0,2.0,0.0,5.0,10.0,24.0,-14.0,6.0,0.8571428571428571,29.0
+65,Cincinnati United CUSE 17B Dortmund,7.0,1.0,3.0,3.0,16.0,19.0,-3.0,6.0,0.8571428571428571,26.0
+66,Cincinnati United CULM 17B Crystal Palace,7.0,1.0,3.0,3.0,11.0,20.0,-9.0,6.0,0.8571428571428571,20.0
+67,FC Storm FC Storm B17 IH White,7.0,1.0,3.0,3.0,13.0,19.0,-6.0,6.0,0.8571428571428571,20.0
+68,Worthington United Worthington United 94 2018 Boys Red,6.0,1.0,2.0,3.0,3.5,4.5,-0.67,5.0,0.83,32.4
+69,BSA Celtic 18B United,8.0,1.0,3.0,4.0,14.0,19.0,-5.0,6.0,0.75,17.5
+70,FC Storm FC Storm B17 Loveland White,7.0,1.0,2.0,4.0,14.0,29.0,-15.0,5.0,0.7142857142857143,25.2
+71,Cincinnati West CWSC B17 Academy Elite,7.0,1.0,2.0,4.0,12.0,30.0,-18.0,5.0,0.7142857142857143,24.0
+72,FC Dayton FC Dayton B17 Elite,7.0,1.0,2.0,4.0,10.0,36.0,-26.0,5.0,0.7142857142857143,20.5
+73,Cincinnati United CUSM 17B Cagliari,7.0,1.0,2.0,4.0,18.0,28.0,-10.0,5.0,0.7142857142857143,16.7
+74,Kings Hammer Soccer Club KHJR NKY B17-3,7.0,1.0,2.0,4.0,26.0,36.0,-10.0,5.0,0.7142857142857143,16.7
+75,Club Ohio Club Ohio East 19B Academy,6.0,1.0,1.0,4.0,3.0,4.5,-1.5,4.0,0.67,26.1
+76,Cincinnati United CUSM 17B Dinamo Zagreb,6.0,1.0,1.0,4.0,13.0,26.0,-13.0,4.0,0.6666666666666666,24.1
+77,Fairfield Optimist Soccer Club FOSC B17 Red,6.0,1.0,1.0,4.0,11.0,30.0,-19.0,4.0,0.6666666666666666,21.1
+78,Cincy SC Cincy SC B17 Elite,7.0,0.0,4.0,3.0,18.0,25.0,-7.0,4.0,0.5714285714285714,13.3
+79,Cincinnati United CUSE 17B Granada,8.0,1.0,1.0,6.0,8.0,27.0,-19.0,4.0,0.5,19.5
+80,FC Storm FC Storm B17 Loveland Blue,6.0,1.0,0.0,5.0,7.0,26.0,-19.0,3.0,0.5,17.2
+81,Cincinnati United CULM 17B Bournemouth,6.0,0.0,3.0,3.0,9.0,29.0,-20.0,3.0,0.5,16.7
+82,Barcelona United Barcelona United Elite 18B,6.0,1.0,0.0,5.0,1.67,6.17,-4.5,3.0,0.5,13.2
+83,Club Ohio Club Ohio West 19B Academy,7.0,1.0,0.0,6.0,1.57,3.43,-1.86,3.0,0.43,19.5
+84,Lakota Futbol Club LFC B18 Red,7.0,1.0,0.0,6.0,15.0,34.0,-19.0,3.0,0.4285714285714285,16.9
+85,Mercury Mercury B17 West,7.0,1.0,0.0,6.0,14.0,37.0,-23.0,3.0,0.4285714285714285,15.1
+86,Oak Hills Youth Athletics Oak Hills Premier Boys 2018,8.0,1.0,0.0,7.0,11.0,54.0,-43.0,3.0,0.375,8.8
+87,FC Dayton FC Dayton B17 Navy,7.0,0.0,2.0,5.0,4.0,56.0,-52.0,2.0,0.2857142857142857,6.7
+88,Mercury Mercury B17 Red,8.0,0.0,2.0,6.0,8.0,40.0,-32.0,2.0,0.25,8.8
+89,Kings Hammer Soccer Club KHJR CINCY B17-1,8.0,0.0,2.0,6.0,8.0,58.0,-50.0,2.0,0.25,5.8
+90,Eclipse FC Eclipse FC Beasts,6.0,0.0,1.0,5.0,8.0,25.0,-17.0,1.0,0.1666666666666666,10.4
+91,Warrior White B17/18,8.0,0.0,1.0,7.0,0.0,0.0,0.0,1.0,0.13,18.0
+92,Worthington United Worthington United 94 2018 Boys White,7.0,0.0,0.0,7.0,1.14,3.43,-2.29,0.0,0.0,8.1
+93,FC Storm FC Storm B17 Loveland Black,6.0,0.0,0.0,6.0,4.0,42.0,-38.0,0.0,0.0,0.0

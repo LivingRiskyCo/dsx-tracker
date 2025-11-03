@@ -146,6 +146,14 @@ def main():
         "comprehensive_opponents_coverage.py",
         "Comprehensive Opponents Coverage Analysis"
     ))
+    
+    # 11. Discover Ohio Tournaments (Optional - run manually for new discoveries)
+    # Uncomment to enable automatic tournament discovery
+    # WARNING: This scans many event IDs and may take 10-30 minutes
+    # updates.append(run_script(
+    #     "discover_ohio_tournaments_2018_boys.py",
+    #     "Ohio Tournament Discovery - 2018 Boys Teams (Optional)"
+    # ))
 
     # Print Summary
     print("\n" + "="*70)
