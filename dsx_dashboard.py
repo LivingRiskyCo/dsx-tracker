@@ -6137,41 +6137,68 @@ elif page == "📊 Team Analysis":
                 
                 # Only create basic opponent entry if NOT matched to division data
                 if not matched_to_division and opp not in teams_with_data:
-                    # Create a basic opponent entry with limited data
-                    opp_matches = matches[matches['Opponent'] == opp]
-                    opp_w = len(opp_matches[opp_matches['Outcome'] == 'W'])
-                    opp_d = len(opp_matches[opp_matches['Outcome'] == 'D'])
-                    opp_l = len(opp_matches[opp_matches['Outcome'] == 'L'])
-                    opp_gf = opp_matches['GF'].sum()
-                    opp_ga = opp_matches['GA'].sum()
-                    opp_gd = opp_gf - opp_ga
-                    opp_pts = (opp_w * 3) + opp_d
-                    opp_gp = len(opp_matches)
-                    opp_ppg = opp_pts / opp_gp if opp_gp > 0 else 0
-                    opp_gf_pg = opp_gf / opp_gp if opp_gp > 0 else 0
-                    opp_ga_pg = opp_ga / opp_gp if opp_gp > 0 else 0
-                    opp_gd_pg = opp_gd / opp_gp if opp_gp > 0 else 0
+                    # Try to get stats from extracted matches first
+                    extracted_stats = None
+                    try:
+                        extracted_matches = pd.read_csv('Opponents_of_Opponents_Matches_Expanded.csv')
+                        if not extracted_matches.empty:
+                            extracted_stats = calculate_team_stats_from_extracted_matches(extracted_matches, opp)
+                    except:
+                        pass
                     
-                    # Calculate basic strength index
-                    ppg_norm = max(0.0, min(3.0, opp_ppg)) / 3.0 * 100.0
-                    gdpg_norm = (max(-5.0, min(5.0, opp_gd_pg)) + 5.0) / 10.0 * 100.0
-                    opp_strength = round(0.7 * ppg_norm + 0.3 * gdpg_norm, 1)
-                    
-                    opp_row = pd.DataFrame([{
-                        'Team': opp,
-                        'Rank': 999,  # Not in tracked division
-                        'StrengthIndex': opp_strength,
-                        'W': opp_w,
-                        'L': opp_l,
-                        'D': opp_d,
-                        'GF': opp_gf_pg,
-                        'GA': opp_ga_pg,
-                        'GD': opp_gd_pg,
-                        'PPG': opp_ppg,
-                        'GP': opp_gp,
-                        'League/Division': 'DSX Opponent (Limited Data)',
-                        'SourceURL': 'DSX_Matches_Fall2025.csv'
-                    }])
+                    # Use extracted stats if available, otherwise use DSX match history only
+                    if extracted_stats:
+                        opp_row = pd.DataFrame([{
+                            'Team': opp,
+                            'Rank': 998,  # Extracted match data
+                            'StrengthIndex': extracted_stats['StrengthIndex'],
+                            'W': extracted_stats['W'],
+                            'L': extracted_stats['L'],
+                            'D': extracted_stats['D'],
+                            'GF': extracted_stats['GF'],
+                            'GA': extracted_stats['GA'],
+                            'GD': extracted_stats['GD'],
+                            'PPG': extracted_stats['PPG'],
+                            'GP': extracted_stats['GP'],
+                            'League/Division': f"Extracted Match Data ({extracted_stats['MatchCount']} games)",
+                            'SourceURL': 'Opponents_of_Opponents_Matches_Expanded.csv'
+                        }])
+                    else:
+                        # Fallback to DSX match history only
+                        opp_matches = matches[matches['Opponent'] == opp]
+                        opp_w = len(opp_matches[opp_matches['Outcome'] == 'W'])
+                        opp_d = len(opp_matches[opp_matches['Outcome'] == 'D'])
+                        opp_l = len(opp_matches[opp_matches['Outcome'] == 'L'])
+                        opp_gf = opp_matches['GF'].sum()
+                        opp_ga = opp_matches['GA'].sum()
+                        opp_gd = opp_gf - opp_ga
+                        opp_pts = (opp_w * 3) + opp_d
+                        opp_gp = len(opp_matches)
+                        opp_ppg = opp_pts / opp_gp if opp_gp > 0 else 0
+                        opp_gf_pg = opp_gf / opp_gp if opp_gp > 0 else 0
+                        opp_ga_pg = opp_ga / opp_gp if opp_gp > 0 else 0
+                        opp_gd_pg = opp_gd / opp_gp if opp_gp > 0 else 0
+                        
+                        # Calculate basic strength index
+                        ppg_norm = max(0.0, min(3.0, opp_ppg)) / 3.0 * 100.0
+                        gdpg_norm = (max(-5.0, min(5.0, opp_gd_pg)) + 5.0) / 10.0 * 100.0
+                        opp_strength = round(0.7 * ppg_norm + 0.3 * gdpg_norm, 1)
+                        
+                        opp_row = pd.DataFrame([{
+                            'Team': opp,
+                            'Rank': 999,  # Not in tracked division
+                            'StrengthIndex': opp_strength,
+                            'W': opp_w,
+                            'L': opp_l,
+                            'D': opp_d,
+                            'GF': opp_gf_pg,
+                            'GA': opp_ga_pg,
+                            'GD': opp_gd_pg,
+                            'PPG': opp_ppg,
+                            'GP': opp_gp,
+                            'League/Division': 'DSX Opponent (Limited Data)',
+                            'SourceURL': 'DSX_Matches_Fall2025.csv'
+                        }])
                     
                     df = pd.concat([df, opp_row], ignore_index=True)
                     teams_with_data.append(opp)
@@ -7254,7 +7281,24 @@ elif page == "📊 Benchmarking":
                     if 'GA' in opp_stats:
                         st.write(f"**Against/Game:** {opp_stats['GA']:.2f}")
                 else:
+                    # Try extracted matches as fallback
                     opp_stats = None
+                    try:
+                        extracted_matches = pd.read_csv('Opponents_of_Opponents_Matches_Expanded.csv')
+                        if not extracted_matches.empty:
+                            extracted_stats = calculate_team_stats_from_extracted_matches(extracted_matches, selected_team_name)
+                            if extracted_stats:
+                                opp_stats = extracted_stats
+                                st.success(f"✅ Using {extracted_stats['MatchCount']} games from opponent-of-opponent tracking")
+                                st.write(f"**Strength Index:** {extracted_stats['StrengthIndex']:.1f}")
+                                st.write(f"**PPG:** {extracted_stats['PPG']:.2f}")
+                                st.write(f"**Goals/Game:** {extracted_stats['GF']:.2f}")
+                                st.write(f"**Against/Game:** {extracted_stats['GA']:.2f}")
+                    except:
+                        pass
+                    
+                    if opp_stats is None:
+                        opp_stats = None
             else:
                 st.warning("No opponent data available")
                 opp_stats = None
@@ -8183,8 +8227,51 @@ elif page == "📋 Full Analysis":
     all_divs = load_division_data()
     dsx_si = dsx_stats['StrengthIndex']
     
+    # Try to enhance with extracted matches for opponents not in division data
+    try:
+        extracted_matches = pd.read_csv('Opponents_of_Opponents_Matches_Expanded.csv')
+        if not extracted_matches.empty:
+            # Get DSX opponents that might not be in division data
+            try:
+                dsx_matches = pd.read_csv("DSX_Matches_Fall2025.csv")
+                dsx_opponents = dsx_matches['Opponent'].dropna().unique()
+                
+                for opp in dsx_opponents:
+                    # Check if opponent is already in all_divs
+                    if all_divs.empty or opp not in all_divs['Team'].tolist():
+                        # Try to get stats from extracted matches
+                        extracted_stats = calculate_team_stats_from_extracted_matches(extracted_matches, opp)
+                        if extracted_stats:
+                            # Add to all_divs
+                            opp_row = pd.DataFrame([{
+                                'Team': opp,
+                                'Rank': 998,
+                                'StrengthIndex': extracted_stats['StrengthIndex'],
+                                'W': extracted_stats['W'],
+                                'L': extracted_stats['L'],
+                                'D': extracted_stats['D'],
+                                'GF': extracted_stats['GF'],
+                                'GA': extracted_stats['GA'],
+                                'GD': extracted_stats['GD'],
+                                'PPG': extracted_stats['PPG'],
+                                'GP': extracted_stats['GP'],
+                                'League/Division': f"Extracted Match Data ({extracted_stats['MatchCount']} games)",
+                                'SourceURL': 'Opponents_of_Opponents_Matches_Expanded.csv'
+                            }])
+                            if all_divs.empty:
+                                all_divs = opp_row
+                            else:
+                                all_divs = pd.concat([all_divs, opp_row], ignore_index=True)
+            except:
+                pass
+    except:
+        pass
+    
     # Calculate strength differences
-    all_divs['SI_Diff'] = dsx_si - all_divs['StrengthIndex']
+    if not all_divs.empty:
+        all_divs['SI_Diff'] = dsx_si - all_divs['StrengthIndex']
+    else:
+        all_divs['SI_Diff'] = []
     
     # Categorize teams
     should_beat = all_divs[all_divs['SI_Diff'] > 10].sort_values('StrengthIndex', ascending=False)
