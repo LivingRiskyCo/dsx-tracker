@@ -6103,19 +6103,26 @@ elif page == "📊 Ohio U8/U9 Rankings":
             rankings_df = rankings_df.sort_values(['PPG', 'StrengthIndex'], ascending=[False, False])
             rankings_df['Rank'] = range(1, len(rankings_df) + 1)
             
-            # View selector
+            # View selector - default to showing all teams
             view_option = st.selectbox(
                 "View:",
-                ["Top 50 Teams", f"All Teams ({len(rankings_df)} teams)"],
+                [f"All Teams ({len(rankings_df)} teams)", "Top 50 Teams", "Top 25 Teams", "Top 10 Teams"],
+                index=0,  # Default to "All Teams"
                 key="u8_u9_view_selector"
             )
             
-            if view_option == "Top 50 Teams":
+            if "Top 50" in view_option:
                 display_df = rankings_df.head(50).copy()
                 st.header(f"🏆 Top 50 {age_label} Teams")
+            elif "Top 25" in view_option:
+                display_df = rankings_df.head(25).copy()
+                st.header(f"🏆 Top 25 {age_label} Teams")
+            elif "Top 10" in view_option:
+                display_df = rankings_df.head(10).copy()
+                st.header(f"🏆 Top 10 {age_label} Teams")
             else:
                 display_df = rankings_df.copy()
-                st.header(f"🏆 All {age_label} Teams")
+                st.header(f"🏆 Complete {age_label} Rankings - {len(rankings_df)} Teams")
             
             st.caption(f"Ranked by Points Per Game (PPG), then Strength Index. Last updated: {datetime.now().strftime('%Y-%m-%d %H:%M')}")
             
