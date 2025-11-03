@@ -111,17 +111,17 @@ if all_divisions:
     print(f"[OK] Created {output_file_6plus}")
     print(f"   Total teams (6+ games): {len(teams_6plus)}")
     
-    # Find DSX position
+    # Find DSX position in 2018 rankings
     if dsx_row:
-        dsx_ranked = combined[combined['Team'].str.contains('DSX', case=False, na=False)]
-        if not dsx_ranked.empty:
-            dsx_rank = int(dsx_ranked.iloc[0]['Rank'])
-            print(f"\nDSX Position: #{dsx_rank} of {len(combined)} teams (3+ games)")
+        dsx_ranked_2018 = teams_2018[teams_2018['Team'].str.contains('DSX', case=False, na=False)]
+        if not dsx_ranked_2018.empty:
+            dsx_rank_2018 = int(dsx_ranked_2018.iloc[0]['Rank'])
+            print(f"\nDSX Position (2018 teams): #{dsx_rank_2018} of {len(teams_2018)} teams (3+ games)")
             
-            dsx_6plus = teams_6plus[teams_6plus['Team'].str.contains('DSX', case=False, na=False)]
-            if not dsx_6plus.empty:
-                dsx_rank_6plus = int(dsx_6plus.iloc[0]['Rank'])
-                print(f"DSX Position (6+ games): #{dsx_rank_6plus} of {len(teams_6plus)} teams")
+            dsx_2018_6plus = teams_2018_6plus[teams_2018_6plus['Team'].str.contains('DSX', case=False, na=False)]
+            if not dsx_2018_6plus.empty:
+                dsx_rank_2018_6plus = int(dsx_2018_6plus.iloc[0]['Rank'])
+                print(f"DSX Position (2018 teams, 6+ games): #{dsx_rank_2018_6plus} of {len(teams_2018_6plus)} teams")
     
     print()
     print("[OK] Rankings CSV files created successfully!")

@@ -1422,10 +1422,10 @@ if page == "🎯 What's Next":
                 pass
             
             for idx, game in upcoming_games.head(5).iterrows():
-            opponent = game['Opponent']
-            game_date = game['Date']
-            location = game['Location']
-            league = game.get('Tournament', game.get('League', 'N/A'))
+                opponent = game['Opponent']
+                game_date = game['Date']
+                location = game['Location']
+                league = game.get('Tournament', game.get('League', 'N/A'))
             
             with st.expander(f"**{game_date}**: {opponent} ({league})", expanded=(idx==0)):
                 col1, col2 = st.columns([2, 3])
