@@ -1426,27 +1426,27 @@ if page == "🎯 What's Next":
                 game_date = game['Date']
                 location = game['Location']
                 league = game.get('Tournament', game.get('League', 'N/A'))
-            
-            with st.expander(f"**{game_date}**: {opponent} ({league})", expanded=(idx==0)):
-                col1, col2 = st.columns([2, 3])
                 
-                with col1:
-                    st.subheader("📍 Game Info")
-                    st.write(f"**Date:** {game_date}")
-                    st.write(f"**Location:** {location}")
-                    st.write(f"**League:** {league}")
-                    st.write(f"**Notes:** {game.get('Notes', 'N/A')}")
-                
-                with col2:
+                with st.expander(f"**{game_date}**: {opponent} ({league})", expanded=(idx==0)):
+                    col1, col2 = st.columns([2, 3])
+                    
+                    with col1:
+                        st.subheader("📍 Game Info")
+                        st.write(f"**Date:** {game_date}")
+                        st.write(f"**Location:** {location}")
+                        st.write(f"**League:** {league}")
+                        st.write(f"**Notes:** {game.get('Notes', 'N/A')}")
+                    
+                    with col2:
                         st.subheader("🎯 Head-to-Head Prediction")
-                    
+                        
                         # Get opponent stats from consolidated division data (with alias + fuzzy matching)
-                    opp_si = None
-                    opp_gf = None
-                    opp_ga = None
+                        opp_si = None
+                        opp_gf = None
+                        opp_ga = None
                         opp_gp = 1
-                    
-                    if not all_divisions_df.empty:
+                        
+                        if not all_divisions_df.empty:
                             # Apply alias first
                             opponent_alias = resolve_alias(opponent)
                             # Try exact match first
@@ -1489,21 +1489,21 @@ if page == "🎯 What's Next":
                             # Calculate per-game stats
                             opp_gp = team.get('GP', 1)
                             opp_gp = opp_gp if opp_gp > 0 else 1
-                                
-                                # Check if GF/GA are totals or per-game already
-                                gf_val = team.get('GF', 0)
-                                ga_val = team.get('GA', 0)
-                                
-                                # If GF > 10, likely totals (divide by GP), otherwise might be per-game
-                                if gf_val > 10:
-                                    opp_gf = gf_val / opp_gp if opp_gp > 0 else 0
-                                else:
-                                    opp_gf = gf_val
-                                
-                                if ga_val > 10:
-                                    opp_ga = ga_val / opp_gp if opp_gp > 0 else 0
-                                else:
-                                    opp_ga = ga_val
+                            
+                            # Check if GF/GA are totals or per-game already
+                            gf_val = team.get('GF', 0)
+                            ga_val = team.get('GA', 0)
+                            
+                            # If GF > 10, likely totals (divide by GP), otherwise might be per-game
+                            if gf_val > 10:
+                                opp_gf = gf_val / opp_gp if opp_gp > 0 else 0
+                            else:
+                                opp_gf = gf_val
+                            
+                            if ga_val > 10:
+                                opp_ga = ga_val / opp_gp if opp_gp > 0 else 0
+                            else:
+                                opp_ga = ga_val
                     
                     if opp_si is not None:
                         # Enhanced Strength Index display
@@ -4522,10 +4522,122 @@ elif page == "🏆 Division Rankings":
     st.markdown("---")
     st.header("📊 Comprehensive Rankings")
     
-    # Load comprehensive rankings
-    ranking_tabs = st.tabs(["All Teams (3+ games)", "Top Teams (6+ games)"])
+    # Load comprehensive rankings - separated by year
+    ranking_tabs = st.tabs(["2018 Teams (3+ games)", "2018 Teams (6+ games)", "2017 Teams (3+ games)", "All Teams Combined"])
     
-    with ranking_tabs[0]:
+    with ranking_tabs[0]:  # 2018 Teams (3+ games)
+        if os.path.exists("Rankings_2018_Teams_3Plus_Games.csv"):
+            try:
+                rankings_2018 = pd.read_csv("Rankings_2018_Teams_3Plus_Games.csv", index_col=False)
+                
+                # Find DSX position
+                dsx_row = rankings_2018[rankings_2018['Team'].str.contains('DSX', case=False, na=False)]
+                if not dsx_row.empty:
+                    dsx_rank = int(dsx_row.iloc[0]['Rank'])
+                    total_teams = len(rankings_2018)
+                    
+                    st.metric("DSX Position", f"#{dsx_rank} of {total_teams} teams", 
+                             f"PPG: {dsx_row.iloc[0]['PPG']:.2f}, SI: {dsx_row.iloc[0]['StrengthIndex']:.1f}")
+                    st.caption("2018 teams with 3+ games (includes tournament teams)")
+                
+                # Display rankings table
+                st.subheader(f"📋 2018 Teams Rankings ({len(rankings_2018)} teams)")
+                
+                # Format for display
+                display_df = rankings_2018.copy()
+                display_df['Team'] = display_df.apply(
+                    lambda row: f"🟢 **{row['Team']}**" if 'DSX' in str(row['Team']) else row['Team'],
+                    axis=1
+                )
+                
+                st.dataframe(
+                    display_df[['Rank', 'Team', 'GP', 'W', 'L', 'D', 'GF', 'GA', 'GD', 'PPG', 'StrengthIndex']],
+                    use_container_width=True,
+                    hide_index=True,
+                    column_config={
+                        "Rank": st.column_config.NumberColumn("Rank", format="%d"),
+                        "Team": st.column_config.TextColumn("Team"),
+                        "GP": st.column_config.NumberColumn("GP", help="Games Played"),
+                        "PPG": st.column_config.NumberColumn("PPG", help="Points Per Game", format="%.2f"),
+                        "StrengthIndex": st.column_config.ProgressColumn("Strength", format="%.1f", min_value=0, max_value=100),
+                    }
+                )
+            except Exception as e:
+                st.error(f"Error loading 2018 rankings: {e}")
+        else:
+            st.warning("2018 rankings file not found. Click 'Refresh Rankings Data' to generate it.")
+    
+    with ranking_tabs[1]:  # 2018 Teams (6+ games)
+        if os.path.exists("Rankings_2018_Teams_6Plus_Games.csv"):
+            try:
+                rankings_2018_6plus = pd.read_csv("Rankings_2018_Teams_6Plus_Games.csv", index_col=False)
+                
+                # Find DSX position
+                dsx_row = rankings_2018_6plus[rankings_2018_6plus['Team'].str.contains('DSX', case=False, na=False)]
+                if not dsx_row.empty:
+                    dsx_rank = int(dsx_row.iloc[0]['Rank'])
+                    total_teams = len(rankings_2018_6plus)
+                    
+                    st.metric("DSX Position", f"#{dsx_rank} of {total_teams} teams", 
+                             f"PPG: {dsx_row.iloc[0]['PPG']:.2f}, SI: {dsx_row.iloc[0]['StrengthIndex']:.1f}")
+                    st.caption("2018 teams with 6+ games (most accurate - full league seasons)")
+                
+                # Display rankings table
+                st.subheader(f"🏆 2018 Teams Rankings - 6+ Games ({len(rankings_2018_6plus)} teams)")
+                
+                # Format for display
+                display_df = rankings_2018_6plus.copy()
+                display_df['Team'] = display_df.apply(
+                    lambda row: f"🟢 **{row['Team']}**" if 'DSX' in str(row['Team']) else row['Team'],
+                    axis=1
+                )
+                
+                st.dataframe(
+                    display_df[['Rank', 'Team', 'GP', 'W', 'L', 'D', 'GF', 'GA', 'GD', 'PPG', 'StrengthIndex']],
+                    use_container_width=True,
+                    hide_index=True,
+                    column_config={
+                        "Rank": st.column_config.NumberColumn("Rank", format="%d"),
+                        "Team": st.column_config.TextColumn("Team"),
+                        "GP": st.column_config.NumberColumn("GP", help="Games Played"),
+                        "PPG": st.column_config.NumberColumn("PPG", help="Points Per Game", format="%.2f"),
+                        "StrengthIndex": st.column_config.ProgressColumn("Strength", format="%.1f", min_value=0, max_value=100),
+                    }
+                )
+            except Exception as e:
+                st.error(f"Error loading 2018 rankings (6+ games): {e}")
+        else:
+            st.warning("2018 rankings (6+ games) file not found. Click 'Refresh Rankings Data' to generate it.")
+    
+    with ranking_tabs[2]:  # 2017 Teams (3+ games)
+        if os.path.exists("Rankings_2017_Teams_3Plus_Games.csv"):
+            try:
+                rankings_2017 = pd.read_csv("Rankings_2017_Teams_3Plus_Games.csv", index_col=False)
+                
+                st.metric("Total Teams", len(rankings_2017), "2017 and 17/18 teams")
+                st.caption("2017 teams with 3+ games (includes 17/18 mixed-age teams)")
+                
+                # Display rankings table
+                st.subheader(f"📋 2017 Teams Rankings ({len(rankings_2017)} teams)")
+                
+                st.dataframe(
+                    rankings_2017[['Rank', 'Team', 'GP', 'W', 'L', 'D', 'GF', 'GA', 'GD', 'PPG', 'StrengthIndex']],
+                    use_container_width=True,
+                    hide_index=True,
+                    column_config={
+                        "Rank": st.column_config.NumberColumn("Rank", format="%d"),
+                        "Team": st.column_config.TextColumn("Team"),
+                        "GP": st.column_config.NumberColumn("GP", help="Games Played"),
+                        "PPG": st.column_config.NumberColumn("PPG", help="Points Per Game", format="%.2f"),
+                        "StrengthIndex": st.column_config.ProgressColumn("Strength", format="%.1f", min_value=0, max_value=100),
+                    }
+                )
+            except Exception as e:
+                st.error(f"Error loading 2017 rankings: {e}")
+        else:
+            st.warning("2017 rankings file not found. Click 'Refresh Rankings Data' to generate it.")
+    
+    with ranking_tabs[3]:  # All Teams Combined
         if os.path.exists("Comprehensive_All_Teams_Rankings.csv"):
             try:
                 all_rankings = pd.read_csv("Comprehensive_All_Teams_Rankings.csv", index_col=False)
@@ -4538,10 +4650,10 @@ elif page == "🏆 Division Rankings":
                     
                     st.metric("DSX Position", f"#{dsx_rank} of {total_teams} teams", 
                              f"PPG: {dsx_row.iloc[0]['PPG']:.2f}, SI: {dsx_row.iloc[0]['StrengthIndex']:.1f}")
-                    st.caption("All teams with 3+ games (includes tournament teams)")
+                    st.caption("All teams (2018 + 2017) with 3+ games")
                 
                 # Display rankings table
-                st.subheader(f"📋 Complete Rankings ({len(all_rankings)} teams)")
+                st.subheader(f"📋 All Teams Rankings ({len(all_rankings)} teams)")
                 
                 # Format for display
                 display_df = all_rankings.copy()
@@ -4566,48 +4678,6 @@ elif page == "🏆 Division Rankings":
                 st.error(f"Error loading comprehensive rankings: {e}")
         else:
             st.warning("Comprehensive rankings file not found. Click 'Refresh Rankings Data' to generate it.")
-    
-    with ranking_tabs[1]:
-        if os.path.exists("Top_93_Teams_Rankings_6Plus_Games.csv"):
-            try:
-                top_rankings = pd.read_csv("Top_93_Teams_Rankings_6Plus_Games.csv", index_col=False)
-                
-                # Find DSX position
-                dsx_row = top_rankings[top_rankings['Team'].str.contains('DSX', case=False, na=False)]
-                if not dsx_row.empty:
-                    dsx_rank = int(dsx_row.iloc[0]['Rank'])
-                    total_teams = len(top_rankings)
-                    
-                    st.metric("DSX Position", f"#{dsx_rank} of {total_teams} teams", 
-                             f"PPG: {dsx_row.iloc[0]['PPG']:.2f}, SI: {dsx_row.iloc[0]['StrengthIndex']:.1f}")
-                    st.caption("Most accurate rankings - teams with 6+ games (full league seasons)")
-                
-                # Display rankings table
-                st.subheader(f"🏆 Top {len(top_rankings)} Teams (6+ games - Most Accurate)")
-                
-                # Format for display
-                display_df = top_rankings.copy()
-                display_df['Team'] = display_df.apply(
-                    lambda row: f"🟢 **{row['Team']}**" if 'DSX' in str(row['Team']) else row['Team'],
-                    axis=1
-                )
-                
-                st.dataframe(
-                    display_df[['Rank', 'Team', 'GP', 'W', 'L', 'D', 'GF', 'GA', 'GD', 'PPG', 'StrengthIndex']],
-                    use_container_width=True,
-                    hide_index=True,
-                    column_config={
-                        "Rank": st.column_config.NumberColumn("Rank", format="%d"),
-                        "Team": st.column_config.TextColumn("Team"),
-                        "GP": st.column_config.NumberColumn("GP", help="Games Played"),
-                        "PPG": st.column_config.NumberColumn("PPG", help="Points Per Game", format="%.2f"),
-                        "StrengthIndex": st.column_config.ProgressColumn("Strength", format="%.1f", min_value=0, max_value=100),
-                    }
-                )
-            except Exception as e:
-                st.error(f"Error loading top rankings: {e}")
-        else:
-            st.warning("Top rankings file not found. Click 'Refresh Rankings Data' to generate it.")
     
     st.markdown("---")
     
