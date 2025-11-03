@@ -3037,8 +3037,8 @@ elif page == "🎮 Live Game Tracker":
                             })
                     
                     if lineup_data:
-                    lineup_df = pd.DataFrame(lineup_data)
-                    lineup_df.to_csv("current_lineup.csv", index=False)
+                        lineup_df = pd.DataFrame(lineup_data)
+                        lineup_df.to_csv("current_lineup.csv", index=False)
                         st.success(f"✅ Lineup saved! ({len(lineup_data)} players)")
                     else:
                         st.warning("⚠️ No players selected to save!")
@@ -3059,7 +3059,7 @@ elif page == "🎮 Live Game Tracker":
                             loaded_count = 0
                             saved_positions = saved_lineup['Position'].tolist() if 'Position' in saved_lineup.columns else []
                             
-                        for _, row in saved_lineup.iterrows():
+                            for _, row in saved_lineup.iterrows():
                                 if row.get('Status') == 'Starting' or 'Status' not in row:
                                     saved_pos = str(row.get('Position', ''))
                                     saved_player = str(row.get('Player', ''))
@@ -3070,11 +3070,11 @@ elif page == "🎮 Live Game Tracker":
                                         loaded_count += 1
                                     else:
                                         # Position doesn't exist in current formation - find first empty position
-                                for pos in positions:
-                                    if st.session_state.lineup.get(pos) is None:
+                                        for pos in positions:
+                                            if st.session_state.lineup.get(pos) is None:
                                                 st.session_state.lineup[pos] = saved_player
                                                 loaded_count += 1
-                                        break
+                                                break
                             
                             if loaded_count > 0:
                                 # Check if saved formation matches current formation
@@ -3386,21 +3386,21 @@ elif page == "🎮 Live Game Tracker":
                 game_is_locked = False
         
         # Auto-save every 15 seconds for live viewing (non-blocking)
-            if 'last_auto_save' not in st.session_state:
+        if 'last_auto_save' not in st.session_state:
             st.session_state.last_auto_save = current_time
         if current_time - st.session_state.last_auto_save > 15:
-                save_live_game_state()
+            save_live_game_state()
             st.session_state.last_auto_save = current_time
         
         # Check if half is complete
         if st.session_state.timer_running and st.session_state.time_remaining <= 0:
-                st.session_state.timer_running = False
+            st.session_state.timer_running = False
             st.session_state.timer_start_time = None
             st.session_state.total_paused_time = 0
             st.session_state.pause_start_time = None
-                save_live_game_state()
-                st.balloons()
-                st.success(f"{half_text} Complete!")
+            save_live_game_state()
+            st.balloons()
+            st.success(f"{half_text} Complete!")
         
         # Auto-sync timer state with Python (JavaScript handles smooth countdown)
         # Only sync periodically to avoid excessive Streamlit reruns
@@ -3609,34 +3609,34 @@ elif page == "🎮 Live Game Tracker":
                 st.success(f"✅ Location: {st.session_state.shot_location}")
             
         st.markdown("---")
-            
-            # Notes (optional)
-            if 'shot_notes' not in st.session_state:
-                st.session_state.shot_notes = ""
-            notes = st.text_input("Notes (optional)", value=st.session_state.shot_notes, key="shot_notes_input")
-            if notes != st.session_state.shot_notes:
-                st.session_state.shot_notes = notes
-            
-            st.markdown("---")
-            
-            # Close button (no RECORD button needed - auto-saves on each selection)
-            if st.button("✅ Done / Close", use_container_width=True, type="primary", key="close_shot_btn"):
-                # Final update before closing
-                if st.session_state.shot_player:
-                    _update_last_shot_event()
-                    save_live_game_state()
-                # Reset selections
-                st.session_state.shot_player = None
-                st.session_state.shot_outcome = None
-                st.session_state.shot_type = None
-                st.session_state.shot_location = None
-                st.session_state.shot_notes = ""
-                st.session_state.show_shot_dialog = False
-                if 'last_timer_refresh' in st.session_state:
-                    st.session_state.last_timer_refresh = time.time()
-                st.rerun()
         
-            st.markdown('</div>', unsafe_allow_html=True)
+        # Notes (optional)
+        if 'shot_notes' not in st.session_state:
+            st.session_state.shot_notes = ""
+        notes = st.text_input("Notes (optional)", value=st.session_state.shot_notes, key="shot_notes_input")
+        if notes != st.session_state.shot_notes:
+            st.session_state.shot_notes = notes
+        
+        st.markdown("---")
+        
+        # Close button (no RECORD button needed - auto-saves on each selection)
+        if st.button("✅ Done / Close", use_container_width=True, type="primary", key="close_shot_btn"):
+            # Final update before closing
+            if st.session_state.shot_player:
+                _update_last_shot_event()
+                save_live_game_state()
+            # Reset selections
+            st.session_state.shot_player = None
+            st.session_state.shot_outcome = None
+            st.session_state.shot_type = None
+            st.session_state.shot_location = None
+            st.session_state.shot_notes = ""
+            st.session_state.show_shot_dialog = False
+            if 'last_timer_refresh' in st.session_state:
+                st.session_state.last_timer_refresh = time.time()
+            st.rerun()
+        
+        st.markdown('</div>', unsafe_allow_html=True)
         
         # Pass dialog
         if 'show_pass_dialog' in st.session_state and st.session_state.show_pass_dialog:
@@ -5352,7 +5352,7 @@ elif page == "🏆 Division Rankings":
                 
                 if opponent_df.empty:
                     opponent_df = opp_row.copy()
-                            else:
+                else:
                     opponent_df = pd.concat([opponent_df, opp_row], ignore_index=True)
     
     # Show matching summary (collapsed by default)
@@ -5370,7 +5370,7 @@ elif page == "🏆 Division Rankings":
                     for orig, matched in matched_opponents.items():
                         if orig == matched:
                             st.write(f"  ✅ {orig}")
-            else:
+                        else:
                             st.write(f"  ⚠️ {orig} → {matched} (fuzzy match)")
                 
                 # Show unmatched
