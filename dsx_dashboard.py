@@ -5449,9 +5449,10 @@ elif page == "🏆 Division Rankings":
                     if opp_name not in matched_opponents:
                         matched_opponents[opp_name] = row['Team']
                         if opponent_df.empty:
-                            opponent_df = df.iloc[[idx]].copy()
+                            # Use row as Series instead of iloc to avoid index issues
+                            opponent_df = pd.DataFrame([row]).copy()
                         else:
-                            opponent_df = pd.concat([opponent_df, df.iloc[[idx]]], ignore_index=True)
+                            opponent_df = pd.concat([opponent_df, pd.DataFrame([row])], ignore_index=True)
                     break
             
             # If no exact match, try partial/fuzzy matching
