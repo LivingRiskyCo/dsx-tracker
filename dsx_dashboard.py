@@ -9056,12 +9056,40 @@ elif page == "⚙️ Data Manager":
             ("CU Fall Finale 2025 U8 Boys Platinum", "CU_Fall_Finale_2025_Division_Rankings.csv"),
             ("Club Ohio Fall Classic 2025 U09B Select III", "Club_Ohio_Fall_Classic_2025_Division_Rankings.csv"),
             ("CPL Fall 2025 U9 (multi-group)", "CPL_Fall_2025_Division_Rankings.csv"),
+            ("OCL BU09 7v7 Stripes - 2017 Boys Benchmarking (Not in main rankings)", "OCL_BU09_7v7_Stripes_Benchmarking_2017.csv"),
         ]
         rows = []
         for name, fname in tracked_files:
             exists = os.path.exists(fname)
             rows.append({'League/Division': name, 'File': fname, 'Status': '✅ Available' if exists else '❌ Missing'})
         st.dataframe(pd.DataFrame(rows), use_container_width=True, hide_index=True)
+        
+        st.markdown("---")
+        st.subheader("🔍 Discovered Ohio Tournaments (2018 Boys)")
+        discovered_files = [
+            ("Ohio Tournaments 2018 Boys Discovered", "Ohio_Tournaments_2018_Boys_Discovered_20251102.csv", "All discovered teams with GotSport links"),
+            ("Ohio Tournaments Summary", "Ohio_Tournaments_Summary_20251102.csv", "Tournament summary"),
+            ("Missing Opponent-of-Opponent Teams", "Missing_Opponent_Opponent_Teams_20251103.csv", "Teams needing game data extraction"),
+        ]
+        for name, fname, desc in discovered_files:
+            exists = os.path.exists(fname)
+            if exists:
+                st.markdown(f"**{name}** - {desc}")
+                st.caption(f"📁 {fname} - {desc}")
+                try:
+                    df = pd.read_csv(fname)
+                    st.info(f"✅ {len(df)} rows - Click GotSport links to view team data")
+                    # Show sample with clickable links
+                    if 'SourceURL' in df.columns:
+                        sample_df = df[['Team', 'EventID', 'GroupID', 'SourceURL']].head(10)
+                        for idx, row in sample_df.iterrows():
+                            st.markdown(f"  • [{row['Team']}]({row['SourceURL']}) - Event {row['EventID']}, Group {row['GroupID']}")
+                    else:
+                        st.dataframe(df.head(10), use_container_width=True, hide_index=True)
+                except Exception as e:
+                    st.warning(f"Could not load {fname}: {e}")
+            else:
+                st.warning(f"❌ {fname} not found")
 
         st.markdown("---")
         st.subheader("🔌 Update Scripts & Sources")
