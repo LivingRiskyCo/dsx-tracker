@@ -4,7 +4,198 @@ import os
 import re
 
 print("Creating comprehensive rankings CSV files...")
+print("(Now enhanced with extracted matches data)")
 print()
+
+# Team name aliases for matching (from dsx_dashboard.py)
+TEAM_NAME_ALIASES = {
+    "Club Ohio West 18B Academy": ["Club Ohio Club Ohio West 18B Academy", "Club Ohio West 18B Academy", "Club Ohio West 18B"],
+    "Club Ohio West 18B Academy II": ["Club Ohio Club Ohio West 18B Academy II", "Club Ohio West 18B Academy II"],
+    "Lakota FC 2018 Black": ["Lakota FC 2018 Black", "Lakota 2018 Black"],
+    "Lakota FC 2018 Red": ["Lakota FC 2018 Red", "Lakota 2018 Red"],
+}
+
+# Helper function to normalize team names for matching
+def normalize_team_name(team_name):
+    """Normalize team name for matching"""
+    if pd.isna(team_name):
+        return ""
+    name = str(team_name).strip()
+    
+    # Remove duplicate "Club Ohio" prefix
+    name = re.sub(r'^Club\s+Ohio\s+Club\s+Ohio\s+', 'Club Ohio ', name, flags=re.IGNORECASE)
+    
+    # Remove common suffixes for matching
+    normalized = name.lower()
+    normalized = re.sub(r'\s+2018\s*$', '', normalized)
+    normalized = re.sub(r'\s+b18\s*$', '', normalized)
+    normalized = re.sub(r'\s+u8\s*$', '', normalized)
+    normalized = re.sub(r'\s+boys\s*$', '', normalized)
+    
+    return normalized
+
+# Helper function to resolve aliases
+def resolve_alias(team_name):
+    """Resolve team name aliases"""
+    if pd.isna(team_name):
+        return ""
+    
+    name = str(team_name).strip()
+    
+    # Check aliases
+    for canonical, aliases in TEAM_NAME_ALIASES.items():
+        if name == canonical or name in aliases:
+            return canonical
+    
+    # Check if name matches any alias (fuzzy)
+    name_lower = name.lower()
+    for canonical, aliases in TEAM_NAME_ALIASES.items():
+        for alias in aliases:
+            if name_lower == alias.lower() or name_lower in alias.lower() or alias.lower() in name_lower:
+                return canonical
+    
+    return name
+
+# Helper function to check if two team names match
+def team_names_match(name1, name2):
+    """Check if two team names refer to the same team"""
+    if pd.isna(name1) or pd.isna(name2):
+        return False
+    
+    name1 = str(name1).strip()
+    name2 = str(name2).strip()
+    
+    # Exact match
+    if name1 == name2:
+        return True
+    
+    # Check aliases
+    resolved1 = resolve_alias(name1)
+    resolved2 = resolve_alias(name2)
+    if resolved1 == resolved2 and resolved1:
+        return True
+    
+    # Normalized match
+    norm1 = normalize_team_name(name1)
+    norm2 = normalize_team_name(name2)
+    
+    # Check if one normalized name contains the other (but not too short)
+    if len(norm1) > 10 and len(norm2) > 10:
+        if norm1 in norm2 or norm2 in norm1:
+            # Check for distinguishing suffixes like "II" vs no "II"
+            if " ii" in name1.lower() or " 2" in name1.lower():
+                if " ii" not in name2.lower() and " 2" not in name2.lower():
+                    return False
+            if " ii" in name2.lower() or " 2" in name2.lower():
+                if " ii" not in name1.lower() and " 2" not in name1.lower():
+                    return False
+            return True
+    
+    return False
+
+# Function to calculate team stats from extracted matches (from dsx_dashboard.py)
+def calculate_team_stats_from_extracted_matches(extracted_matches_df, team_name):
+    """Calculate team statistics from extracted matches"""
+    if extracted_matches_df is None or extracted_matches_df.empty:
+        return None
+    
+    target_normalized = normalize_team_name(team_name)
+    team_matches = []
+    
+    for idx, match in extracted_matches_df.iterrows():
+        match_team = str(match.get('Team', ''))
+        match_opp = str(match.get('Opponent', ''))
+        
+        # Check if this match involves our target team
+        if (team_names_match(team_name, match_team) or 
+            team_names_match(team_name, match_opp)):
+            
+            # Determine if team was home or away
+            is_home = team_names_match(team_name, match_team)
+            
+            # Get score
+            gf = match.get('GF')
+            ga = match.get('GA')
+            
+            # If GF/GA not directly available, try to parse from Score
+            if pd.isna(gf) or pd.isna(ga):
+                score = str(match.get('Score', ''))
+                score_match = re.search(r'(\d+)\s*[-:]\s*(\d+)', score)
+                if score_match:
+                    if is_home:
+                        gf = int(score_match.group(1))
+                        ga = int(score_match.group(2))
+                    else:
+                        gf = int(score_match.group(2))
+                        ga = int(score_match.group(1))
+            
+            # Get result
+            result = match.get('Result')
+            if pd.isna(result):
+                if gf is not None and ga is not None:
+                    if gf > ga:
+                        result = 'W'
+                    elif ga > gf:
+                        result = 'L'
+                    else:
+                        result = 'D'
+            
+            team_matches.append({
+                'Opponent': match_opp if is_home else match_team,
+                'GF': gf if not pd.isna(gf) else None,
+                'GA': ga if not pd.isna(ga) else None,
+                'Result': result,
+            })
+    
+    if not team_matches:
+        return None
+    
+    # Calculate stats
+    matches_df = pd.DataFrame(team_matches)
+    
+    # Filter out matches without valid scores
+    valid_matches = matches_df[
+        (matches_df['GF'].notna()) & 
+        (matches_df['GA'].notna()) &
+        (matches_df['Result'].notna())
+    ].copy()
+    
+    if valid_matches.empty:
+        return None
+    
+    gp = len(valid_matches)
+    w = len(valid_matches[valid_matches['Result'] == 'W'])
+    l = len(valid_matches[valid_matches['Result'] == 'L'])
+    d = len(valid_matches[valid_matches['Result'] == 'D'])
+    
+    gf_total = valid_matches['GF'].sum()
+    ga_total = valid_matches['GA'].sum()
+    gd_total = gf_total - ga_total
+    
+    pts = (w * 3) + d
+    ppg = pts / gp if gp > 0 else 0
+    gf_pg = gf_total / gp if gp > 0 else 0
+    ga_pg = ga_total / gp if gp > 0 else 0
+    gd_pg = gd_total / gp if gp > 0 else 0
+    
+    # Calculate Strength Index
+    ppg_norm = max(0.0, min(3.0, ppg)) / 3.0 * 100.0
+    gdpg_norm = (max(-5.0, min(5.0, gd_pg)) + 5.0) / 10.0 * 100.0
+    strength_index = round(0.7 * ppg_norm + 0.3 * gdpg_norm, 1)
+    
+    return {
+        'GP': gp,
+        'W': w,
+        'L': l,
+        'D': d,
+        'GF': round(gf_pg, 2),
+        'GA': round(ga_pg, 2),
+        'GD': round(gd_pg, 2),
+        'Pts': pts,
+        'PPG': round(ppg, 2),
+        'StrengthIndex': strength_index,
+        'Source': 'Extracted Matches'
+    }
 
 # Load DSX match history
 try:
@@ -48,6 +239,18 @@ except Exception as e:
     print(f"Error loading DSX matches: {e}")
     dsx_row = None
 
+# Load extracted matches for enhancement
+print("Loading extracted matches data...")
+extracted_matches = None
+if os.path.exists("Opponents_of_Opponents_Matches_Expanded.csv"):
+    try:
+        extracted_matches = pd.read_csv("Opponents_of_Opponents_Matches_Expanded.csv", index_col=False).reset_index(drop=True)
+        print(f"   Loaded {len(extracted_matches)} extracted matches")
+    except Exception as e:
+        print(f"   Warning: Could not load extracted matches: {e}")
+else:
+    print("   No extracted matches file found")
+
 # Load all division data
 division_files = [
     'OCL_BU08_Stripes_Division_Rankings.csv',
@@ -79,6 +282,51 @@ if all_divisions:
     combined['GP'] = pd.to_numeric(combined['GP'], errors='coerce').fillna(0)
     combined = combined[combined['GP'] >= 3].copy()
     
+    # DEDUPLICATE TEAMS: Consolidate teams with similar names
+    print("\nDeduplicating teams with similar names...")
+    unique_teams = {}
+    consolidated_count = 0
+    
+    for idx, row in combined.iterrows():
+        team_name = str(row['Team']).strip()
+        
+        # Try to find a matching team we've already seen
+        matched_key = None
+        for key in unique_teams.keys():
+            if team_names_match(team_name, key):
+                matched_key = key
+                break
+        
+        if matched_key:
+            # Consolidate stats - add games together
+            existing = unique_teams[matched_key]
+            
+            # Combine games (take max GP, sum wins/losses, etc.)
+            existing_gp = pd.to_numeric(existing.get('GP', 0), errors='coerce')
+            new_gp = pd.to_numeric(row.get('GP', 0), errors='coerce')
+            
+            if new_gp > existing_gp:
+                # If new team has more games, use it as the primary data
+                unique_teams[matched_key] = row.to_dict()
+                unique_teams[matched_key]['Team'] = matched_key  # Keep the canonical name
+                consolidated_count += 1
+                print(f"   Consolidated: {team_name} -> {matched_key} ({existing_gp:.0f} + {new_gp:.0f} games)")
+        else:
+            # New team - add it
+            canonical_name = resolve_alias(team_name)
+            if canonical_name != team_name:
+                row_dict = row.to_dict()
+                row_dict['Team'] = canonical_name
+                unique_teams[canonical_name] = row_dict
+            else:
+                unique_teams[team_name] = row.to_dict()
+    
+    # Convert back to DataFrame
+    if unique_teams:
+        combined = pd.DataFrame(list(unique_teams.values()))
+        print(f"   Consolidated {consolidated_count} duplicate teams into {len(combined)} unique teams")
+        print()
+    
     # Classify teams by age/year
     def classify_team_age(team_name):
         """Classify team as 2018, 2017, or 17/18 (mixed)"""
@@ -99,6 +347,40 @@ if all_divisions:
     
     # Add age classification column
     combined['AgeGroup'] = combined['Team'].apply(classify_team_age)
+    
+    # ENHANCE WITH EXTRACTED MATCHES
+    print("\nEnhancing team stats with extracted matches...")
+    enhanced_teams = []
+    teams_with_more_games = 0
+    
+    for idx, team_row in combined.iterrows():
+        team_name = team_row['Team']
+        division_gp = team_row['GP']
+        
+        # Try to get stats from extracted matches
+        if extracted_matches is not None:
+            extracted_stats = calculate_team_stats_from_extracted_matches(extracted_matches, team_name)
+            
+            if extracted_stats and extracted_stats['GP'] > division_gp:
+                # Use extracted matches stats if they have more games
+                team_row['GP'] = extracted_stats['GP']
+                team_row['W'] = extracted_stats['W']
+                team_row['L'] = extracted_stats['L']
+                team_row['D'] = extracted_stats['D']
+                team_row['GF'] = extracted_stats['GF']
+                team_row['GA'] = extracted_stats['GA']
+                team_row['GD'] = extracted_stats['GD']
+                team_row['Pts'] = extracted_stats['Pts']
+                team_row['PPG'] = extracted_stats['PPG']
+                team_row['StrengthIndex'] = extracted_stats['StrengthIndex']
+                teams_with_more_games += 1
+                print(f"   Enhanced {team_name}: {division_gp} -> {extracted_stats['GP']} games")
+        
+        enhanced_teams.append(team_row)
+    
+    combined = pd.DataFrame(enhanced_teams).reset_index(drop=True)
+    print(f"   Enhanced {teams_with_more_games} teams with extracted matches data")
+    print()
     
     # Separate teams by age group
     teams_2018 = combined[combined['AgeGroup'] == '2018'].copy()
