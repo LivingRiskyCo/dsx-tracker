@@ -523,12 +523,6 @@ def get_opponent_three_stat_snapshot(opponent_name, all_divisions_df, dsx_matche
         'has_extracted_data': False
     }
     
-    snapshot = {
-        'league': None,
-        'tournament': None,
-        'h2h': None
-    }
-    
     # Helper function to normalize team names for matching
     def normalize_name_for_match(name):
         if pd.isna(name):
