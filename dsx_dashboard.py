@@ -6065,6 +6065,186 @@ elif page == "🏆 Division Rankings":
     else:
         st.warning("No DSX match data found. Add games to see your competitive ranking!")
 
+elif page == "📊 Ohio U8/U9 Rankings":
+    st.title("📊 Ohio U8/U9 Boys Rankings")
+    
+    st.markdown("""
+    **🎯 Public Rankings Platform - Filling the Gap!**
+    
+    GotSport provides rankings starting at U10, but **U8 and U9 Boys rankings don't exist**.
+    We're building the comprehensive ranking system for these age groups!
+    
+    [View GotSport Rankings (U10+):](https://rankings.gotsport.com/?team_country=USA&age=10&gender=m&state=OH)
+    """)
+    
+    st.info("💡 **This is a public-facing rankings system similar to GotSport, but for U8/U9 Boys which GotSport doesn't cover.**")
+    
+    # Age group selector
+    age_group = st.radio(
+        "Select Age Group:",
+        ["U8 Boys (2018)", "U9 Boys (2017)"],
+        horizontal=True
+    )
+    
+    st.markdown("---")
+    
+    # Load appropriate rankings
+    if age_group == "U8 Boys (2018)":
+        ranking_file = "Rankings_2018_Teams_6Plus_Games.csv" if os.path.exists("Rankings_2018_Teams_6Plus_Games.csv") else "Rankings_2018_Teams_3Plus_Games.csv"
+        age_label = "U8 Boys (2018 Birth Year)"
+    else:
+        ranking_file = "Rankings_2017_Teams_3Plus_Games.csv"
+        age_label = "U9 Boys (2017 Birth Year)"
+    
+    # Load rankings
+    try:
+        if os.path.exists(ranking_file):
+            rankings_df = pd.read_csv(ranking_file, index_col=False)
+            rankings_df = rankings_df.sort_values(['PPG', 'StrengthIndex'], ascending=[False, False])
+            rankings_df['Rank'] = range(1, len(rankings_df) + 1)
+            
+            # View selector
+            view_option = st.selectbox(
+                "View:",
+                ["Top 50 Teams", f"All Teams ({len(rankings_df)} teams)"],
+                key="u8_u9_view_selector"
+            )
+            
+            if view_option == "Top 50 Teams":
+                display_df = rankings_df.head(50).copy()
+                st.header(f"🏆 Top 50 {age_label} Teams")
+            else:
+                display_df = rankings_df.copy()
+                st.header(f"🏆 All {age_label} Teams")
+            
+            st.caption(f"Ranked by Points Per Game (PPG), then Strength Index. Last updated: {datetime.now().strftime('%Y-%m-%d %H:%M')}")
+            
+            # Display rankings table
+            st.dataframe(
+                display_df[['Rank', 'Team', 'GP', 'W', 'L', 'D', 'PPG', 'StrengthIndex']],
+                use_container_width=True,
+                hide_index=True,
+                column_config={
+                    "Rank": st.column_config.NumberColumn("Rank", format="%d"),
+                    "Team": st.column_config.TextColumn("Team"),
+                    "GP": st.column_config.NumberColumn("GP", help="Games Played"),
+                    "W": st.column_config.NumberColumn("W", help="Wins"),
+                    "L": st.column_config.NumberColumn("L", help="Losses"),
+                    "D": st.column_config.NumberColumn("D", help="Draws"),
+                    "PPG": st.column_config.NumberColumn("PPG", help="Points Per Game", format="%.2f"),
+                    "StrengthIndex": st.column_config.ProgressColumn(
+                        "Strength",
+                        help="Combined strength rating (0-100)",
+                        format="%.1f",
+                        min_value=0,
+                        max_value=100,
+                    ),
+                }
+            )
+            
+            # Team selector for detailed profile
+            st.markdown("---")
+            st.subheader("🔍 View Team Profile")
+            
+            team_options = display_df['Team'].tolist()
+            selected_team_profile = st.selectbox(
+                "Select a team to view full profile:",
+                team_options,
+                key="u8_u9_team_profile_selector"
+            )
+            
+            if selected_team_profile:
+                team_row = display_df[display_df['Team'] == selected_team_profile].iloc[0]
+                
+                st.markdown("---")
+                st.header(f"📊 {selected_team_profile} - Team Profile")
+                
+                # Team stats
+                col1, col2, col3, col4 = st.columns(4)
+                
+                with col1:
+                    st.metric("Rank", f"#{int(team_row['Rank'])}")
+                    st.metric("Games Played", int(team_row['GP']))
+                
+                with col2:
+                    st.metric("Record", f"{int(team_row['W'])}-{int(team_row['L'])}-{int(team_row['D'])}")
+                    st.metric("PPG", f"{team_row['PPG']:.2f}")
+                
+                with col3:
+                    st.metric("Strength Index", f"{team_row['StrengthIndex']:.1f}")
+                    if 'GF' in team_row:
+                        st.metric("Goals/Game", f"{team_row['GF']:.2f}")
+                
+                with col4:
+                    if 'GA' in team_row:
+                        st.metric("Goals Against/Game", f"{team_row['GA']:.2f}")
+                    if 'GD' in team_row:
+                        st.metric("Goal Diff/Game", f"{team_row['GD']:+.2f}")
+                
+                # Try to load match history from extracted matches
+                st.markdown("---")
+                st.subheader("📅 Match History")
+                
+                try:
+                    # Try to find matches from extracted data
+                    extracted_matches = pd.read_csv('Opponents_of_Opponents_Matches_Expanded.csv')
+                    team_matches = extracted_matches[
+                        (extracted_matches['Team'] == selected_team_profile) | 
+                        (extracted_matches['Opponent'] == selected_team_profile)
+                    ].copy()
+                    
+                    if not team_matches.empty:
+                        # Format match history
+                        st.write(f"**Found {len(team_matches)} matches for {selected_team_profile}**")
+                        
+                        # Filter matches with valid scores
+                        valid_matches = team_matches[
+                            (team_matches['Score'].notna()) & 
+                            (team_matches['Score'] != '') &
+                            (team_matches['Date'].notna())
+                        ].sort_values('Date', ascending=False).head(20)
+                        
+                        if not valid_matches.empty:
+                            for _, match in valid_matches.iterrows():
+                                is_home = match.get('Team') == selected_team_profile
+                                opponent = match.get('Opponent') if is_home else match.get('Team')
+                                score = str(match.get('Score', ''))
+                                date = match.get('Date', 'N/A')
+                                location = match.get('Location', '')
+                                
+                                col_match1, col_match2 = st.columns([3, 1])
+                                with col_match1:
+                                    st.write(f"**{date}** vs {opponent}")
+                                    st.write(f"   Score: {score}")
+                                with col_match2:
+                                    if pd.notna(location) and location != '':
+                                        st.caption(f"📍 {location}")
+                        else:
+                            st.info("Match details (scores/dates) not yet available from extracted matches.")
+                    else:
+                        st.info("Match history not yet available for this team from extracted matches.")
+                        
+                except Exception as e:
+                    st.info("Match history loading from expanded dataset...")
+                
+                # Three-stat snapshot if available
+                try:
+                    all_divisions_df = load_division_data()
+                    dsx_matches_for_profile = pd.read_csv("DSX_Matches_Fall2025.csv", index_col=False) if os.path.exists("DSX_Matches_Fall2025.csv") else pd.DataFrame()
+                    
+                    team_snapshot = get_opponent_three_stat_snapshot(selected_team_profile, all_divisions_df, dsx_matches_for_profile)
+                    if team_snapshot:
+                        st.markdown("---")
+                        display_opponent_three_stat_snapshot(team_snapshot, selected_team_profile)
+                except:
+                    pass
+        else:
+            st.warning(f"Rankings file not found: {ranking_file}")
+            st.info("Run `create_comprehensive_rankings.py` to generate rankings.")
+            
+    except Exception as e:
+        st.error(f"Error loading rankings: {str(e)}")
+        st.info("Rankings may need to be generated. Check Data Manager for update options.")
 
 elif page == "📊 Team Analysis":
     st.title("📊 Team Analysis")
