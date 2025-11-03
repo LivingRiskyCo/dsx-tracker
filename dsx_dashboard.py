@@ -4739,7 +4739,7 @@ elif page == "🏆 Division Rankings":
         dsx_row = pd.DataFrame()
     
     # Get unique opponents DSX has played or will play
-        opponent_names = []
+    opponent_names = []
     
     # Load from match history
     if not dsx_matches.empty:
