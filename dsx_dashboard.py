@@ -4547,9 +4547,11 @@ elif page == "🎥 Video Analysis Viewer":
                 break
         
         if file_id:
-            # Convert to direct download link
-            # Using uc?export=download&id= for better compatibility
-            return f"https://drive.google.com/uc?export=download&id={file_id}"
+            # For video files, try the streaming format
+            # Note: Google Drive has CORS restrictions, so this may not work for all browsers
+            # Alternative: Use uc?export=view&id= for viewing (but may still have CORS issues)
+            # Best solution: Host videos on a service that allows direct streaming (Dropbox, AWS S3, etc.)
+            return f"https://drive.google.com/uc?export=view&id={file_id}"
         
         # If no file ID found, return original URL
         return url
@@ -4636,11 +4638,16 @@ elif page == "🎥 Video Analysis Viewer":
         </head>
         <body>
             <div class="video-container">
-                <video id="video" controls crossorigin="anonymous">
+                <video id="video" controls crossorigin="anonymous" preload="metadata">
                     <source src="{video_url}" type="video/mp4">
                     Your browser does not support the video tag.
                 </video>
                 <canvas id="canvas"></canvas>
+                <div id="error-message" style="display: none; color: red; padding: 20px; text-align: center;">
+                    <p>⚠️ Video failed to load. This may be due to CORS restrictions with Google Drive.</p>
+                    <p>Try: 1) Make sure the file is set to "Anyone with the link can view"</p>
+                    <p>2) Or download the video and upload it directly</p>
+                </div>
                 <div class="controls">
                     <button onclick="togglePlayPause()">⏯️ Play/Pause</button>
                     <button onclick="seekFrame(-30)">⏪ -1s</button>
@@ -4662,6 +4669,27 @@ elif page == "🎥 Video Analysis Viewer":
                 video.addEventListener('loadedmetadata', resizeCanvas);
                 video.addEventListener('resize', resizeCanvas);
                 window.addEventListener('resize', resizeCanvas);
+                
+                // Error handling
+                video.addEventListener('error', function(e) {{
+                    console.error('Video error:', e);
+                    const errorMsg = document.getElementById('error-message');
+                    if (errorMsg) {{
+                        errorMsg.style.display = 'block';
+                    }}
+                }});
+                
+                video.addEventListener('loadstart', function() {{
+                    console.log('Video loading started');
+                }});
+                
+                video.addEventListener('canplay', function() {{
+                    console.log('Video can play');
+                    const errorMsg = document.getElementById('error-message');
+                    if (errorMsg) {{
+                        errorMsg.style.display = 'none';
+                    }}
+                }});
                 
                 function getCurrentFrame() {{
                     if (!video.duration) return 0;
