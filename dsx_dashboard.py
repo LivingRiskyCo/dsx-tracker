@@ -1087,7 +1087,7 @@ with st.sidebar:
     # Team logo
     import os
     if os.path.exists("dsx_logo.png"):
-        st.image("dsx_logo.png", use_container_width=True)
+        st.image("dsx_logo.png", width='stretch')
     else:
         st.markdown("""
         <div style='text-align: center; padding: 20px; background: linear-gradient(135deg, #ff6b35 0%, #f7931e 100%); border-radius: 10px; margin-bottom: 20px;'>
@@ -1107,7 +1107,7 @@ with st.sidebar:
     st.markdown("---")
     st.caption(f"Last Updated: {datetime.now().strftime('%Y-%m-%d %H:%M')}")
     
-    if st.button("🔄 Refresh Data", use_container_width=True):
+    if st.button("🔄 Refresh Data", width='stretch'):
         refresh_data()
 
 
@@ -1506,7 +1506,7 @@ if page == "🎯 What's Next":
                 showlegend=True
             )
             
-            st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(fig, width='stretch')
             
             # Season insights
             st.subheader("💡 Season Insights")
@@ -1916,7 +1916,7 @@ if page == "🎯 What's Next":
                 try:
                     st.write("Loaded rows:", len(upcoming))
                     st.write("Status values:", sorted(list(set(upcoming['Status'].astype(str).str.strip().str.upper().tolist()))))
-                    st.dataframe(upcoming, use_container_width=True, hide_index=True)
+                    st.dataframe(upcoming, width='stretch', hide_index=True)
                 except Exception:
                     st.write("Unable to display upcoming CSV contents.")
         
@@ -2217,7 +2217,7 @@ elif page == "📅 Team Schedule":
                             response_col1, response_col2, response_col3 = st.columns(3)
                             
                             with response_col1:
-                                if st.button("✅ Available", key=f"avail_{event_id}", use_container_width=True):
+                                if st.button("✅ Available", key=f"avail_{event_id}", width='stretch'):
                                     # Update schedule_availability.csv
                                     try:
                                         availability_df = pd.read_csv("schedule_availability.csv")
@@ -2243,7 +2243,7 @@ elif page == "📅 Team Schedule":
                                         st.error(f"Error updating availability: {e}")
                             
                             with response_col2:
-                                if st.button("❌ Can't Make It", key=f"unavail_{event_id}", use_container_width=True):
+                                if st.button("❌ Can't Make It", key=f"unavail_{event_id}", width='stretch'):
                                     # Update schedule_availability.csv
                                     try:
                                         availability_df = pd.read_csv("schedule_availability.csv")
@@ -2269,7 +2269,7 @@ elif page == "📅 Team Schedule":
                                         st.error(f"Error updating availability: {e}")
                             
                             with response_col3:
-                                if st.button("❓ Maybe", key=f"maybe_{event_id}", use_container_width=True):
+                                if st.button("❓ Maybe", key=f"maybe_{event_id}", width='stretch'):
                                     # Update schedule_availability.csv
                                     try:
                                         availability_df = pd.read_csv("schedule_availability.csv")
@@ -2302,7 +2302,7 @@ elif page == "📅 Team Schedule":
                         
                         with action_col1:
                             if event_type == 'Game':
-                                if st.button("🎮 Start Live Tracker", key=f"track_{event_id}", use_container_width=True):
+                                if st.button("🎮 Start Live Tracker", key=f"track_{event_id}", width='stretch'):
                                     # Pre-fill Live Game Tracker data in session state
                                     st.session_state.prefill_game_data = {
                                         'date': event['Date'].strftime('%Y-%m-%d'),
@@ -2316,7 +2316,7 @@ elif page == "📅 Team Schedule":
                                     st.info("💡 **Tip:** Use the sidebar to navigate to Live Game Tracker. Your game details will be pre-filled!")
                         
                         with action_col2:
-                            if st.button("📝 View Details", key=f"detail_{event_id}", use_container_width=True):
+                            if st.button("📝 View Details", key=f"detail_{event_id}", width='stretch'):
                                 # Show detailed event info
                                 st.markdown("---")
                                 st.markdown("#### 📋 Complete Event Details")
@@ -2348,7 +2348,7 @@ elif page == "📅 Team Schedule":
                         
                         with action_col3:
                             if event_type == 'Game' and event.get('Opponent'):
-                                if st.button("🔍 Opponent Intel", key=f"intel_{event_id}", use_container_width=True):
+                                if st.button("🔍 Opponent Intel", key=f"intel_{event_id}", width='stretch'):
                                     # Store opponent for Opponent Intel page
                                     st.session_state.selected_opponent = event['Opponent']
                                     st.success(f"✅ Opponent selected: **{event['Opponent']}**")
@@ -2388,7 +2388,7 @@ elif page == "📅 Team Schedule":
             # Month navigation
             col1, col2, col3 = st.columns([1, 2, 1])
             with col1:
-                if st.button("◀ Previous", key="prev_month", use_container_width=True):
+                if st.button("◀ Previous", key="prev_month", width='stretch'):
                     st.session_state.cal_month -= 1
                     if st.session_state.cal_month < 1:
                         st.session_state.cal_month = 12
@@ -2398,7 +2398,7 @@ elif page == "📅 Team Schedule":
                 month_name = datetime(st.session_state.cal_year, st.session_state.cal_month, 1).strftime('%B %Y')
                 st.markdown(f"### {month_name}")
             with col3:
-                if st.button("Next ▶", key="next_month", use_container_width=True):
+                if st.button("Next ▶", key="next_month", width='stretch'):
                     st.session_state.cal_month += 1
                     if st.session_state.cal_month > 12:
                         st.session_state.cal_month = 1
@@ -2440,7 +2440,7 @@ elif page == "📅 Team Schedule":
                                     st.markdown(f"🟣 **{day}**")
                                 
                                 # Show event details on click
-                                if st.button(f"View", key=f"day_{day}", use_container_width=True):
+                                if st.button(f"View", key=f"day_{day}", width='stretch'):
                                     st.session_state.selected_date = day_date
                             else:
                                 st.write(f"{day}")
@@ -2474,14 +2474,14 @@ elif page == "📅 Team Schedule":
             # Week navigation
             col1, col2, col3 = st.columns([1, 2, 1])
             with col1:
-                if st.button("◀ Previous Week", key="prev_week", use_container_width=True):
+                if st.button("◀ Previous Week", key="prev_week", width='stretch'):
                     st.session_state.week_start -= timedelta(days=7)
                     st.rerun()
             with col2:
                 week_end = st.session_state.week_start + timedelta(days=6)
                 st.markdown(f"### {st.session_state.week_start.strftime('%b %d')} - {week_end.strftime('%b %d, %Y')}")
             with col3:
-                if st.button("Next Week ▶", key="next_week", use_container_width=True):
+                if st.button("Next Week ▶", key="next_week", width='stretch'):
                     st.session_state.week_start += timedelta(days=7)
                     st.rerun()
             
@@ -3000,7 +3000,7 @@ elif page == "🎮 Live Game Tracker":
                 # Store game data and skip to lineup
                 col_a, col_b = st.columns([3, 1])
                 with col_a:
-                    if st.button("✅ CONFIRM & SELECT LINEUP", type="primary", use_container_width=True):
+                    if st.button("✅ CONFIRM & SELECT LINEUP", type="primary", width='stretch'):
                         st.session_state.game_data = {
                             'date': str(selected_game['date']),
                             'opponent': selected_game['opponent'],
@@ -3011,7 +3011,7 @@ elif page == "🎮 Live Game Tracker":
                         st.session_state['skip_manual_form'] = True
                         st.rerun()
                 with col_b:
-                    if st.button("↩️ Back", use_container_width=True):
+                    if st.button("↩️ Back", width='stretch'):
                         st.rerun()
                 
                 # Don't show manual form below
@@ -3176,7 +3176,7 @@ elif page == "🎮 Live Game Tracker":
             
             # Update session state (disabled if game is active and locked)
             game_active_and_locked = st.session_state.game_active and game_lock_enabled and not st.session_state.get('game_unlocked', False)
-            if st.button("✅ Update Lineup", type="primary", use_container_width=True, disabled=game_active_and_locked):
+            if st.button("✅ Update Lineup", type="primary", width='stretch', disabled=game_active_and_locked):
                 for pos, player in lineup_form.items():
                     st.session_state.lineup[pos] = player
                 st.success("Lineup updated!")
@@ -3210,7 +3210,7 @@ elif page == "🎮 Live Game Tracker":
                         'Position': [row['Position'] for _, row in bench.iterrows()],
                         'Status': ['✅ Ready' for _ in range(len(bench))]
                     })
-                    st.dataframe(bench_display, hide_index=True, use_container_width=True)
+                    st.dataframe(bench_display, hide_index=True, width='stretch')
                     st.caption(f"**{len(bench)} players on bench** - Use 🔄 SUB button during game to make substitutions")
             
             st.markdown("---")
@@ -3218,7 +3218,7 @@ elif page == "🎮 Live Game Tracker":
             # Quick actions
             col_a, col_b, col_c = st.columns(3)
             with col_a:
-                if st.button("💾 Save Lineup", use_container_width=True):
+                if st.button("💾 Save Lineup", width='stretch'):
                     # Save lineup to CSV with formation info
                     lineup_data = []
                     for pos, player in st.session_state.lineup.items():
@@ -3238,7 +3238,7 @@ elif page == "🎮 Live Game Tracker":
                         st.warning("⚠️ No players selected to save!")
             
             with col_b:
-                if st.button("📂 Load Lineup", use_container_width=True, disabled=game_active_and_locked):
+                if st.button("📂 Load Lineup", width='stretch', disabled=game_active_and_locked):
                     try:
                         saved_lineup = pd.read_csv("current_lineup.csv")
                         
@@ -3285,7 +3285,7 @@ elif page == "🎮 Live Game Tracker":
                         st.error(f"❌ Error loading lineup: {str(e)}")
             
             with col_c:
-                if st.button("🔄 Reset Lineup", use_container_width=True, disabled=game_active_and_locked):
+                if st.button("🔄 Reset Lineup", width='stretch', disabled=game_active_and_locked):
                     for pos in positions:
                         st.session_state.lineup[pos] = None
                     st.session_state.lineup['subs'] = []
@@ -3299,7 +3299,7 @@ elif page == "🎮 Live Game Tracker":
             st.markdown(f"**Debug Info:** Selected {len(selected_starters)}/7 players: {selected_starters}")
             
             # Start game button (disabled if game already active and locked)
-            if st.button("🚀 START GAME", type="primary", use_container_width=True, disabled=game_active_and_locked):
+            if st.button("🚀 START GAME", type="primary", width='stretch', disabled=game_active_and_locked):
                 if opponent and len(selected_starters) >= 7:
                     st.session_state.game_active = True
                     st.session_state.game_data = {
@@ -3494,7 +3494,7 @@ elif page == "🎮 Live Game Tracker":
         
         with col1:
             if st.button("▶️ Start" if not st.session_state.timer_running else "⏸️ Pause", 
-                         use_container_width=True):
+                         width='stretch'):
                 if not st.session_state.timer_running:
                     # Starting timer
                     st.session_state.timer_running = True
@@ -3520,7 +3520,7 @@ elif page == "🎮 Live Game Tracker":
             st.success("⏱️ Timer running - Enter details while clock continues")
         
         with col2:
-            if st.button("⏭️ Next Half", use_container_width=True, disabled=game_is_locked):
+            if st.button("⏭️ Next Half", width='stretch', disabled=game_is_locked):
                 if st.session_state.current_half == 1:
                     st.session_state.current_half = 2
                     st.session_state.time_remaining = game_data['half_length'] * 60
@@ -3533,7 +3533,7 @@ elif page == "🎮 Live Game Tracker":
                     st.rerun()
         
         with col3:
-            if st.button("🔄 Reset Timer", use_container_width=True, disabled=game_is_locked):
+            if st.button("🔄 Reset Timer", width='stretch', disabled=game_is_locked):
                 st.session_state.time_remaining = game_data['half_length'] * 60
                 st.session_state.timer_running = False
                 st.session_state.timer_start_time = None
@@ -3542,13 +3542,13 @@ elif page == "🎮 Live Game Tracker":
                 st.rerun()
         
         with col4:
-            if st.button("⏹️ End Game", use_container_width=True, type="primary"):
+            if st.button("⏹️ End Game", width='stretch', type="primary"):
                 st.session_state.game_active = False
                 st.session_state.show_summary = True
                 st.rerun()
         
         with col5:
-            if st.button("🔄 Refresh", use_container_width=True):
+            if st.button("🔄 Refresh", width='stretch'):
                 st.rerun()
         
         # Show lock status and unlock option
@@ -3557,7 +3557,7 @@ elif page == "🎮 Live Game Tracker":
             
             # Unlock button with confirmation
             if not st.session_state.unlock_requested:
-                if st.button("🔓 Unlock Game (Testing)", use_container_width=True, type="secondary"):
+                if st.button("🔓 Unlock Game (Testing)", width='stretch', type="secondary"):
                     st.session_state.unlock_requested = True
                     st.rerun()
             else:
@@ -3565,13 +3565,13 @@ elif page == "🎮 Live Game Tracker":
                 st.write("Unlocking allows editing game settings and lineup. Are you sure?")
                 col_unlock1, col_unlock2 = st.columns(2)
                 with col_unlock1:
-                    if st.button("✅ Yes, Unlock", use_container_width=True, type="primary"):
+                    if st.button("✅ Yes, Unlock", width='stretch', type="primary"):
                         st.session_state.game_unlocked = True  # Flag to bypass lock
                         st.session_state.unlock_requested = False
                         st.success("✅ Game unlocked for this session")
                         st.rerun()
                 with col_unlock2:
-                    if st.button("❌ Cancel", use_container_width=True):
+                    if st.button("❌ Cancel", width='stretch'):
                         st.session_state.unlock_requested = False
                         st.rerun()
             
@@ -3625,7 +3625,7 @@ elif page == "🎮 Live Game Tracker":
         col1, col2 = st.columns(2)
         
         with col1:
-            if st.button("⚽ DSX GOAL", use_container_width=True, type="primary", key="dsx_goal_btn"):
+            if st.button("⚽ DSX GOAL", width='stretch', type="primary", key="dsx_goal_btn"):
                 st.session_state.show_goal_dialog = True
                 # Reset timer refresh to prevent auto-refresh during dialog
                 if 'last_timer_refresh' in st.session_state:
@@ -3634,7 +3634,7 @@ elif page == "🎮 Live Game Tracker":
                 st.rerun()
         
         with col2:
-            if st.button("🥅 OPP GOAL", use_container_width=True, key="opp_goal_btn"):
+            if st.button("🥅 OPP GOAL", width='stretch', key="opp_goal_btn"):
                 add_event_tracker('OPP_GOAL')
                 # Reset timer refresh
                 if 'last_timer_refresh' in st.session_state:
@@ -3646,7 +3646,7 @@ elif page == "🎮 Live Game Tracker":
         col3, col4 = st.columns(2)
         
         with col3:
-            if st.button("🎯 SHOT", use_container_width=True, key="shot_btn"):
+            if st.button("🎯 SHOT", width='stretch', key="shot_btn"):
                 st.session_state.show_shot_dialog = True
                 # Reset timer refresh
                 if 'last_timer_refresh' in st.session_state:
@@ -3655,7 +3655,7 @@ elif page == "🎮 Live Game Tracker":
                 st.rerun()
         
         with col4:
-            if st.button("➡️ PASS", use_container_width=True, key="pass_btn"):
+            if st.button("➡️ PASS", width='stretch', key="pass_btn"):
                 st.session_state.show_pass_dialog = True
                 # Reset timer refresh
                 if 'last_timer_refresh' in st.session_state:
@@ -3690,7 +3690,7 @@ elif page == "🎮 Live Game Tracker":
                 for idx, (_, row) in enumerate(on_field_players.iterrows()):
                     with shooter_cols[idx % num_cols]:
                         player_display = f"#{int(row['PlayerNumber'])} {row['PlayerName']}"
-                        if st.button(player_display, use_container_width=True,
+                        if st.button(player_display, width='stretch',
                                    type="primary" if st.session_state.shot_player == player_display else "secondary",
                                    key=f"shot_player_{int(row['PlayerNumber'])}"):
                             st.session_state.shot_player = player_display
@@ -3710,7 +3710,7 @@ elif page == "🎮 Live Game Tracker":
             st.write("**Outcome (Optional):**")
             outcome_cols = st.columns(3)
             with outcome_cols[0]:
-                if st.button("⚽ ON TARGET", use_container_width=True,
+                if st.button("⚽ ON TARGET", width='stretch',
                            type="primary" if st.session_state.shot_outcome == "⚽ On Target" else "secondary",
                            key="shot_outcome_target"):
                     st.session_state.shot_outcome = "⚽ On Target"
@@ -3719,7 +3719,7 @@ elif page == "🎮 Live Game Tracker":
                     save_live_game_state()
                     st.rerun()
             with outcome_cols[1]:
-                if st.button("❌ OFF TARGET", use_container_width=True,
+                if st.button("❌ OFF TARGET", width='stretch',
                            type="primary" if st.session_state.shot_outcome == "❌ Off Target" else "secondary",
                            key="shot_outcome_off"):
                     st.session_state.shot_outcome = "❌ Off Target"
@@ -3728,7 +3728,7 @@ elif page == "🎮 Live Game Tracker":
                     save_live_game_state()
                     st.rerun()
             with outcome_cols[2]:
-                if st.button("🛡️ BLOCKED", use_container_width=True,
+                if st.button("🛡️ BLOCKED", width='stretch',
                            type="primary" if st.session_state.shot_outcome == "🛡️ Blocked" else "secondary",
                            key="shot_outcome_blocked"):
                     st.session_state.shot_outcome = "🛡️ Blocked"
@@ -3746,7 +3746,7 @@ elif page == "🎮 Live Game Tracker":
             st.write("**Type (Optional):**")
             type_cols = st.columns(3)
             with type_cols[0]:
-                if st.button("👟 RIGHT FOOT", use_container_width=True,
+                if st.button("👟 RIGHT FOOT", width='stretch',
                            type="primary" if st.session_state.shot_type == "👟 Right Foot" else "secondary",
                            key="shot_type_right"):
                     st.session_state.shot_type = "👟 Right Foot"
@@ -3755,7 +3755,7 @@ elif page == "🎮 Live Game Tracker":
                     save_live_game_state()
                     st.rerun()
             with type_cols[1]:
-                if st.button("👟 LEFT FOOT", use_container_width=True,
+                if st.button("👟 LEFT FOOT", width='stretch',
                            type="primary" if st.session_state.shot_type == "👟 Left Foot" else "secondary",
                            key="shot_type_left"):
                     st.session_state.shot_type = "👟 Left Foot"
@@ -3764,7 +3764,7 @@ elif page == "🎮 Live Game Tracker":
                     save_live_game_state()
                     st.rerun()
             with type_cols[2]:
-                if st.button("🤕 HEADER", use_container_width=True,
+                if st.button("🤕 HEADER", width='stretch',
                            type="primary" if st.session_state.shot_type == "🤕 Header" else "secondary",
                            key="shot_type_header"):
                     st.session_state.shot_type = "🤕 Header"
@@ -3790,7 +3790,7 @@ elif page == "🎮 Live Game Tracker":
             ]
             for idx, (btn_text, display_text) in enumerate(locations):
                 with loc_cols[idx]:
-                    if st.button(btn_text, use_container_width=True,
+                    if st.button(btn_text, width='stretch',
                                type="primary" if st.session_state.shot_location == display_text else "secondary",
                                key=f"shot_location_{idx}"):
                         st.session_state.shot_location = display_text
@@ -3814,7 +3814,7 @@ elif page == "🎮 Live Game Tracker":
         st.markdown("---")
         
         # Close button (no RECORD button needed - auto-saves on each selection)
-        if st.button("✅ Done / Close", use_container_width=True, type="primary", key="close_shot_btn"):
+        if st.button("✅ Done / Close", width='stretch', type="primary", key="close_shot_btn"):
             # Final update before closing
             if st.session_state.shot_player:
                 _update_last_shot_event()
@@ -3857,7 +3857,7 @@ elif page == "🎮 Live Game Tracker":
                 for idx, (_, row) in enumerate(on_field_players.iterrows()):
                     with from_cols[idx % num_cols]:
                         player_display = f"#{int(row['PlayerNumber'])} {row['PlayerName']}"
-                        if st.button(player_display, use_container_width=True, 
+                        if st.button(player_display, width='stretch', 
                                    type="primary" if st.session_state.pass_from_player == player_display else "secondary",
                                    key=f"pass_from_{int(row['PlayerNumber'])}"):
                             st.session_state.pass_from_player = player_display
@@ -3882,10 +3882,10 @@ elif page == "🎮 Live Game Tracker":
                         player_display = f"#{int(row['PlayerNumber'])} {row['PlayerName']}"
                         # Don't allow same player for from and to
                         if st.session_state.pass_from_player and player_display == st.session_state.pass_from_player:
-                            st.button(f"⚠️ {player_display}", use_container_width=True, disabled=True, 
+                            st.button(f"⚠️ {player_display}", width='stretch', disabled=True, 
                                     key=f"pass_to_disabled_{int(row['PlayerNumber'])}")
                         else:
-                            if st.button(player_display, use_container_width=True,
+                            if st.button(player_display, width='stretch',
                                        type="primary" if st.session_state.pass_to_player == player_display else "secondary",
                                        key=f"pass_to_{int(row['PlayerNumber'])}"):
                                 st.session_state.pass_to_player = player_display
@@ -3913,7 +3913,7 @@ elif page == "🎮 Live Game Tracker":
             st.write("**Pass Result (Optional):**")
             result_col1, result_col2 = st.columns(2)
             with result_col1:
-                if st.button("✅ COMPLETE", use_container_width=True, 
+                if st.button("✅ COMPLETE", width='stretch', 
                            type="primary" if st.session_state.pass_complete_status == "Complete" else "secondary",
                            key="pass_complete_btn"):
                     st.session_state.pass_complete_status = "Complete"
@@ -3923,7 +3923,7 @@ elif page == "🎮 Live Game Tracker":
                 st.rerun()
         
             with result_col2:
-                if st.button("❌ INCOMPLETE", use_container_width=True,
+                if st.button("❌ INCOMPLETE", width='stretch',
                            type="primary" if st.session_state.pass_complete_status == "Incomplete" else "secondary",
                            key="pass_incomplete_btn"):
                     st.session_state.pass_complete_status = "Incomplete"
@@ -3951,7 +3951,7 @@ elif page == "🎮 Live Game Tracker":
             st.markdown("---")
             
             # Close button (no RECORD button needed - auto-saves on each selection)
-            if st.button("✅ Done / Close", use_container_width=True, type="primary", key="close_pass_btn"):
+            if st.button("✅ Done / Close", width='stretch', type="primary", key="close_pass_btn"):
                 # Final update before closing
                 if st.session_state.pass_from_player and st.session_state.pass_to_player:
                     _update_last_pass_event()
@@ -3991,7 +3991,7 @@ elif page == "🎮 Live Game Tracker":
                 notes = st.text_input("Notes (optional)")
                 col1, col2 = st.columns(2)
                 with col1:
-                    if st.form_submit_button("✅ RECORD", use_container_width=True, type="primary"):
+                    if st.form_submit_button("✅ RECORD", width='stretch', type="primary"):
                         player_name = keeper.split(' ', 1)[1]
                         save_details = f"{save_type} | Shot from {shot_from}"
                         if notes:
@@ -4001,7 +4001,7 @@ elif page == "🎮 Live Game Tracker":
                         st.session_state.show_save_dialog = False
                         st.rerun()
                 with col2:
-                    if st.form_submit_button("❌ Cancel", use_container_width=True):
+                    if st.form_submit_button("❌ Cancel", width='stretch'):
                         st.session_state.show_save_dialog = False
                         st.rerun()
         
@@ -4019,7 +4019,7 @@ elif page == "🎮 Live Game Tracker":
                 notes = st.text_input("Notes (optional)")
                 col1, col2 = st.columns(2)
                 with col1:
-                    if st.form_submit_button("✅ RECORD", use_container_width=True, type="primary"):
+                    if st.form_submit_button("✅ RECORD", width='stretch', type="primary"):
                         # Parse player numbers
                         out_num = int(player_out.split('#')[1].split(' ')[0])
                         in_num = int(player_in.split('#')[1].split(' ')[0])
@@ -4038,14 +4038,14 @@ elif page == "🎮 Live Game Tracker":
                         st.session_state.show_sub_dialog = False
                         st.rerun()
                 with col2:
-                    if st.form_submit_button("❌ Cancel", use_container_width=True):
+                    if st.form_submit_button("❌ Cancel", width='stretch'):
                         st.session_state.show_sub_dialog = False
                         st.rerun()
         
         col5, col6, col7 = st.columns(3)
         
         with col5:
-            if st.button("🧤 SAVE", use_container_width=True, key="save_btn"):
+            if st.button("🧤 SAVE", width='stretch', key="save_btn"):
                 st.session_state.show_save_dialog = True
                 if 'last_timer_refresh' in st.session_state:
                     st.session_state.last_timer_refresh = current_time
@@ -4053,7 +4053,7 @@ elif page == "🎮 Live Game Tracker":
                 st.rerun()
         
         with col6:
-            if st.button("⚠️ CORNER", use_container_width=True, key="corner_btn"):
+            if st.button("⚠️ CORNER", width='stretch', key="corner_btn"):
                 add_event_tracker('CORNER')
                 if 'last_timer_refresh' in st.session_state:
                     st.session_state.last_timer_refresh = current_time
@@ -4061,7 +4061,7 @@ elif page == "🎮 Live Game Tracker":
                 st.rerun()
         
         with col7:
-            if st.button("🔄 SUB", use_container_width=True, key="sub_btn"):
+            if st.button("🔄 SUB", width='stretch', key="sub_btn"):
                 st.session_state.show_sub_dialog = True
                 if 'last_timer_refresh' in st.session_state:
                     st.session_state.last_timer_refresh = current_time
@@ -4071,7 +4071,7 @@ elif page == "🎮 Live Game Tracker":
         col7, col8, col9 = st.columns(3)
         
         with col7:
-            if st.button("↩️ UNDO", use_container_width=True, type="secondary", key="undo_btn"):
+            if st.button("↩️ UNDO", width='stretch', type="secondary", key="undo_btn"):
                 if st.session_state.events:
                     last_event = st.session_state.events.pop(0)
                     st.success(f"✅ Undid: {last_event['type']}")
@@ -4083,7 +4083,7 @@ elif page == "🎮 Live Game Tracker":
                     st.error("No events to undo!")
         
         with col8:
-            if st.button("📝 NOTE", use_container_width=True, key="note_btn"):
+            if st.button("📝 NOTE", width='stretch', key="note_btn"):
                 st.session_state.show_note_dialog = True
                 if 'last_timer_refresh' in st.session_state:
                     st.session_state.last_timer_refresh = current_time
@@ -4091,7 +4091,7 @@ elif page == "🎮 Live Game Tracker":
                 st.rerun()
         
         with col9:
-            if st.button("🚨 TIMEOUT", use_container_width=True, key="timeout_btn"):
+            if st.button("🚨 TIMEOUT", width='stretch', key="timeout_btn"):
                 add_event_tracker('TIMEOUT', notes="Injury/timeout")
                 if 'last_timer_refresh' in st.session_state:
                     st.session_state.last_timer_refresh = current_time
@@ -4107,7 +4107,7 @@ elif page == "🎮 Live Game Tracker":
         gk_col1, gk_col2, gk_col3, gk_col4 = st.columns(4)
         
         with gk_col1:
-            if st.button("✋ CATCH", use_container_width=True, key="catch_btn"):
+            if st.button("✋ CATCH", width='stretch', key="catch_btn"):
                 st.session_state.show_catch_dialog = True
                 if 'last_timer_refresh' in st.session_state:
                     st.session_state.last_timer_refresh = current_time
@@ -4115,7 +4115,7 @@ elif page == "🎮 Live Game Tracker":
                 st.rerun()
         
         with gk_col2:
-            if st.button("👊 PUNCH", use_container_width=True, key="punch_btn"):
+            if st.button("👊 PUNCH", width='stretch', key="punch_btn"):
                 st.session_state.show_punch_dialog = True
                 if 'last_timer_refresh' in st.session_state:
                     st.session_state.last_timer_refresh = current_time
@@ -4123,7 +4123,7 @@ elif page == "🎮 Live Game Tracker":
                 st.rerun()
         
         with gk_col3:
-            if st.button("🦶 DISTRIBUTION", use_container_width=True, key="dist_btn"):
+            if st.button("🦶 DISTRIBUTION", width='stretch', key="dist_btn"):
                 st.session_state.show_dist_dialog = True
                 if 'last_timer_refresh' in st.session_state:
                     st.session_state.last_timer_refresh = current_time
@@ -4131,7 +4131,7 @@ elif page == "🎮 Live Game Tracker":
                 st.rerun()
         
         with gk_col4:
-            if st.button("🧹 CLEARANCE", use_container_width=True, key="clear_btn"):
+            if st.button("🧹 CLEARANCE", width='stretch', key="clear_btn"):
                 st.session_state.show_clear_dialog = True
                 if 'last_timer_refresh' in st.session_state:
                     st.session_state.last_timer_refresh = current_time
@@ -4150,7 +4150,7 @@ elif page == "🎮 Live Game Tracker":
                 notes = st.text_input("Notes (optional)")
                 col1, col2 = st.columns(2)
                 with col1:
-                    if st.form_submit_button("✅ RECORD", use_container_width=True, type="primary"):
+                    if st.form_submit_button("✅ RECORD", width='stretch', type="primary"):
                         player_name = scorer.split(' ', 1)[1] if ' ' in scorer else scorer
                         assist_name = assist.split(' ', 1)[1] if assist != "None" and ' ' in assist else (None if assist == "None" else assist)
                         add_event_tracker('DSX_GOAL', player=player_name, assist=assist_name, notes=notes)
@@ -4161,7 +4161,7 @@ elif page == "🎮 Live Game Tracker":
                         st.session_state.show_goal_dialog = False
                         st.rerun()
                 with col2:
-                    if st.form_submit_button("❌ Cancel", use_container_width=True):
+                    if st.form_submit_button("❌ Cancel", width='stretch'):
                         st.session_state.show_goal_dialog = False
                         st.rerun()
         
@@ -4188,7 +4188,7 @@ elif page == "🎮 Live Game Tracker":
                 notes = st.text_input("Notes (optional)")
                 col1, col2 = st.columns(2)
                 with col1:
-                    if st.form_submit_button("✅ RECORD", use_container_width=True, type="primary"):
+                    if st.form_submit_button("✅ RECORD", width='stretch', type="primary"):
                         player_name = keeper.split(' ', 1)[1]
                         catch_details = f"{catch_type}"
                         if notes:
@@ -4198,7 +4198,7 @@ elif page == "🎮 Live Game Tracker":
                         st.session_state.show_catch_dialog = False
                         st.rerun()
                 with col2:
-                    if st.form_submit_button("❌ Cancel", use_container_width=True):
+                    if st.form_submit_button("❌ Cancel", width='stretch'):
                         st.session_state.show_catch_dialog = False
                         st.rerun()
         
@@ -4219,7 +4219,7 @@ elif page == "🎮 Live Game Tracker":
                 notes = st.text_input("Notes (optional)")
                 col1, col2 = st.columns(2)
                 with col1:
-                    if st.form_submit_button("✅ RECORD", use_container_width=True, type="primary"):
+                    if st.form_submit_button("✅ RECORD", width='stretch', type="primary"):
                         player_name = keeper.split(' ', 1)[1]
                         punch_details = f"{punch_type}"
                         if notes:
@@ -4229,7 +4229,7 @@ elif page == "🎮 Live Game Tracker":
                         st.session_state.show_punch_dialog = False
                         st.rerun()
                 with col2:
-                    if st.form_submit_button("❌ Cancel", use_container_width=True):
+                    if st.form_submit_button("❌ Cancel", width='stretch'):
                         st.session_state.show_punch_dialog = False
                         st.rerun()
         
@@ -4256,7 +4256,7 @@ elif page == "🎮 Live Game Tracker":
                 notes = st.text_input("Notes (optional)")
                 col1, col2 = st.columns(2)
                 with col1:
-                    if st.form_submit_button("✅ RECORD", use_container_width=True, type="primary"):
+                    if st.form_submit_button("✅ RECORD", width='stretch', type="primary"):
                         player_name = keeper.split(' ', 1)[1]
                         dist_details = f"{dist_type} to {target}"
                         if notes:
@@ -4266,7 +4266,7 @@ elif page == "🎮 Live Game Tracker":
                         st.session_state.show_dist_dialog = False
                         st.rerun()
                 with col2:
-                    if st.form_submit_button("❌ Cancel", use_container_width=True):
+                    if st.form_submit_button("❌ Cancel", width='stretch'):
                         st.session_state.show_dist_dialog = False
                         st.rerun()
         
@@ -4287,7 +4287,7 @@ elif page == "🎮 Live Game Tracker":
                 notes = st.text_input("Notes (optional)")
                 col1, col2 = st.columns(2)
                 with col1:
-                    if st.form_submit_button("✅ RECORD", use_container_width=True, type="primary"):
+                    if st.form_submit_button("✅ RECORD", width='stretch', type="primary"):
                         player_name = keeper.split(' ', 1)[1]
                         clear_details = f"{clear_type}"
                         if notes:
@@ -4297,7 +4297,7 @@ elif page == "🎮 Live Game Tracker":
                         st.session_state.show_clear_dialog = False
                         st.rerun()
                 with col2:
-                    if st.form_submit_button("❌ Cancel", use_container_width=True):
+                    if st.form_submit_button("❌ Cancel", width='stretch'):
                         st.session_state.show_clear_dialog = False
                         st.rerun()
         
@@ -4358,7 +4358,7 @@ elif page == "🎮 Live Game Tracker":
         result = "WIN" if dsx_score > opp_score else "LOSS" if dsx_score < opp_score else "DRAW"
         st.markdown(f"### {result}! DSX {dsx_score} - {opp_score} {st.session_state.game_data['opponent']}")
         
-        if st.button("💾 Save to CSV", use_container_width=True, type="primary"):
+        if st.button("💾 Save to CSV", width='stretch', type="primary"):
             # Save match
             match_data = {
                 'Date': st.session_state.game_data['date'],
@@ -4373,7 +4373,7 @@ elif page == "🎮 Live Game Tracker":
             matches_df.to_csv("DSX_Matches_Fall2025.csv", index=False)
             st.success("✅ Game saved!")
             
-        if st.button("🔄 New Game", use_container_width=True):
+        if st.button("🔄 New Game", width='stretch'):
             st.session_state.game_active = False
             st.session_state.show_summary = False
             st.session_state.events = []
@@ -5045,7 +5045,7 @@ elif page == "💬 Team Chat":
                     key=f"message_{channel_name}"
                 )
                 
-                submit = st.form_submit_button("📤 Send Message", use_container_width=True, type="primary")
+                submit = st.form_submit_button("📤 Send Message", width='stretch', type="primary")
                 
                 if submit:
                     if not username or not username.strip():
@@ -5106,7 +5106,7 @@ elif page == "🏆 Division Rankings":
     with col1:
         st.info("📊 **See how DSX ranks among your peers - teams that also play tournament schedules like DSX.**")
     with col2:
-        if st.button("🔄 Refresh Rankings Data", use_container_width=True):
+        if st.button("🔄 Refresh Rankings Data", width='stretch'):
             # Run the ranking generation script
             import subprocess
             import sys
@@ -5156,7 +5156,7 @@ elif page == "🏆 Division Rankings":
                 
                 st.dataframe(
                     display_df[['Rank', 'Team', 'GP', 'W', 'L', 'D', 'GF', 'GA', 'GD', 'PPG', 'StrengthIndex']],
-                    use_container_width=True,
+                    width='stretch',
                     hide_index=True,
                     column_config={
                         "Rank": st.column_config.NumberColumn("Rank", format="%d"),
@@ -5198,7 +5198,7 @@ elif page == "🏆 Division Rankings":
                 
                 st.dataframe(
                     display_df[['Rank', 'Team', 'GP', 'W', 'L', 'D', 'GF', 'GA', 'GD', 'PPG', 'StrengthIndex']],
-                    use_container_width=True,
+                    width='stretch',
                     hide_index=True,
                     column_config={
                         "Rank": st.column_config.NumberColumn("Rank", format="%d"),
@@ -5226,7 +5226,7 @@ elif page == "🏆 Division Rankings":
                 
                 st.dataframe(
                     rankings_2017[['Rank', 'Team', 'GP', 'W', 'L', 'D', 'GF', 'GA', 'GD', 'PPG', 'StrengthIndex']],
-                    use_container_width=True,
+                    width='stretch',
                     hide_index=True,
                     column_config={
                         "Rank": st.column_config.NumberColumn("Rank", format="%d"),
@@ -5268,7 +5268,7 @@ elif page == "🏆 Division Rankings":
                 
                 st.dataframe(
                     display_df[['Rank', 'Team', 'GP', 'W', 'L', 'D', 'GF', 'GA', 'GD', 'PPG', 'StrengthIndex']],
-                    use_container_width=True,
+                    width='stretch',
                     hide_index=True,
                     column_config={
                         "Rank": st.column_config.NumberColumn("Rank", format="%d"),
@@ -5768,7 +5768,7 @@ elif page == "🏆 Division Rankings":
                     
                     st.dataframe(
                         display_peer_df[available_cols],
-                        use_container_width=True,
+                        width='stretch',
                         hide_index=True,
                         column_config={
                             "Rank": st.column_config.NumberColumn("Rank", format="%d"),
@@ -6174,7 +6174,7 @@ elif page == "🏆 Division Rankings":
                 
                 st.dataframe(
                     display_df[display_cols],
-                    use_container_width=True,
+                    width='stretch',
                     hide_index=True,
                     column_config={
                         "Rank": st.column_config.NumberColumn("Rank", format="%d"),
@@ -6440,7 +6440,7 @@ elif page == "🏆 Division Rankings":
                         height=400
                     )
                     fig.update_xaxes(tickangle=-45)
-                    st.plotly_chart(fig, use_container_width=True)
+                    st.plotly_chart(fig, width='stretch')
                 
                 with col2:
                     # PPG comparison
@@ -6461,7 +6461,7 @@ elif page == "🏆 Division Rankings":
                         height=400
                     )
                     fig.update_xaxes(tickangle=-45)
-                    st.plotly_chart(fig, use_container_width=True)
+                    st.plotly_chart(fig, width='stretch')
                 
                 # Offensive vs Defensive scatter
                 st.markdown("---")
@@ -6484,7 +6484,7 @@ elif page == "🏆 Division Rankings":
                 fig.add_vline(x=combined_df['GA_PG'].mean(), line_dash="dash", line_color="gray",
                               annotation_text="Avg GA/G", annotation_position="top")
                 fig.update_layout(height=500, showlegend=False)
-                st.plotly_chart(fig, use_container_width=True)
+                st.plotly_chart(fig, width='stretch')
                 
                 st.info("💡 **Top-right quadrant** = Strong offense & weak defense | **Top-left quadrant** = Strong offense & strong defense (best!)")
     
@@ -6585,7 +6585,7 @@ elif page == "📊 Ohio U8/U9 Rankings":
             # Display rankings table
             st.dataframe(
                 display_df[['Rank', 'Team', 'GP', 'W', 'L', 'D', 'PPG', 'StrengthIndex']],
-                use_container_width=True,
+                width='stretch',
                 hide_index=True,
                 column_config={
                     "Rank": st.column_config.NumberColumn("Rank", format="%d"),
@@ -6999,7 +6999,7 @@ elif page == "📊 Team Analysis":
             height=500
         )
         
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width='stretch')
 
 
 elif page == "👥 Player Stats":
@@ -7100,7 +7100,7 @@ elif page == "👥 Player Stats":
             if 'Goals/Game' in display_df.columns:
                 display_df['Goals/Game'] = display_df['Goals/Game'].apply(lambda x: f"{x:.2f}")
             
-            st.dataframe(display_df, use_container_width=True, hide_index=True)
+            st.dataframe(display_df, width='stretch', hide_index=True)
         
         st.markdown("---")
         
@@ -7115,7 +7115,7 @@ elif page == "👥 Player Stats":
                 title='Minutes Played by Player',
                 labels={'PlayerName': 'Player', 'Minutes': 'Minutes Played'}
             )
-            st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(fig, width='stretch')
             
             # Fairness check
             avg_minutes = players['Minutes'].mean()
@@ -7312,7 +7312,7 @@ elif page == "📅 Match History":
     
     st.dataframe(
         display_matches[['Date', 'Tournament', 'Opponent', 'GF', 'GA', 'GD', 'Result']],
-        use_container_width=True,
+        width='stretch',
         hide_index=True,
         column_config={
             "Date": st.column_config.DateColumn("Date"),
@@ -7350,7 +7350,7 @@ elif page == "📅 Match History":
             yaxis_title='Goals',
             height=400
         )
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width='stretch')
     
     with col2:
         # Results by tournament
@@ -7363,7 +7363,7 @@ elif page == "📅 Match History":
             color_discrete_map={'W': 'green', 'D': 'yellow', 'L': 'red'}
         )
         fig.update_layout(height=400)
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width='stretch')
     
     # Cumulative GD
     matches_sorted = matches.sort_values('Date')
@@ -7378,7 +7378,7 @@ elif page == "📅 Match History":
     )
     fig.add_hline(y=0, line_dash="dash", line_color="gray")
     fig.update_layout(height=400)
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, width='stretch')
 
 
 elif page == "🎮 Game Predictions":
@@ -8033,7 +8033,7 @@ elif page == "📊 Benchmarking":
                 height=500
             )
             
-            st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(fig, width='stretch')
             
             st.markdown("---")
             
@@ -8154,7 +8154,7 @@ elif page == "📊 Benchmarking":
                 
                 st.dataframe(
                     benchmarking_2017_df[display_cols],
-                    use_container_width=True,
+                    width='stretch',
                     hide_index=True,
                     column_config={
                         "Rank": st.column_config.NumberColumn("Rank", format="%d"),
@@ -8538,7 +8538,7 @@ elif page == "🔍 Opponent Intel":
             match_display = opp_matches[['Date', 'Tournament', 'Location', 'GF', 'GA', 'Outcome', 'Points', 'GoalDiff']].copy()
             match_display.columns = ['Date', 'Tournament', 'Location', 'GF', 'GA', 'Result', 'Pts', 'GD']
             
-            st.dataframe(match_display, use_container_width=True, hide_index=True)
+            st.dataframe(match_display, width='stretch', hide_index=True)
             
             st.markdown("---")
             
@@ -8573,7 +8573,7 @@ elif page == "🔍 Opponent Intel":
                     height=400
                 )
                 
-                st.plotly_chart(fig, use_container_width=True)
+                st.plotly_chart(fig, width='stretch')
             
             st.markdown("---")
             
@@ -9117,7 +9117,7 @@ elif page == "📋 Full Analysis":
         'Feasibility': ['⭐⭐⭐ Challenging', '⭐⭐⭐⭐ Achievable', '⭐⭐⭐⭐⭐ Very Achievable', '⭐⭐⭐ Difficult', '⭐ Very Unlikely']
     }
     
-    st.dataframe(pd.DataFrame(goals_data), use_container_width=True, hide_index=True)
+    st.dataframe(pd.DataFrame(goals_data), width='stretch', hide_index=True)
 
 
 elif page == "📖 Quick Start Guide":
@@ -9327,7 +9327,7 @@ elif page == "📖 Quick Start Guide":
         ]
     }
     
-    st.dataframe(pd.DataFrame(pages_info), use_container_width=True, hide_index=True)
+    st.dataframe(pd.DataFrame(pages_info), width='stretch', hide_index=True)
     
     st.markdown("---")
     
@@ -9643,7 +9643,7 @@ elif page == "⚙️ Data Manager":
             edited_roster = st.data_editor(
                 roster,
                 num_rows="dynamic",  # Allow adding/deleting rows
-                use_container_width=True,
+                width='stretch',
                 hide_index=True,
                 column_config={
                     "PlayerNumber": st.column_config.NumberColumn("Jersey #", required=True),
@@ -9697,7 +9697,7 @@ elif page == "⚙️ Data Manager":
             edited_stats = st.data_editor(
                 player_stats,
                 num_rows="dynamic",
-                use_container_width=True,
+                width='stretch',
                 hide_index=True,
                 column_config={
                     "PlayerNumber": st.column_config.NumberColumn("Jersey #", required=True),
@@ -9755,7 +9755,7 @@ elif page == "⚙️ Data Manager":
             edited_matches = st.data_editor(
                 matches,
                 num_rows="dynamic",
-                use_container_width=True,
+                width='stretch',
                 hide_index=True,
                 column_config={
                     "Date": st.column_config.TextColumn("Date (YYYY-MM-DD)", required=True),
@@ -9812,7 +9812,7 @@ elif page == "⚙️ Data Manager":
             edited_game_stats = st.data_editor(
                 game_stats,
                 num_rows="dynamic",
-                use_container_width=True,
+                width='stretch',
                 hide_index=True,
                 column_config={
                     "Date": st.column_config.TextColumn("Date (YYYY-MM-DD)", required=True),
@@ -9871,7 +9871,7 @@ elif page == "⚙️ Data Manager":
             edited_schedule = st.data_editor(
                 schedule,
                 num_rows="dynamic",
-                use_container_width=True,
+                width='stretch',
                 hide_index=True,
                 column_config={
                     "EventID": st.column_config.NumberColumn("Event ID", help="Unique ID (auto-generated)"),
@@ -9962,7 +9962,7 @@ elif page == "⚙️ Data Manager":
                     
                     col1, col2 = st.columns(2)
                     with col1:
-                        if st.button("📥 Import & Merge", type="primary", use_container_width=True):
+                        if st.button("📥 Import & Merge", type="primary", width='stretch'):
                             # Call import logic from import_teamsnap_schedule.py
                             try:
                                 # Read the uploaded file content
@@ -10045,7 +10045,7 @@ elif page == "⚙️ Data Manager":
                                 st.write("**Tip:** Make sure your TeamSnap CSV has columns like 'Date', 'Time', 'Location', and 'Opponent'")
                     
                     with col2:
-                        if st.button("❌ Cancel", use_container_width=True):
+                        if st.button("❌ Cancel", width='stretch'):
                             st.rerun()
                             
                 except Exception as e:
@@ -10099,7 +10099,7 @@ elif page == "⚙️ Data Manager":
             edited_positions = st.data_editor(
                 positions,
                 num_rows="dynamic",
-                use_container_width=True,
+                width='stretch',
                 hide_index=True,
                 key="position_config_editor",
                 column_config={
@@ -10213,7 +10213,7 @@ elif page == "⚙️ Data Manager":
         for name, fname in tracked_files:
             exists = os.path.exists(fname)
             rows.append({'League/Division': name, 'File': fname, 'Status': '✅ Available' if exists else '❌ Missing'})
-        st.dataframe(pd.DataFrame(rows), use_container_width=True, hide_index=True)
+        st.dataframe(pd.DataFrame(rows), width='stretch', hide_index=True)
         
         st.markdown("---")
         st.subheader("🔍 Discovered Ohio Tournaments (2018 Boys)")
@@ -10223,7 +10223,7 @@ elif page == "⚙️ Data Manager":
             st.write("**Real-Time Tournament Discovery**")
             st.caption("Automatically discover and track new U8/U9 Boys tournaments from GotSport")
         with col2:
-            if st.button("🔍 Run Discovery", use_container_width=True, type="primary"):
+            if st.button("🔍 Run Discovery", width='stretch', type="primary"):
                 import subprocess
                 import sys
                 try:
@@ -10268,7 +10268,7 @@ elif page == "⚙️ Data Manager":
                             if len(df) > 20:
                                 st.caption(f"... and {len(df) - 20} more teams. Download full file below.")
                         else:
-                            st.dataframe(df.head(20), use_container_width=True, hide_index=True)
+                            st.dataframe(df.head(20), width='stretch', hide_index=True)
                         
                         # Download button
                         with open(fname, 'rb') as f:
@@ -10299,7 +10299,7 @@ elif page == "⚙️ Data Manager":
             { 'Script': 'fetch_division_schedules.py', 'Purpose': 'Generic division schedules', 'Source': 'GotSport' },
             { 'Script': 'fetch_ocl_bu09_7v7_stripes.py', 'Purpose': 'OCL BU09 7v7 Stripes - 2017 Boys Benchmarking (Not in main rankings)', 'Source': 'GotSport group=418537' },
         ]
-        st.dataframe(pd.DataFrame(sources), use_container_width=True, hide_index=True)
+        st.dataframe(pd.DataFrame(sources), width='stretch', hide_index=True)
     
     st.markdown("---")
     
@@ -10363,7 +10363,7 @@ elif page == "⚙️ Data Manager":
     col1, col2, col3, col4, col5, col6 = st.columns(6)
     
     with col1:
-        if st.button("Update Division", use_container_width=True):
+        if st.button("Update Division", width='stretch'):
             with st.spinner("Fetching division data..."):
                 import subprocess
                 result = subprocess.run([sys.executable, 'fetch_gotsport_division.py'], 
@@ -10376,7 +10376,7 @@ elif page == "⚙️ Data Manager":
                     st.code(result.stderr)
     
     with col2:
-        if st.button("Update BSA Celtic", use_container_width=True):
+        if st.button("Update BSA Celtic", width='stretch'):
             with st.spinner("Fetching BSA Celtic..."):
                 import subprocess
                 result = subprocess.run([sys.executable, 'fetch_bsa_celtic.py'], 
@@ -10389,7 +10389,7 @@ elif page == "⚙️ Data Manager":
                     st.code(result.stderr)
     
     with col3:
-        if st.button("Update CU Fall Finale", use_container_width=True):
+        if st.button("Update CU Fall Finale", width='stretch'):
             with st.spinner("Fetching CU Fall Finale..."):
                 import subprocess
                 result = subprocess.run([sys.executable, 'fetch_cu_fall_finale.py'], 
@@ -10402,7 +10402,7 @@ elif page == "⚙️ Data Manager":
                     st.code(result.stderr)
     
     with col4:
-        if st.button("Update Club Ohio Fall Classic", use_container_width=True):
+        if st.button("Update Club Ohio Fall Classic", width='stretch'):
             with st.spinner("Fetching Club Ohio Fall Classic..."):
                 import subprocess
                 result = subprocess.run([sys.executable, 'fetch_club_ohio_fall_classic.py'], 
@@ -10415,7 +10415,7 @@ elif page == "⚙️ Data Manager":
                     st.code(result.stderr)
     
     with col5:
-        if st.button("Update OCL Stripes Results", use_container_width=True):
+        if st.button("Update OCL Stripes Results", width='stretch'):
             with st.spinner("Fetching OCL Stripes results..."):
                 import subprocess
                 result = subprocess.run([sys.executable, 'fetch_ocl_stripes_results.py'], 
@@ -10428,7 +10428,7 @@ elif page == "⚙️ Data Manager":
                     st.code(result.stderr)
     
     with col6:
-        if st.button("Update All", use_container_width=True):
+        if st.button("Update All", width='stretch'):
             with st.spinner("Updating all data..."):
                 import subprocess
                 
