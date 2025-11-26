@@ -4522,11 +4522,48 @@ elif page == "🎥 Video Analysis Viewer":
     st.markdown("View recorded game videos with player tracking overlays and analysis data")
     
     # Helper functions for video viewer
+    def convert_google_drive_link(url: str) -> str:
+        """
+        Convert Google Drive sharing link to direct download link.
+        
+        Formats supported:
+        - https://drive.google.com/file/d/FILE_ID/view?usp=sharing
+        - https://drive.google.com/open?id=FILE_ID
+        - https://drive.google.com/uc?id=FILE_ID
+        """
+        # Extract file ID from various Google Drive URL formats
+        patterns = [
+            r'/file/d/([a-zA-Z0-9_-]+)',  # /file/d/FILE_ID
+            r'[?&]id=([a-zA-Z0-9_-]+)',   # ?id=FILE_ID or &id=FILE_ID
+            r'/uc\?id=([a-zA-Z0-9_-]+)',  # /uc?id=FILE_ID
+        ]
+        
+        file_id = None
+        for pattern in patterns:
+            match = re.search(pattern, url)
+            if match:
+                file_id = match.group(1)
+                break
+        
+        if file_id:
+            # Convert to direct download link
+            # Using uc?export=download&id= for better compatibility
+            return f"https://drive.google.com/uc?export=download&id={file_id}"
+        
+        # If no file ID found, return original URL
+        return url
+    
     def load_overlay_metadata(metadata_path: str) -> Optional[Dict]:
-        """Load overlay metadata from JSON file."""
+        """Load overlay metadata from JSON file or URL."""
         try:
-            with open(metadata_path, 'r', encoding='utf-8') as f:
-                return json.load(f)
+            # Check if it's a URL
+            if metadata_path.startswith('http://') or metadata_path.startswith('https://'):
+                with urllib.request.urlopen(metadata_path) as response:
+                    return json.loads(response.read().decode('utf-8'))
+            else:
+                # Local file
+                with open(metadata_path, 'r', encoding='utf-8') as f:
+                    return json.load(f)
         except Exception as e:
             st.error(f"Error loading metadata: {e}")
             return None
@@ -4741,12 +4778,32 @@ elif page == "🎥 Video Analysis Viewer":
             video_file = st.file_uploader("Upload Video (MP4)", type=['mp4'])
             video_url = None
         else:
-            video_url = st.text_input("Video URL (MP4)", 
-                                     placeholder="https://example.com/video.mp4")
+            video_url = st.text_input("Video URL (MP4 or Google Drive)", 
+                                     placeholder="https://drive.google.com/file/d/... or https://example.com/video.mp4",
+                                     help="For Google Drive: Right-click file → Share → Copy link, then paste here")
             video_file = None
+            
+            # Auto-convert Google Drive links
+            if video_url and 'drive.google.com' in video_url:
+                video_url = convert_google_drive_link(video_url)
+                st.success("✅ Converted Google Drive link to direct download")
         
         st.header("📄 Metadata")
-        metadata_file = st.file_uploader("Upload Overlay Metadata (JSON)", type=['json'])
+        metadata_source = st.radio("Metadata source:", ["Upload File", "URL"], key="metadata_source")
+        
+        if metadata_source == "Upload File":
+            metadata_file = st.file_uploader("Upload Overlay Metadata (JSON)", type=['json'])
+            metadata_url = None
+        else:
+            metadata_url = st.text_input("Metadata URL (JSON or Google Drive)", 
+                                        placeholder="https://drive.google.com/file/d/... or https://example.com/metadata.json",
+                                        help="For Google Drive: Right-click file → Share → Copy link, then paste here")
+            metadata_file = None
+            
+            # Auto-convert Google Drive links for metadata
+            if metadata_url and 'drive.google.com' in metadata_url:
+                metadata_url = convert_google_drive_link(metadata_url)
+                st.success("✅ Converted Google Drive link to direct download")
         
         st.header("🎛️ Display Options")
         show_players = st.checkbox("Show Players", value=True)
@@ -4757,8 +4814,9 @@ elif page == "🎥 Video Analysis Viewer":
     
     # Main content area
     has_video = (video_file is not None) or (video_url is not None)
+    has_metadata = (metadata_file is not None) or (metadata_url is not None)
     
-    if has_video and metadata_file:
+    if has_video and has_metadata:
         # Handle video source
         if video_file:
             # Save uploaded file temporarily
@@ -4770,10 +4828,15 @@ elif page == "🎥 Video Analysis Viewer":
             video_path = None
             video_url_for_player = video_url
         
-        # Save metadata file temporarily
-        with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.json', encoding='utf-8') as tmp_metadata:
-            json.dump(json.loads(metadata_file.read().decode('utf-8')), tmp_metadata, indent=2)
-            metadata_path = tmp_metadata.name
+        # Handle metadata source
+        if metadata_file:
+            # Save metadata file temporarily
+            with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.json', encoding='utf-8') as tmp_metadata:
+                json.dump(json.loads(metadata_file.read().decode('utf-8')), tmp_metadata, indent=2)
+                metadata_path = tmp_metadata.name
+        else:
+            # Use URL directly
+            metadata_path = metadata_url
         
         # Load metadata
         overlay_data = load_overlay_metadata(metadata_path)
@@ -4866,11 +4929,13 @@ elif page == "🎥 Video Analysis Viewer":
                 pass
     
     elif has_video:
-        st.warning("⚠️ Please upload metadata file")
+        st.warning("⚠️ Please provide metadata file or URL")
         if video_file:
             st.video(video_file)
+        elif video_url:
+            st.info(f"Video URL provided: {video_url[:80]}...")
     
-    elif metadata_file:
+    elif has_metadata:
         st.warning("⚠️ Please provide a video source (upload or URL)")
     
     else:
