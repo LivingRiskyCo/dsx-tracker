@@ -1101,15 +1101,17 @@ with st.sidebar:
     st.markdown("---")
     
     # Import tagging module
+    TAGGING_AVAILABLE = False
     try:
         from streamlit_tagging import render_tagging_page, render_consensus_viewer_page, render_user_stats_page
         TAGGING_AVAILABLE = True
     except ImportError as e:
         TAGGING_AVAILABLE = False
-        # Log error for debugging (only in development)
-        import sys
-        if 'streamlit' not in sys.modules or not hasattr(st, 'error'):
-            print(f"Tagging module not available: {e}")
+        # Show error in sidebar for debugging
+        st.sidebar.error(f"⚠️ Tagging unavailable: {str(e)[:50]}")
+    except Exception as e:
+        TAGGING_AVAILABLE = False
+        st.sidebar.error(f"⚠️ Tagging error: {str(e)[:50]}")
     
     # Navigation options
     nav_options = ["🎯 What's Next", "📅 Team Schedule", "🎮 Live Game Tracker", "📺 Watch Live Game", "🎥 Video Analysis Viewer", "💬 Team Chat", "🏆 Division Rankings", "📊 Ohio U8/U9 Rankings", "📊 Team Analysis", "👥 Player Stats", "📅 Match History", "📝 Game Log", "🔍 Opponent Intel", "🎮 Game Predictions", "📊 Benchmarking", "📋 Full Analysis", "📖 Quick Start Guide", "⚙️ Data Manager"]

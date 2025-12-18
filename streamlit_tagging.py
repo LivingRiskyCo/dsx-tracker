@@ -5,14 +5,32 @@ Integrates with dsx-tracker dashboard
 
 import streamlit as st
 import pandas as pd
-import cv2
-import numpy as np
+try:
+    import cv2
+    import numpy as np
+    CV2_AVAILABLE = True
+except ImportError:
+    CV2_AVAILABLE = False
 from typing import Dict, List, Optional
-from tagging_database import TaggingDatabase
-from consensus_engine import ConsensusEngine
-from google_drive_integration import GoogleDriveAccess
+from pathlib import Path
 import hashlib
 from datetime import datetime
+import sys
+
+# Add current directory to path for imports
+current_dir = Path(__file__).parent
+if str(current_dir) not in sys.path:
+    sys.path.insert(0, str(current_dir))
+
+try:
+    from tagging_database import TaggingDatabase
+    from consensus_engine import ConsensusEngine
+    from google_drive_integration import GoogleDriveAccess
+except ImportError as e:
+    st.error(f"Error importing tagging modules: {e}")
+    TaggingDatabase = None
+    ConsensusEngine = None
+    GoogleDriveAccess = None
 
 # Initialize components
 @st.cache_resource
