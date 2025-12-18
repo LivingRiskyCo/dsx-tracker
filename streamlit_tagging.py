@@ -489,7 +489,13 @@ def render_tagging_page():
     st.caption(f"Found **{len(players)}** players detected at frame {frame_num}")
     
     # Get consensus for this frame
-    consensus = consensus_engine.get_consensus(video_id, frame_num) if consensus_engine else {}
+    consensus = {}
+    if consensus_engine:
+        try:
+            consensus = consensus_engine.get_consensus(video_id, frame_num)
+        except Exception as e:
+            st.warning(f"Could not load consensus: {e}")
+            consensus = {}
     
     # Show consensus summary at top
     if consensus:
