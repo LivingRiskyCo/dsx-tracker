@@ -605,21 +605,6 @@ def render_tagging_page():
                         st.warning("Please enter a player name")
             
             st.markdown("---")
-    
-    if frame_consensus:
-        consensus_df = pd.DataFrame([
-            {
-                'Track ID': c['track_id'],
-                'Player Name': c['player_name'],
-                'Confidence': f"{c['confidence_score']*100:.0f}%",
-                'Votes': c['vote_count'],
-                'Status': c['status']
-            }
-            for c in frame_consensus
-        ])
-        st.dataframe(consensus_df, use_container_width=True)
-    else:
-        st.info("No consensus tags yet for this frame")
 
 def render_consensus_viewer_page():
     """View consensus tags across all frames"""
