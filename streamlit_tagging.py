@@ -411,9 +411,26 @@ def render_tagging_page():
         max_frame = 1000
         min_frame = 0
     
-    # Frame navigation - put this FIRST
-    st.subheader("🎬 Navigate to Frame")
-    frame_num = st.slider("Frame Number", min_frame, max_frame, min_frame, step=1, key="frame_slider_main")
+    # Simplified interface - frame navigation first
+    st.subheader("🎬 Frame Navigation")
+    
+    # Use session state to track current frame and force updates
+    if 'current_frame' not in st.session_state:
+        st.session_state.current_frame = min_frame
+    
+    # Frame slider - this will trigger rerun when changed
+    frame_num = st.slider(
+        "Frame Number", 
+        min_frame, 
+        max_frame, 
+        st.session_state.current_frame, 
+        step=1, 
+        key="frame_slider_main",
+        help="Move this slider to navigate to different frames. Players below will update automatically."
+    )
+    
+    # Update session state
+    st.session_state.current_frame = frame_num
     
     # Show frame info
     col_info1, col_info2, col_info3 = st.columns(3)
@@ -422,70 +439,26 @@ def render_tagging_page():
     with col_info2:
         st.metric("🎬 Current Frame", frame_num)
     with col_info3:
-        st.metric("📈 Total Frames", max_frame - min_frame + 1)
+        st.metric("📈 Frame Range", f"{min_frame}-{max_frame}")
     
     st.markdown("---")
     
-    # Video player section
-    st.subheader("📹 Video Player")
-    st.caption("💡 **Watch the video and pause at the frame you want to tag**")
-    
-    # Video player - Google Drive videos need special handling
-    video_displayed = False
-    
-    # Show direct link first (this always works)
+    # Simplified video section - just a link
+    st.subheader("📹 Video Reference")
     video_view_url = f"https://drive.google.com/file/d/{video_id}/view"
-    st.markdown(f"🔗 **[Open Video in New Tab]({video_view_url})** (Recommended - works best)")
+    st.markdown(f"""
+    **💡 How to tag players:**
+    1. **[Open Video in New Tab]({video_view_url})** to watch the video
+    2. **Use the frame slider above** to navigate to the frame you want to tag
+    3. **Players detected at that frame** will appear below
+    4. **Enter player names** and submit tags
     
-    # Try iframe embed (this works better than st.video for Google Drive)
-    st.markdown("---")
-    st.caption("📺 **Video Player (Embedded)** - If it doesn't load, use the link above")
-    try:
-        iframe_html = f"""
-        <iframe 
-            src="https://drive.google.com/file/d/{video_id}/preview" 
-            width="100%" 
-            height="500" 
-            frameborder="0" 
-            allow="autoplay; encrypted-media" 
-            allowfullscreen
-            style="border-radius: 10px;">
-        </iframe>
-        """
-        st.components.v1.html(iframe_html, height=520)
-        video_displayed = True
-    except Exception as e:
-        st.warning(f"Could not embed video: {e}")
-    
-    # Also try direct download URL for st.video (may work if file is publicly shared)
-    st.markdown("---")
-    st.caption("📹 **Alternative Player** - May work if video is publicly shared")
-    try:
-        # For large files, Google Drive requires confirmation, so direct download may not work
-        # But we can try the preview URL format
-        video_preview_url = f"https://drive.google.com/file/d/{video_id}/preview"
-        st.video(video_preview_url)
-        video_displayed = True
-    except Exception as e:
-        st.caption("Native video player not available - use the embedded player above or the link")
-    
-    if not video_displayed:
-        st.info("""
-        **💡 How to use:**
-        1. **Click the link above** to open the video in a new tab
-        2. **Watch the video** and note the frame numbers
-        3. **Use the frame slider** in this interface to navigate
-        4. **Tag players** based on the frame number and track IDs
-        
-        **Alternative:** You can still tag players based on:
-        - Track numbers in the CSV
-        - Player positions (x, y coordinates)  
-        - Previous tags/consensus
-        """)
+    The video and frame slider are **separate** - navigate the video manually and use the slider to match the frame number.
+    """)
     
     st.markdown("---")
     
-    # Load players at this frame (pass frame_col to avoid redundant search)
+    # Load players at this frame - this will update when frame_num changes
     players = get_players_at_frame(csv_data, frame_num, frame_col)
     
     if not players:
