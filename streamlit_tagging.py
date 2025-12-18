@@ -411,28 +411,55 @@ def render_tagging_page():
         max_frame = 1000
         min_frame = 0
     
-    st.subheader("📹 Video Player")
+    # Frame navigation - put this FIRST
+    st.subheader("🎬 Navigate to Frame")
+    frame_num = st.slider("Frame Number", min_frame, max_frame, min_frame, step=1, key="frame_slider_main")
     
-    # Show video info
-    col_info1, col_info2 = st.columns(2)
+    # Show frame info
+    col_info1, col_info2, col_info3 = st.columns(3)
     with col_info1:
-        st.caption(f"📊 CSV has {len(csv_data)} rows")
+        st.metric("📊 CSV Rows", len(csv_data))
     with col_info2:
-        st.caption(f"🎬 Frame range: {min_frame} - {max_frame}")
+        st.metric("🎬 Current Frame", frame_num)
+    with col_info3:
+        st.metric("📈 Total Frames", max_frame - min_frame + 1)
+    
+    st.markdown("---")
+    
+    # Video player section
+    st.subheader("📹 Video Player")
+    st.caption("💡 **Watch the video and pause at the frame you want to tag**")
     
     # Video player - use direct download URL for better compatibility
+    video_displayed = False
     try:
         video_direct_url = drive.get_video_url(video_id, direct=True)
         st.video(video_direct_url)
+        video_displayed = True
     except Exception as e:
-        st.warning(f"⚠️ Video may not play if not publicly shared. Error: {e}")
-        # Fallback to preview URL
-        video_preview_url = drive.get_video_url(video_id, direct=False)
-        st.video(video_preview_url)
-        st.info("💡 **Tip:** Make sure your Google Drive video is shared publicly ('Anyone with the link') for best playback")
+        try:
+            # Fallback to preview URL
+            video_preview_url = drive.get_video_url(video_id, direct=False)
+            st.video(video_preview_url)
+            video_displayed = True
+        except Exception as e2:
+            st.error(f"⚠️ Could not load video")
+            st.warning("""
+            **Video Access Issues:**
+            - Make sure your Google Drive video is shared publicly ('Anyone with the link')
+            - Try copying the shareable link again
+            - The video should be in MP4 format
+            """)
     
-    # Frame selection slider
-    frame_num = st.slider("Frame Number", min_frame, max_frame, min_frame, step=1)
+    if not video_displayed:
+        st.info("""
+        **Alternative:** If the video doesn't load, you can still tag players based on:
+        - Track numbers in the CSV
+        - Player positions (x, y coordinates)
+        - Previous tags/consensus
+        """)
+    
+    st.markdown("---")
     
     # Load players at this frame (pass frame_col to avoid redundant search)
     players = get_players_at_frame(csv_data, frame_num, frame_col)
