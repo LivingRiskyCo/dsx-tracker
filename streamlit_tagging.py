@@ -509,7 +509,7 @@ def render_tagging_page():
                 
                 col_btn1, col_btn2 = st.columns(2)
                 with col_btn1:
-                    if st.button("Submit Tag", key=f"submit_{unique_suffix}"):
+                    if st.button("Submit Tag", key=f"submit_{unique_key}"):
                         try:
                             # Get user IP (if available)
                             ip_address = None
