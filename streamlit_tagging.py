@@ -95,20 +95,25 @@ def load_csv_data(csv_path: str) -> Optional[pd.DataFrame]:
         st.error(f"Error loading CSV: {e}")
         return None
 
-def get_players_at_frame(df: pd.DataFrame, frame_num: int) -> List[Dict]:
+def get_players_at_frame(df: pd.DataFrame, frame_num: int, frame_col: str = None) -> List[Dict]:
     """Get all players detected at a specific frame"""
-    # Try different column name variations
-    frame_col = None
-    for col in ['frame', 'Frame', 'FRAME', 'frame_num', 'frame_number']:
-        if col in df.columns:
-            frame_col = col
-            break
-    
+    # Try different column name variations if frame_col not provided
     if frame_col is None:
-        st.error("CSV file must contain a 'frame' column")
+        for col in ['frame', 'Frame', 'FRAME', 'frame_num', 'frame_number']:
+            if col in df.columns:
+                frame_col = col
+                break
+    
+    if frame_col is None or frame_col not in df.columns:
         return []
     
-    frame_data = df[df[frame_col] == frame_num]
+    # Convert frame column to numeric for comparison, handling NaN values
+    try:
+        df_frame_numeric = pd.to_numeric(df[frame_col], errors='coerce')
+        frame_data = df[df_frame_numeric == frame_num]
+    except Exception:
+        # Fallback to direct comparison
+        frame_data = df[df[frame_col] == frame_num]
     
     players = []
     for _, row in frame_data.iterrows():
