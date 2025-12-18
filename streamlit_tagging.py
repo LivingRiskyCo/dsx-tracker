@@ -16,6 +16,7 @@ from pathlib import Path
 import hashlib
 from datetime import datetime
 import sys
+import uuid
 
 # Add current directory to path for imports
 current_dir = Path(__file__).parent
@@ -465,14 +466,16 @@ def render_tagging_page():
     for i, player in enumerate(players):
         track_id = player['track_id']
         
-        # Create simple, unique key using hash of video_id + frame + track + index
-        # This ensures uniqueness while keeping keys short and valid
-        import hashlib
-        key_string = f"{video_id}_{frame_num}_{track_id}_{i}"
-        key_hash = hashlib.md5(key_string.encode()).hexdigest()[:12]  # Use first 12 chars of hash
-        unique_suffix = f"p{key_hash}"  # Prefix with 'p' to ensure it starts with letter
+        # Create simple, unique key using index and track_id
+        # Streamlit keys must be valid Python identifiers (start with letter/underscore, alphanumeric)
+        # Use simple numeric-based key that's guaranteed to be unique
+        unique_key = f"player_{i}_{track_id}_{frame_num}"
+        # Sanitize to ensure valid identifier
+        unique_key = ''.join(c if c.isalnum() or c == '_' else '_' for c in unique_key)
+        if unique_key[0].isdigit():
+            unique_key = f"p_{unique_key}"
         
-        with st.expander(f"Player Track #{track_id} - {player.get('player_name', 'Untagged')}", expanded=False, key=f"exp_{unique_suffix}"):
+        with st.expander(f"Player Track #{track_id} - {player.get('player_name', 'Untagged')}", expanded=False, key=unique_key):
             col1, col2 = st.columns([1, 2])
             
             with col1:
