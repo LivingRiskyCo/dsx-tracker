@@ -485,7 +485,7 @@ def render_tagging_page():
         st.markdown("**💡 Navigation**")
         st.caption("Use the slider above to change frames")
         st.caption("Frame image updates automatically")
-        if frame_bytes:
+        if 'frame_bytes' in locals() and frame_bytes:
             st.success("✅ Frame loaded")
         else:
             st.info("📹 Use video link to view")
@@ -494,6 +494,39 @@ def render_tagging_page():
     
     # Load players at this frame - this will update when frame_num changes
     players = get_players_at_frame(csv_data, frame_num, frame_col)
+    
+    # Draw player positions on frame if available
+    if players and 'frame_bytes' in locals() and frame_bytes and CV2_AVAILABLE:
+        try:
+            # Decode frame
+            frame_array = np.frombuffer(frame_bytes, np.uint8)
+            frame = cv2.imdecode(frame_array, cv2.IMREAD_COLOR)
+            
+            if frame is not None:
+                # Get frame dimensions
+                frame_height, frame_width = frame.shape[:2]
+                
+                # Draw each player
+                for player in players:
+                    track_id = player.get('track_id', 0)
+                    x = int(player.get('x', 0))
+                    y = int(player.get('y', 0))
+                    
+                    # Scale coordinates if needed (assuming CSV coordinates match frame)
+                    # Draw circle and label
+                    cv2.circle(frame, (x, y), 15, (0, 255, 0), 2)
+                    cv2.putText(frame, f"#{track_id}", (x + 20, y), 
+                               cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2)
+                
+                # Encode back to JPEG
+                _, buffer = cv2.imencode('.jpg', frame, [cv2.IMWRITE_JPEG_QUALITY, 85])
+                frame_with_players = buffer.tobytes()
+                
+                # Update displayed image
+                st.image(frame_with_players, caption=f"Frame {frame_num} with Player Positions | Time: {time_str}", use_container_width=True)
+        except Exception as e:
+            # If drawing fails, just show the original frame
+            st.caption(f"Note: Could not draw player positions: {e}")
     
     if not players:
         st.warning(f"⚠️ No players detected at frame {frame_num}")
