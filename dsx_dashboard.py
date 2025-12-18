@@ -1100,9 +1100,30 @@ with st.sidebar:
     st.markdown("**Dublin DSX Orange**  \n2018 Boys")
     st.markdown("---")
     
+    # Import tagging module
+    try:
+        from streamlit_tagging import render_tagging_page, render_consensus_viewer_page, render_user_stats_page
+        TAGGING_AVAILABLE = True
+    except ImportError:
+        TAGGING_AVAILABLE = False
+    
+    # Import tagging module
+    try:
+        from streamlit_tagging import render_tagging_page, render_consensus_viewer_page, render_user_stats_page
+        TAGGING_AVAILABLE = True
+    except ImportError:
+        TAGGING_AVAILABLE = False
+    
+    # Navigation options
+    nav_options = ["🎯 What's Next", "📅 Team Schedule", "🎮 Live Game Tracker", "📺 Watch Live Game", "🎥 Video Analysis Viewer", "💬 Team Chat", "🏆 Division Rankings", "📊 Ohio U8/U9 Rankings", "📊 Team Analysis", "👥 Player Stats", "📅 Match History", "📝 Game Log", "🔍 Opponent Intel", "🎮 Game Predictions", "📊 Benchmarking", "📋 Full Analysis", "📖 Quick Start Guide", "⚙️ Data Manager"]
+    
+    # Add tagging pages if available
+    if TAGGING_AVAILABLE:
+        nav_options.extend(["🏷️ Player Tagging", "📊 Consensus Viewer", "👤 My Tags"])
+    
     page = st.radio(
         "Navigation",
-        ["🎯 What's Next", "📅 Team Schedule", "🎮 Live Game Tracker", "📺 Watch Live Game", "🎥 Video Analysis Viewer", "💬 Team Chat", "🏆 Division Rankings", "📊 Ohio U8/U9 Rankings", "📊 Team Analysis", "👥 Player Stats", "📅 Match History", "📝 Game Log", "🔍 Opponent Intel", "🎮 Game Predictions", "📊 Benchmarking", "📋 Full Analysis", "📖 Quick Start Guide", "⚙️ Data Manager"]
+        nav_options
     )
     
     st.markdown("---")
@@ -5936,6 +5957,23 @@ elif page == "🏆 Division Rankings":
             return ""
         return ' '.join(str(name).strip().split()).lower()
     
+    # Helper function to detect if a team is 2017 or older (should be excluded from 2018+ rankings)
+    def is_2017_or_older(team_name):
+        """Check if team is 2017 or older (U9 or older) - should be excluded from 2018+ rankings"""
+        if pd.isna(team_name):
+            return False
+        team_str = str(team_name).upper()
+        # Check for explicit 2017 or older years
+        if re.search(r'\b(201[0-7]|20[0-6])\b', team_str):
+            return True
+        # Check for U9 or older (U9 = 2017, U10 = 2016, etc.)
+        if re.search(r'\b(U9|BU9|U-9|B-9|U1[0-9]|BU1[0-9])\b', team_str):
+            return True
+        # Check for B17 or older (B17 = 2017, B16 = 2016, etc.)
+        if re.search(r'\b(B1[0-7]|B0[7-9])\b', team_str):
+            return True
+        return False
+    
     # Build opponent rankings - include ALL teams DSX has played/will play
     # For teams with division data, use that. For others, use head-to-head stats only
     opponent_df = pd.DataFrame()
@@ -6127,6 +6165,17 @@ elif page == "🏆 Division Rankings":
             opponent_df['GF'] = opponent_df['GF_PG']  # Always use per-game
             opponent_df['GA'] = opponent_df['GA_PG']  # Always use per-game
             opponent_df['GD'] = opponent_df['GD_PG']  # Always use per-game
+            
+            # Filter out 2017 or older teams (keep only 2018+ teams for "2018+ teams only" ranking)
+            if not opponent_df.empty:
+                # Check each team and exclude 2017 or older teams
+                age_mask = opponent_df['Team'].apply(lambda x: not is_2017_or_older(x))
+                excluded_teams = opponent_df[~age_mask]['Team'].tolist() if not opponent_df[~age_mask].empty else []
+                opponent_df = opponent_df[age_mask].copy()
+                
+                # Log excluded teams if any
+                if excluded_teams:
+                    st.caption(f"ℹ️ Excluded {len(excluded_teams)} non-2018 team(s) from ranking: {', '.join(excluded_teams)}")
             
             # Combine DSX with opponents
             combined_df = pd.concat([dsx_row, opponent_df], ignore_index=True)
@@ -10553,6 +10602,14 @@ elif page == "⚙️ Data Manager":
     **Cache TTL:** 1 hour
     """)
 
+# Tagging pages (if available)
+if TAGGING_AVAILABLE:
+    if page == "🏷️ Player Tagging":
+        render_tagging_page()
+    elif page == "📊 Consensus Viewer":
+        render_consensus_viewer_page()
+    elif page == "👤 My Tags":
+        render_user_stats_page()
 
 # Footer
 st.markdown("---")
