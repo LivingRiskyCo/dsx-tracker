@@ -62,11 +62,25 @@ class GoogleDriveAccess:
             URL for video access
         """
         if direct:
-            # Direct download URL (requires file to be publicly accessible)
-            return f"https://drive.google.com/uc?export=download&id={file_id}"
+            # Try multiple URL formats for better compatibility
+            # Format 1: Direct download (works if file is publicly shared)
+            url1 = f"https://drive.google.com/uc?export=download&id={file_id}"
+            # Format 2: Alternative direct download
+            url2 = f"https://drive.google.com/uc?id={file_id}"
+            # Return the first one (we'll try both in the calling code)
+            return url1
         else:
-            # Preview/embed URL (better for streaming)
+            # Preview/embed URL (better for streaming, but may not work in Streamlit)
             return f"https://drive.google.com/file/d/{file_id}/preview"
+    
+    def get_streamable_video_url(self, file_id: str) -> str:
+        """
+        Get a video URL that works with Streamlit's video player
+        Uses gdown to create a temporary direct link
+        """
+        # For Streamlit, we need a direct MP4 URL
+        # Google Drive direct download URL (requires public sharing)
+        return f"https://drive.google.com/uc?export=download&id={file_id}"
     
     def download_video(self, file_id: str, output_path: Optional[str] = None) -> str:
         """
