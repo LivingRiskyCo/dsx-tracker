@@ -462,6 +462,35 @@ def render_tagging_page():
     st.subheader(f"Tag Players (Frame {frame_num})")
     st.markdown(f"Found {len(players)} players in this frame")
     
+    # Display frame preview with player boxes
+    st.markdown("---")
+    st.subheader("📸 Frame Preview")
+    
+    # Try to extract and display the frame from video
+    try:
+        # For now, show a placeholder - in future we can extract actual frame from video
+        st.info("💡 **Tip:** Use the video player above to navigate to the frame, then tag players below")
+        st.caption(f"Currently viewing frame {frame_num} of {max_frame}")
+        
+        # Show player positions on a simple visualization
+        if players:
+            col_viz1, col_viz2 = st.columns(2)
+            with col_viz1:
+                st.write("**Players in this frame:**")
+                for i, player in enumerate(players):
+                    st.write(f"• Track #{player['track_id']}: Position ({player['x']:.0f}, {player['y']:.0f})")
+            
+            with col_viz2:
+                st.write("**Instructions:**")
+                st.write("1. Watch the video player above")
+                st.write("2. Navigate to the frame using the slider")
+                st.write("3. Identify each player in the video")
+                st.write("4. Tag them below with their names")
+    except Exception as e:
+        st.warning(f"Could not display frame preview: {e}")
+    
+    st.markdown("---")
+    
     # Tagging interface for each player
     for i, player in enumerate(players):
         track_id = player['track_id']
