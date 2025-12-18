@@ -492,9 +492,32 @@ def render_tagging_page():
     consensus = {}
     if consensus_engine:
         try:
-            consensus = consensus_engine.get_consensus(video_id, frame_num)
+            # Check if method exists (for backwards compatibility)
+            if hasattr(consensus_engine, 'get_consensus'):
+                consensus = consensus_engine.get_consensus(video_id, frame_num)
+            else:
+                # Fallback: get consensus from database directly
+                st.warning("Consensus engine method not available, using database fallback")
+                # Try to get consensus from database for each player
+                for player in players:
+                    track_id = player.get('track_id')
+                    if track_id is not None:
+                        db_consensus = db.get_consensus(video_id, frame_num, track_id)
+                        if db_consensus:
+                            consensus[str(track_id)] = {
+                                'player_name': db_consensus.get('player_name', 'Unknown'),
+                                'confidence': db_consensus.get('confidence_score', 0.0),
+                                'vote_count': db_consensus.get('vote_count', 0),
+                                'agreement_rate': db_consensus.get('agreement_rate', 0.0),
+                                'status': db_consensus.get('status', 'pending')
+                            }
+        except AttributeError as e:
+            st.warning(f"Consensus engine method not available: {e}")
+            consensus = {}
         except Exception as e:
             st.warning(f"Could not load consensus: {e}")
+            import traceback
+            st.error(f"Error details: {traceback.format_exc()}")
             consensus = {}
     
     # Show consensus summary at top
