@@ -126,6 +126,34 @@ class ConsensusEngine:
         weight *= expertise_multiplier.get(expertise, 1.0)
         return weight
     
+    def get_consensus(self, video_id: str, frame_num: int) -> Dict:
+        """
+        Get consensus for all players in a frame
+        
+        Returns:
+            Dictionary mapping track_id (as string) to consensus info
+        """
+        # Get all unique track_ids with tags in this frame
+        tags = self.db.get_tags(video_id, frame_num, None)  # Get all tags for frame
+        if not tags:
+            return {}
+        
+        track_ids = set([t['track_id'] for t in tags])
+        consensus_dict = {}
+        
+        for track_id in track_ids:
+            consensus = self.calculate_consensus(video_id, frame_num, track_id)
+            if consensus:
+                consensus_dict[str(track_id)] = {
+                    'player_name': consensus['player_name'],
+                    'confidence': consensus['confidence_score'],
+                    'vote_count': consensus['vote_count'],
+                    'agreement_rate': consensus['agreement_rate'],
+                    'status': consensus['status']
+                }
+        
+        return consensus_dict
+    
     def update_all_consensus(self, video_id: str, frame_num: int):
         """Update consensus for all players in a frame"""
         # Get all unique track_ids with tags in this frame
