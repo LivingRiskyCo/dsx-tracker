@@ -4939,8 +4939,10 @@ elif page == "🎥 Video Analysis Viewer":
             
             # Display overlay info for current frame (if user provides frame number)
             st.subheader("Frame Information")
+            total_frames = overlay_data.get('total_frames', 0)
+            max_frame = max(0, total_frames - 1) if total_frames > 0 else 0
             frame_num = st.number_input("Frame Number", min_value=0, 
-                                       max_value=overlay_data.get('total_frames', 0) - 1, 
+                                       max_value=max_frame, 
                                        value=0, step=1)
             
             frame_key = str(frame_num)
