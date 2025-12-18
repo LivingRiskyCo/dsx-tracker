@@ -248,9 +248,23 @@ def render_tagging_page():
     # Show success message
     st.success(f"✅ Ready to tag! Video loaded with {len(csv_data)} tracking data rows")
     
-    # Frame selection
-    max_frame = int(csv_data[frame_col].max()) if len(csv_data) > 0 else 1000
-    min_frame = int(csv_data[frame_col].min()) if len(csv_data) > 0 else 0
+    # Frame selection - handle NaN and non-numeric values
+    try:
+        # Convert to numeric, dropping NaN values
+        frame_series = pd.to_numeric(csv_data[frame_col], errors='coerce')
+        frame_series = frame_series.dropna()
+        
+        if len(frame_series) > 0:
+            max_frame = int(frame_series.max())
+            min_frame = int(frame_series.min())
+        else:
+            max_frame = 1000
+            min_frame = 0
+            st.warning("⚠️ No valid frame numbers found in CSV")
+    except Exception as e:
+        st.error(f"Error reading frame data: {e}")
+        max_frame = 1000
+        min_frame = 0
     
     st.subheader("📹 Video Player")
     
