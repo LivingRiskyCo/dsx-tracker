@@ -443,18 +443,52 @@ def render_tagging_page():
     
     st.markdown("---")
     
-    # Simplified video section - just a link
-    st.subheader("📹 Video Reference")
-    video_view_url = f"https://drive.google.com/file/d/{video_id}/view"
-    st.markdown(f"""
-    **💡 How to tag players:**
-    1. **[Open Video in New Tab]({video_view_url})** to watch the video
-    2. **Use the frame slider above** to navigate to the frame you want to tag
-    3. **Players detected at that frame** will appear below
-    4. **Enter player names** and submit tags
+    # Frame image display with player positions
+    st.subheader("📸 Frame Preview")
     
-    The video and frame slider are **separate** - navigate the video manually and use the slider to match the frame number.
-    """)
+    # Calculate FPS from CSV if available, otherwise default to 30
+    fps = 30.0
+    if 'fps' in csv_data.columns:
+        fps = csv_data['fps'].iloc[0] if len(csv_data) > 0 else 30.0
+    elif 'FPS' in csv_data.columns:
+        fps = csv_data['FPS'].iloc[0] if len(csv_data) > 0 else 30.0
+    
+    # Calculate timestamp
+    timestamp = frame_num / fps if fps > 0 else 0
+    time_str = f"{int(timestamp // 60):02d}:{int(timestamp % 60):02d}.{int((timestamp % 1) * 100):02d}"
+    
+    # Try to extract and display frame
+    frame_col1, frame_col2 = st.columns([2, 1])
+    
+    with frame_col1:
+        try:
+            frame_bytes = drive.extract_frame(video_id, frame_num, fps)
+            if frame_bytes:
+                st.image(frame_bytes, caption=f"Frame {frame_num} | Time: {time_str} | FPS: {fps:.1f}", use_container_width=True)
+            else:
+                st.info("💡 **Frame extraction not available** - Use the video link below to view the video")
+                video_view_url = f"https://drive.google.com/file/d/{video_id}/view"
+                st.markdown(f"🔗 **[Open Video in New Tab]({video_view_url})**")
+                st.caption(f"Navigate to frame {frame_num} (Time: {time_str}) in the video")
+        except Exception as e:
+            st.warning(f"Could not extract frame: {e}")
+            video_view_url = f"https://drive.google.com/file/d/{video_id}/view"
+            st.markdown(f"🔗 **[Open Video in New Tab]({video_view_url})**")
+            st.caption(f"Navigate to frame {frame_num} (Time: {time_str}) in the video")
+    
+    with frame_col2:
+        st.markdown("**📊 Frame Info**")
+        st.metric("Frame", frame_num)
+        st.metric("Time", time_str)
+        st.metric("FPS", f"{fps:.1f}")
+        st.markdown("---")
+        st.markdown("**💡 Navigation**")
+        st.caption("Use the slider above to change frames")
+        st.caption("Frame image updates automatically")
+        if frame_bytes:
+            st.success("✅ Frame loaded")
+        else:
+            st.info("📹 Use video link to view")
     
     st.markdown("---")
     
