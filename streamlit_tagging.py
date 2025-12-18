@@ -430,67 +430,58 @@ def render_tagging_page():
     st.subheader("📹 Video Player")
     st.caption("💡 **Watch the video and pause at the frame you want to tag**")
     
-    # Video player - try multiple URL formats
+    # Video player - Google Drive videos need special handling
     video_displayed = False
     
-    # Try different Google Drive URL formats
-    video_urls_to_try = [
-        f"https://drive.google.com/uc?export=download&id={video_id}",
-        f"https://drive.google.com/uc?id={video_id}",
-        f"https://drive.google.com/file/d/{video_id}/view?usp=sharing",
-    ]
+    # Show direct link first (this always works)
+    video_view_url = f"https://drive.google.com/file/d/{video_id}/view"
+    st.markdown(f"🔗 **[Open Video in New Tab]({video_view_url})** (Recommended - works best)")
     
-    for video_url in video_urls_to_try:
-        try:
-            st.video(video_url)
-            video_displayed = True
-            st.caption(f"✅ Video loaded from: {video_url[:50]}...")
-            break
-        except Exception as e:
-            continue
+    # Try iframe embed (this works better than st.video for Google Drive)
+    st.markdown("---")
+    st.caption("📺 **Video Player (Embedded)** - If it doesn't load, use the link above")
+    try:
+        iframe_html = f"""
+        <iframe 
+            src="https://drive.google.com/file/d/{video_id}/preview" 
+            width="100%" 
+            height="500" 
+            frameborder="0" 
+            allow="autoplay; encrypted-media" 
+            allowfullscreen
+            style="border-radius: 10px;">
+        </iframe>
+        """
+        st.components.v1.html(iframe_html, height=520)
+        video_displayed = True
+    except Exception as e:
+        st.warning(f"Could not embed video: {e}")
+    
+    # Also try direct download URL for st.video (may work if file is publicly shared)
+    st.markdown("---")
+    st.caption("📹 **Alternative Player** - May work if video is publicly shared")
+    try:
+        # For large files, Google Drive requires confirmation, so direct download may not work
+        # But we can try the preview URL format
+        video_preview_url = f"https://drive.google.com/file/d/{video_id}/preview"
+        st.video(video_preview_url)
+        video_displayed = True
+    except Exception as e:
+        st.caption("Native video player not available - use the embedded player above or the link")
     
     if not video_displayed:
-        # Show iframe embed as fallback
-        st.warning("⚠️ **Video player not loading automatically**")
         st.info("""
-        **To view the video:**
-        1. Make sure your Google Drive video is shared publicly ('Anyone with the link')
-        2. Click the link below to open the video in a new tab
-        3. Watch the video there and use the frame slider above to navigate
-        4. Tag players based on the frame number
+        **💡 How to use:**
+        1. **Click the link above** to open the video in a new tab
+        2. **Watch the video** and note the frame numbers
+        3. **Use the frame slider** in this interface to navigate
+        4. **Tag players** based on the frame number and track IDs
+        
+        **Alternative:** You can still tag players based on:
+        - Track numbers in the CSV
+        - Player positions (x, y coordinates)  
+        - Previous tags/consensus
         """)
-        
-        # Provide direct link
-        video_link = f"https://drive.google.com/file/d/{video_id}/view"
-        st.markdown(f"🔗 [Open Video in New Tab]({video_link})")
-        
-        # Also try HTML iframe embed
-        st.markdown("---")
-        st.subheader("📺 Video (Embed)")
-        try:
-            iframe_html = f"""
-            <iframe 
-                src="https://drive.google.com/file/d/{video_id}/preview" 
-                width="100%" 
-                height="400" 
-                frameborder="0" 
-                allow="autoplay; encrypted-media" 
-                allowfullscreen>
-            </iframe>
-            """
-            st.components.v1.html(iframe_html, height=420)
-            video_displayed = True
-        except Exception as e:
-            st.error(f"Could not embed video: {e}")
-        
-        if not video_displayed:
-            st.info("""
-            **Alternative:** If the video doesn't load, you can still tag players based on:
-            - Track numbers in the CSV
-            - Player positions (x, y coordinates)  
-            - Previous tags/consensus
-            - Frame numbers (match with your local video player)
-            """)
     
     st.markdown("---")
     
