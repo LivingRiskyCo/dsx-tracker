@@ -501,13 +501,13 @@ def render_tagging_page():
                 player_name = st.text_input(
                     f"Player Name (Track {track_id})",
                     value=consensus['player_name'] if consensus else player.get('player_name', ''),
-                    key=f"name_{unique_suffix}"
+                    key=f"name_{unique_key}"
                 )
                 
                 confidence = st.slider(
                     "Your Confidence",
                     0.0, 1.0, 1.0,
-                    key=f"conf_{unique_suffix}"
+                    key=f"conf_{unique_key}"
                 )
                 
                 col_btn1, col_btn2 = st.columns(2)
