@@ -326,7 +326,10 @@ def render_tagging_page():
     for i, player in enumerate(players):
         track_id = player['track_id']
         
-        with st.expander(f"Player Track #{track_id} - {player.get('player_name', 'Untagged')}", expanded=False):
+        # Create unique key using video_id, frame_num, track_id, and index to ensure uniqueness
+        unique_suffix = f"{video_id}_{frame_num}_{track_id}_{i}"
+        
+        with st.expander(f"Player Track #{track_id} - {player.get('player_name', 'Untagged')}", expanded=False, key=f"expander_{unique_suffix}"):
             col1, col2 = st.columns([1, 2])
             
             with col1:
@@ -348,22 +351,22 @@ def render_tagging_page():
                     st.info("No consensus yet - be the first to tag!")
             
             with col2:
-                # Tag input
+                # Tag input - use unique key
                 player_name = st.text_input(
                     f"Player Name (Track {track_id})",
                     value=consensus['player_name'] if consensus else player.get('player_name', ''),
-                    key=f"name_{frame_num}_{track_id}"
+                    key=f"name_{unique_suffix}"
                 )
                 
                 confidence = st.slider(
                     "Your Confidence",
                     0.0, 1.0, 1.0,
-                    key=f"conf_{frame_num}_{track_id}"
+                    key=f"conf_{unique_suffix}"
                 )
                 
                 col_btn1, col_btn2 = st.columns(2)
                 with col_btn1:
-                    if st.button("Submit Tag", key=f"submit_{frame_num}_{track_id}"):
+                    if st.button("Submit Tag", key=f"submit_{unique_suffix}"):
                         try:
                             # Get user IP (if available)
                             ip_address = None
