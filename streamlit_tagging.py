@@ -483,130 +483,128 @@ def render_tagging_page():
                 st.write(unique_frames)
         return
     
-    st.subheader(f"Tag Players (Frame {frame_num})")
-    st.markdown(f"Found {len(players)} players in this frame")
+    # Display players at current frame - this updates when frame_num changes
+    st.subheader(f"👥 Players at Frame {frame_num}")
     
-    # Display frame preview with player boxes
-    st.markdown("---")
-    st.subheader("📸 Frame Preview")
+    st.caption(f"Found **{len(players)}** players detected at frame {frame_num}")
     
-    # Try to extract and display the frame from video
-    try:
-        # For now, show a placeholder - in future we can extract actual frame from video
-        st.info("💡 **Tip:** Use the video player above to navigate to the frame, then tag players below")
-        st.caption(f"Currently viewing frame {frame_num} of {max_frame}")
-        
-        # Show player positions on a simple visualization
-        if players:
-            col_viz1, col_viz2 = st.columns(2)
-            with col_viz1:
-                st.write("**Players in this frame:**")
-                for i, player in enumerate(players):
-                    st.write(f"• Track #{player['track_id']}: Position ({player['x']:.0f}, {player['y']:.0f})")
-            
-            with col_viz2:
-                st.write("**Instructions:**")
-                st.write("1. Watch the video player above")
-                st.write("2. Navigate to the frame using the slider")
-                st.write("3. Identify each player in the video")
-                st.write("4. Tag them below with their names")
-    except Exception as e:
-        st.warning(f"Could not display frame preview: {e}")
+    # Get consensus for this frame
+    consensus = engine.get_consensus(video_id, frame_num) if engine else {}
+    
+    # Show consensus summary at top
+    if consensus:
+        st.success(f"✅ **{len(consensus)} players** already have consensus tags")
+        with st.expander("📋 View Existing Consensus Tags", expanded=False):
+            consensus_list = []
+            for track_id, tag_info in consensus.items():
+                consensus_list.append({
+                    'Track ID': track_id,
+                    'Player Name': tag_info.get('player_name', 'Unknown'),
+                    'Confidence': f"{tag_info.get('confidence', 0):.2%}",
+                    'Votes': tag_info.get('vote_count', 0)
+                })
+            if consensus_list:
+                consensus_df = pd.DataFrame(consensus_list)
+                st.dataframe(consensus_df, use_container_width=True)
     
     st.markdown("---")
     
-    # Tagging interface for each player
+    # Tag each player - use frame_num in keys to force updates
     for i, player in enumerate(players):
-        track_id = player['track_id']
+        track_id = player.get('track_id', i)
         
-        # Create simple, unique key for widgets (not for expander - expanders don't need keys)
-        # Streamlit keys must be valid Python identifiers (start with letter/underscore, alphanumeric)
-        # Using simple format: p{frame}_{index} to ensure uniqueness and validity
-        unique_key = f"p{frame_num}_{i}"
+        # Create unique key that includes frame_num to force updates
+        unique_key = f"{video_id}_f{frame_num}_t{track_id}_i{i}"
         
-        # Expander without key (Streamlit handles uniqueness automatically for expanders)
-        with st.expander(f"Player Track #{track_id} - {player.get('player_name', 'Untagged')}", expanded=False):
-            col1, col2 = st.columns([1, 2])
-            
-            with col1:
-                # Show consensus if available
-                consensus = db.get_consensus(video_id, frame_num, track_id)
-                if consensus:
-                    confidence_color = "green" if consensus['confidence_score'] > 0.7 else "orange" if consensus['confidence_score'] > 0.5 else "red"
-                    st.markdown(f"""
-                    **Consensus:** {consensus['player_name']}  
-                    **Confidence:** <span style="color:{confidence_color}">{consensus['confidence_score']*100:.0f}%</span>  
-                    **Votes:** {consensus['vote_count']}
-                    """, unsafe_allow_html=True)
-                    
-                    if consensus.get('alternatives'):
-                        st.caption("Alternatives:")
-                        for alt in consensus['alternatives']:
-                            st.caption(f"  - {alt['name']}: {alt['rate']*100:.0f}%")
+        # Get existing consensus for this track at this frame
+        track_consensus = consensus.get(str(track_id), {})
+        suggested_name = track_consensus.get('player_name', '')
+        suggested_confidence = track_consensus.get('confidence', 0.0)
+        
+        # Player info
+        player_name = player.get('player_name', 'Untagged')
+        x_pos = player.get('x', 0)
+        y_pos = player.get('y', 0)
+        team = player.get('team', 'Unknown')
+        
+        # Display player card
+        with st.container():
+            # Header with track ID and current name
+            header_col1, header_col2 = st.columns([3, 1])
+            with header_col1:
+                if track_consensus:
+                    st.markdown(f"### 🏷️ Track #{track_id} - **{suggested_name}** (Consensus)")
                 else:
-                    st.info("No consensus yet - be the first to tag!")
+                    st.markdown(f"### 🏷️ Track #{track_id} - {player_name}")
+            with header_col2:
+                if track_consensus:
+                    st.metric("Confidence", f"{suggested_confidence:.0%}")
             
-            with col2:
-                # Tag input - use unique key
-                player_name = st.text_input(
-                    f"Player Name (Track {track_id})",
-                    value=consensus['player_name'] if consensus else player.get('player_name', ''),
-                    key=f"name_{unique_key}"
+            # Player details in columns
+            detail_col1, detail_col2, detail_col3 = st.columns(3)
+            with detail_col1:
+                st.caption(f"📍 Position: ({x_pos:.1f}, {y_pos:.1f})")
+            with detail_col2:
+                st.caption(f"👕 Team: {team}")
+            with detail_col3:
+                st.caption(f"🎬 Frame: {frame_num}")
+            
+            # Show consensus info if available
+            if track_consensus:
+                st.info(f"💡 **Current Consensus**: {suggested_name} with {suggested_confidence:.0%} confidence ({track_consensus.get('vote_count', 0)} votes)")
+            
+            # Tagging form
+            st.markdown("**Tag This Player:**")
+            form_col1, form_col2 = st.columns([3, 1])
+            
+            with form_col1:
+                new_player_name = st.text_input(
+                    "Player Name",
+                    value=suggested_name if suggested_name else "",
+                    key=f"name_{unique_key}",
+                    help="Enter the player's name",
+                    label_visibility="collapsed",
+                    placeholder="Enter player name..."
                 )
-                
+            
+            with form_col2:
                 confidence = st.slider(
-                    "Your Confidence",
-                    0.0, 1.0, 1.0,
-                    key=f"conf_{unique_key}"
+                    "Confidence",
+                    0.0, 1.0, 
+                    max(0.5, suggested_confidence) if suggested_confidence > 0 else 0.5,
+                    step=0.1,
+                    key=f"conf_{unique_key}",
+                    help="How confident are you in this tag?",
+                    label_visibility="collapsed"
                 )
-                
-                col_btn1, col_btn2 = st.columns(2)
-                with col_btn1:
-                    if st.button("Submit Tag", key=f"submit_{unique_key}"):
+                st.caption(f"{confidence:.0%}")
+            
+            # Submit button
+            submit_col1, submit_col2 = st.columns([1, 4])
+            with submit_col1:
+                if st.button("✅ Submit Tag", key=f"submit_{unique_key}", type="primary"):
+                    if new_player_name and new_player_name.strip():
                         try:
-                            # Get user IP (if available)
-                            ip_address = None
-                            try:
-                                import streamlit.web.server.websocket_headers as ws_headers
-                                if hasattr(ws_headers, '_get_websocket_headers'):
-                                    headers = ws_headers._get_websocket_headers()
-                                    ip_address = headers.get('X-Forwarded-For', '').split(',')[0] if headers else None
-                            except:
-                                pass
-                            
-                            # Add tag
-                            tag_id = db.add_tag(
+                            db.add_tag(
                                 video_id=video_id,
                                 frame_num=frame_num,
                                 track_id=track_id,
-                                player_name=player_name,
+                                player_name=new_player_name.strip(),
                                 user_id=user_id,
                                 confidence=confidence,
-                                ip_address=ip_address,
-                                session_id=st.session_state.get('session_id')
+                                x=x_pos,
+                                y=y_pos,
+                                team=team
                             )
-                            
-                            # Update consensus
-                            consensus_engine.calculate_consensus(video_id, frame_num, track_id)
-                            
-                            st.success("✓ Tag submitted! Thank you for contributing.")
+                            st.success(f"✅ Tagged Track {track_id} as '{new_player_name}'")
+                            # Force rerun to update consensus
                             st.rerun()
                         except Exception as e:
                             st.error(f"Error submitting tag: {e}")
-                
-                with col_btn2:
-                    # Show user's previous tag for this player
-                    user_tags = db.get_user_tags(user_id, limit=1000)
-                    user_tag = next((t for t in user_tags 
-                                   if t['video_id'] == video_id and 
-                                   t['frame_num'] == frame_num and 
-                                   t['track_id'] == track_id), None)
-                    if user_tag:
-                        st.caption(f"You tagged: {user_tag['player_name']}")
-    
-    # Frame consensus summary
-    st.subheader("Frame Consensus Summary")
-    frame_consensus = db.get_frame_consensus(video_id, frame_num)
+                    else:
+                        st.warning("Please enter a player name")
+            
+            st.markdown("---")
     
     if frame_consensus:
         consensus_df = pd.DataFrame([
