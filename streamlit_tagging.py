@@ -294,8 +294,8 @@ def render_tagging_page():
     # Frame selection slider
     frame_num = st.slider("Frame Number", min_frame, max_frame, min_frame, step=1)
     
-    # Load players at this frame
-    players = get_players_at_frame(csv_data, frame_num)
+    # Load players at this frame (pass frame_col to avoid redundant search)
+    players = get_players_at_frame(csv_data, frame_num, frame_col)
     
     if not players:
         st.warning(f"⚠️ No players detected at frame {frame_num}")
