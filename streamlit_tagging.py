@@ -150,16 +150,42 @@ def render_tagging_page():
     
     user_id = get_user_id()
     
+    # Initialize file history in session state
+    if 'video_history' not in st.session_state:
+        st.session_state.video_history = []
+    if 'csv_history' not in st.session_state:
+        st.session_state.csv_history = []
+    
     # Sidebar - Video Selection
     with st.sidebar:
         st.header("📹 Video Selection")
         
-        # Google Drive URL or File ID
-        drive_input = st.text_input(
-            "Google Drive Video URL or File ID",
-            placeholder="https://drive.google.com/file/d/... or FILE_ID",
-            help="Enter the Google Drive shareable link for your video"
-        )
+        # Show previous videos if available
+        if st.session_state.video_history:
+            st.caption("📋 Recent Videos")
+            selected_video = st.selectbox(
+                "Select from recent videos",
+                [""] + st.session_state.video_history,
+                key="video_history_select"
+            )
+            if selected_video:
+                drive_input = st.text_input(
+                    "Google Drive Video URL or File ID",
+                    value=selected_video,
+                    help="Enter the Google Drive shareable link for your video"
+                )
+            else:
+                drive_input = st.text_input(
+                    "Google Drive Video URL or File ID",
+                    placeholder="https://drive.google.com/file/d/... or FILE_ID",
+                    help="Enter the Google Drive shareable link for your video"
+                )
+        else:
+            drive_input = st.text_input(
+                "Google Drive Video URL or File ID",
+                placeholder="https://drive.google.com/file/d/... or FILE_ID",
+                help="Enter the Google Drive shareable link for your video"
+            )
         
         st.markdown("---")
         st.header("📊 Tracking Data (CSV)")
@@ -173,7 +199,24 @@ def render_tagging_page():
         )
         
         csv_data = None
+        csv_source_identifier = None  # To track what was used for history
+        
         if csv_source == "📤 Upload File":
+            # Show previous uploads if available
+            if st.session_state.csv_history:
+                st.caption("📋 Recent CSV Files")
+                recent_csvs = [item for item in st.session_state.csv_history if item.get('type') == 'upload']
+                if recent_csvs:
+                    csv_names = [item.get('name', 'Unknown') for item in recent_csvs]
+                    selected_csv = st.selectbox(
+                        "Select from recent files",
+                        [""] + csv_names,
+                        key="csv_history_select"
+                    )
+                    if selected_csv:
+                        st.info(f"📄 Selected: {selected_csv}")
+                        st.info("💡 Upload a new file to use it, or select from recent files above")
+            
             csv_file = st.file_uploader(
                 "Upload Tracking CSV File", 
                 type=['csv'],
@@ -183,30 +226,126 @@ def render_tagging_page():
                 try:
                     csv_data = pd.read_csv(csv_file)
                     st.success(f"✅ Loaded {len(csv_data)} rows from CSV")
+                    # Add to history
+                    csv_info = {
+                        'type': 'upload',
+                        'name': csv_file.name,
+                        'size': csv_file.size,
+                        'rows': len(csv_data)
+                    }
+                    if csv_info not in st.session_state.csv_history:
+                        st.session_state.csv_history.insert(0, csv_info)
+                        # Keep only last 10
+                        st.session_state.csv_history = st.session_state.csv_history[:10]
+                    csv_source_identifier = f"upload:{csv_file.name}"
                 except Exception as e:
                     st.error(f"Error loading CSV: {e}")
         elif csv_source == "🔗 CSV URL":
-            csv_url = st.text_input(
-                "CSV URL", 
-                placeholder="https://...",
-                help="Enter a direct URL to your CSV file"
-            )
-            if csv_url:
+            # Show previous URLs if available
+            if st.session_state.csv_history:
+                st.caption("📋 Recent CSV URLs")
+                recent_urls = [item for item in st.session_state.csv_history if item.get('type') == 'url']
+                if recent_urls:
+                    url_list = [item.get('url', '') for item in recent_urls]
+                    selected_url = st.selectbox(
+                        "Select from recent URLs",
+                        [""] + url_list,
+                        key="csv_url_history_select"
+                    )
+                    if selected_url:
+                        csv_url = st.text_input(
+                            "CSV URL", 
+                            value=selected_url,
+                            help="Enter a direct URL to your CSV file"
+                        )
+                    else:
+                        csv_url = st.text_input(
+                            "CSV URL", 
+                            placeholder="https://...",
+                            help="Enter a direct URL to your CSV file"
+                        )
+                else:
+                    csv_url = st.text_input(
+                        "CSV URL", 
+                        placeholder="https://...",
+                        help="Enter a direct URL to your CSV file"
+                    )
+            else:
+                csv_url = st.text_input(
+                    "CSV URL", 
+                    placeholder="https://...",
+                    help="Enter a direct URL to your CSV file"
+                )
+            
+            if csv_url and csv_url.strip():
                 csv_data = load_csv_data(csv_url)
                 if csv_data is not None:
                     st.success(f"✅ Loaded {len(csv_data)} rows from URL")
+                    # Add to history
+                    csv_info = {
+                        'type': 'url',
+                        'url': csv_url,
+                        'rows': len(csv_data)
+                    }
+                    if csv_info not in st.session_state.csv_history:
+                        st.session_state.csv_history.insert(0, csv_info)
+                        # Keep only last 10
+                        st.session_state.csv_history = st.session_state.csv_history[:10]
+                    csv_source_identifier = f"url:{csv_url}"
         elif csv_source == "☁️ Google Drive CSV":
-            csv_drive_id = st.text_input(
-                "Google Drive CSV File ID", 
-                placeholder="Enter Google Drive File ID",
-                help="Enter the Google Drive File ID for your CSV file"
-            )
-            if csv_drive_id:
+            # Show previous Google Drive CSVs if available
+            if st.session_state.csv_history:
+                st.caption("📋 Recent Google Drive CSVs")
+                recent_drive = [item for item in st.session_state.csv_history if item.get('type') == 'drive']
+                if recent_drive:
+                    drive_list = [item.get('file_id', '') for item in recent_drive]
+                    selected_drive = st.selectbox(
+                        "Select from recent Google Drive files",
+                        [""] + drive_list,
+                        key="csv_drive_history_select"
+                    )
+                    if selected_drive:
+                        csv_drive_id = st.text_input(
+                            "Google Drive CSV File ID", 
+                            value=selected_drive,
+                            help="Enter the Google Drive File ID for your CSV file"
+                        )
+                    else:
+                        csv_drive_id = st.text_input(
+                            "Google Drive CSV File ID", 
+                            placeholder="Enter Google Drive File ID",
+                            help="Enter the Google Drive File ID for your CSV file"
+                        )
+                else:
+                    csv_drive_id = st.text_input(
+                        "Google Drive CSV File ID", 
+                        placeholder="Enter Google Drive File ID",
+                        help="Enter the Google Drive File ID for your CSV file"
+                    )
+            else:
+                csv_drive_id = st.text_input(
+                    "Google Drive CSV File ID", 
+                    placeholder="Enter Google Drive File ID",
+                    help="Enter the Google Drive File ID for your CSV file"
+                )
+            
+            if csv_drive_id and csv_drive_id.strip():
                 try:
                     csv_path = drive.download_video(csv_drive_id)  # Reuse download function
                     csv_data = load_csv_data(csv_path)
                     if csv_data is not None:
                         st.success(f"✅ Loaded {len(csv_data)} rows from Google Drive")
+                        # Add to history
+                        csv_info = {
+                            'type': 'drive',
+                            'file_id': csv_drive_id,
+                            'rows': len(csv_data)
+                        }
+                        if csv_info not in st.session_state.csv_history:
+                            st.session_state.csv_history.insert(0, csv_info)
+                            # Keep only last 10
+                            st.session_state.csv_history = st.session_state.csv_history[:10]
+                        csv_source_identifier = f"drive:{csv_drive_id}"
                 except Exception as e:
                     st.error(f"Error loading from Google Drive: {e}")
         
