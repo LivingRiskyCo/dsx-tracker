@@ -465,16 +465,12 @@ def render_tagging_page():
     for i, player in enumerate(players):
         track_id = player['track_id']
         
-        # Create unique key using video_id, frame_num, track_id, and index to ensure uniqueness
-        # Sanitize all components to only alphanumeric and underscores for valid Streamlit keys
-        safe_video_id = ''.join(c if c.isalnum() or c == '_' else '_' for c in str(video_id))[:20]  # Limit length
-        safe_frame = str(frame_num).replace('-', '_')
-        safe_track = str(track_id).replace('-', '_')
-        unique_suffix = f"{safe_video_id}_{safe_frame}_{safe_track}_{i}"
-        
-        # Ensure key doesn't start with a number (Streamlit requirement)
-        if unique_suffix[0].isdigit():
-            unique_suffix = f"p_{unique_suffix}"
+        # Create simple, unique key using hash of video_id + frame + track + index
+        # This ensures uniqueness while keeping keys short and valid
+        import hashlib
+        key_string = f"{video_id}_{frame_num}_{track_id}_{i}"
+        key_hash = hashlib.md5(key_string.encode()).hexdigest()[:12]  # Use first 12 chars of hash
+        unique_suffix = f"p{key_hash}"  # Prefix with 'p' to ensure it starts with letter
         
         with st.expander(f"Player Track #{track_id} - {player.get('player_name', 'Untagged')}", expanded=False, key=f"exp_{unique_suffix}"):
             col1, col2 = st.columns([1, 2])
