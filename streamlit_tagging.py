@@ -247,7 +247,25 @@ def render_tagging_page():
     players = get_players_at_frame(csv_data, frame_num)
     
     if not players:
-        st.info(f"No players detected at frame {frame_num}")
+        st.warning(f"⚠️ No players detected at frame {frame_num}")
+        st.info(f"""
+        **Troubleshooting:**
+        - Check if frame {frame_num} exists in your CSV
+        - Verify the CSV has columns: `frame`, `track_id`, `x`, `y`
+        - Try a different frame number (use the slider above)
+        - Available frames in CSV: {min_frame} to {max_frame}
+        """)
+        
+        # Show sample of CSV data for debugging
+        with st.expander("🔍 Debug: Show CSV structure"):
+            st.write("**First few rows:**")
+            st.dataframe(csv_data.head(10))
+            st.write("**Column names:**")
+            st.write(list(csv_data.columns))
+            st.write("**Frames in CSV (sample):**")
+            if frame_col:
+                unique_frames = sorted(csv_data[frame_col].unique())[:20]
+                st.write(unique_frames)
         return
     
     st.subheader(f"Tag Players (Frame {frame_num})")
