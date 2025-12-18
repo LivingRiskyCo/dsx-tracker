@@ -97,16 +97,34 @@ def load_csv_data(csv_path: str) -> Optional[pd.DataFrame]:
 
 def get_players_at_frame(df: pd.DataFrame, frame_num: int) -> List[Dict]:
     """Get all players detected at a specific frame"""
-    frame_data = df[df['frame'] == frame_num]
+    # Try different column name variations
+    frame_col = None
+    for col in ['frame', 'Frame', 'FRAME', 'frame_num', 'frame_number']:
+        if col in df.columns:
+            frame_col = col
+            break
+    
+    if frame_col is None:
+        st.error("CSV file must contain a 'frame' column")
+        return []
+    
+    frame_data = df[df[frame_col] == frame_num]
     
     players = []
     for _, row in frame_data.iterrows():
+        # Try multiple column name variations
+        track_id = row.get('track_id', row.get('id', row.get('track_id', row.get('track-id', 0))))
+        x = row.get('x', row.get('center_x', row.get('center-x', row.get('X', 0))))
+        y = row.get('y', row.get('center_y', row.get('center-y', row.get('Y', 0))))
+        player_name = str(row.get('player_name', row.get('player-name', row.get('name', ''))))
+        team = str(row.get('team', row.get('Team', '')))
+        
         players.append({
-            'track_id': int(row.get('track_id', row.get('id', 0))),
-            'x': float(row.get('x', row.get('center_x', 0))),
-            'y': float(row.get('y', row.get('center_y', 0))),
-            'player_name': str(row.get('player_name', '')),
-            'team': str(row.get('team', ''))
+            'track_id': int(track_id) if pd.notna(track_id) else 0,
+            'x': float(x) if pd.notna(x) else 0.0,
+            'y': float(y) if pd.notna(y) else 0.0,
+            'player_name': player_name if player_name != 'nan' else '',
+            'team': team if team != 'nan' else ''
         })
     
     return players
