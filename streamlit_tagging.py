@@ -443,90 +443,23 @@ def render_tagging_page():
     
     st.markdown("---")
     
-    # Frame image display with player positions
-    st.subheader("📸 Frame Preview")
+    # Simplified video section - just a link
+    st.subheader("📹 Video Reference")
+    video_view_url = f"https://drive.google.com/file/d/{video_id}/view"
+    st.markdown(f"""
+    **💡 How to tag players:**
+    1. **[Open Video in New Tab]({video_view_url})** to watch the video
+    2. **Use the frame slider above** to navigate to the frame you want to tag
+    3. **Players detected at that frame** will appear below
+    4. **Enter player names** and submit tags
     
-    # Calculate FPS from CSV if available, otherwise default to 30
-    fps = 30.0
-    if 'fps' in csv_data.columns:
-        fps = csv_data['fps'].iloc[0] if len(csv_data) > 0 else 30.0
-    elif 'FPS' in csv_data.columns:
-        fps = csv_data['FPS'].iloc[0] if len(csv_data) > 0 else 30.0
-    
-    # Calculate timestamp
-    timestamp = frame_num / fps if fps > 0 else 0
-    time_str = f"{int(timestamp // 60):02d}:{int(timestamp % 60):02d}.{int((timestamp % 1) * 100):02d}"
-    
-    # Try to extract and display frame
-    frame_col1, frame_col2 = st.columns([2, 1])
-    
-    with frame_col1:
-        try:
-            frame_bytes = drive.extract_frame(video_id, frame_num, fps)
-            if frame_bytes:
-                st.image(frame_bytes, caption=f"Frame {frame_num} | Time: {time_str} | FPS: {fps:.1f}", use_container_width=True)
-            else:
-                st.info("💡 **Frame extraction not available** - Use the video link below to view the video")
-                video_view_url = f"https://drive.google.com/file/d/{video_id}/view"
-                st.markdown(f"🔗 **[Open Video in New Tab]({video_view_url})**")
-                st.caption(f"Navigate to frame {frame_num} (Time: {time_str}) in the video")
-        except Exception as e:
-            st.warning(f"Could not extract frame: {e}")
-            video_view_url = f"https://drive.google.com/file/d/{video_id}/view"
-            st.markdown(f"🔗 **[Open Video in New Tab]({video_view_url})**")
-            st.caption(f"Navigate to frame {frame_num} (Time: {time_str}) in the video")
-    
-    with frame_col2:
-        st.markdown("**📊 Frame Info**")
-        st.metric("Frame", frame_num)
-        st.metric("Time", time_str)
-        st.metric("FPS", f"{fps:.1f}")
-        st.markdown("---")
-        st.markdown("**💡 Navigation**")
-        st.caption("Use the slider above to change frames")
-        st.caption("Frame image updates automatically")
-        if 'frame_bytes' in locals() and frame_bytes:
-            st.success("✅ Frame loaded")
-        else:
-            st.info("📹 Use video link to view")
+    The video and frame slider are **separate** - navigate the video manually and use the slider to match the frame number.
+    """)
     
     st.markdown("---")
     
     # Load players at this frame - this will update when frame_num changes
     players = get_players_at_frame(csv_data, frame_num, frame_col)
-    
-    # Draw player positions on frame if available
-    if players and 'frame_bytes' in locals() and frame_bytes and CV2_AVAILABLE:
-        try:
-            # Decode frame
-            frame_array = np.frombuffer(frame_bytes, np.uint8)
-            frame = cv2.imdecode(frame_array, cv2.IMREAD_COLOR)
-            
-            if frame is not None:
-                # Get frame dimensions
-                frame_height, frame_width = frame.shape[:2]
-                
-                # Draw each player
-                for player in players:
-                    track_id = player.get('track_id', 0)
-                    x = int(player.get('x', 0))
-                    y = int(player.get('y', 0))
-                    
-                    # Scale coordinates if needed (assuming CSV coordinates match frame)
-                    # Draw circle and label
-                    cv2.circle(frame, (x, y), 15, (0, 255, 0), 2)
-                    cv2.putText(frame, f"#{track_id}", (x + 20, y), 
-                               cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2)
-                
-                # Encode back to JPEG
-                _, buffer = cv2.imencode('.jpg', frame, [cv2.IMWRITE_JPEG_QUALITY, 85])
-                frame_with_players = buffer.tobytes()
-                
-                # Update displayed image
-                st.image(frame_with_players, caption=f"Frame {frame_num} with Player Positions | Time: {time_str}", use_container_width=True)
-        except Exception as e:
-            # If drawing fails, just show the original frame
-            st.caption(f"Note: Could not draw player positions: {e}")
     
     if not players:
         st.warning(f"⚠️ No players detected at frame {frame_num}")
