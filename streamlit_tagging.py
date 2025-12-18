@@ -116,29 +116,58 @@ def render_tagging_page():
         # Google Drive URL or File ID
         drive_input = st.text_input(
             "Google Drive Video URL or File ID",
-            placeholder="https://drive.google.com/file/d/... or FILE_ID"
+            placeholder="https://drive.google.com/file/d/... or FILE_ID",
+            help="Enter the Google Drive shareable link for your video"
         )
+        
+        st.markdown("---")
+        st.header("📊 Tracking Data (CSV)")
+        st.caption("Upload the CSV file from your video analysis")
         
         # CSV Data Source
         csv_source = st.radio(
-            "CSV Data Source",
-            ["Upload CSV", "CSV URL", "Google Drive CSV"]
+            "How do you want to provide the CSV?",
+            ["📤 Upload File", "🔗 CSV URL", "☁️ Google Drive CSV"],
+            help="Choose how to provide your tracking CSV data"
         )
         
         csv_data = None
-        if csv_source == "Upload CSV":
-            csv_file = st.file_uploader("Upload Tracking CSV", type=['csv'])
+        if csv_source == "📤 Upload File":
+            csv_file = st.file_uploader(
+                "Upload Tracking CSV File", 
+                type=['csv'],
+                help="Upload the CSV file exported from your video analysis (should contain columns: frame, track_id, x, y, player_name)"
+            )
             if csv_file:
-                csv_data = pd.read_csv(csv_file)
-        elif csv_source == "CSV URL":
-            csv_url = st.text_input("CSV URL", placeholder="https://...")
+                try:
+                    csv_data = pd.read_csv(csv_file)
+                    st.success(f"✅ Loaded {len(csv_data)} rows from CSV")
+                except Exception as e:
+                    st.error(f"Error loading CSV: {e}")
+        elif csv_source == "🔗 CSV URL":
+            csv_url = st.text_input(
+                "CSV URL", 
+                placeholder="https://...",
+                help="Enter a direct URL to your CSV file"
+            )
             if csv_url:
                 csv_data = load_csv_data(csv_url)
-        elif csv_source == "Google Drive CSV":
-            csv_drive_id = st.text_input("Google Drive CSV File ID")
+                if csv_data is not None:
+                    st.success(f"✅ Loaded {len(csv_data)} rows from URL")
+        elif csv_source == "☁️ Google Drive CSV":
+            csv_drive_id = st.text_input(
+                "Google Drive CSV File ID", 
+                placeholder="Enter Google Drive File ID",
+                help="Enter the Google Drive File ID for your CSV file"
+            )
             if csv_drive_id:
-                csv_path = drive.download_video(csv_drive_id)  # Reuse download function
-                csv_data = load_csv_data(csv_path)
+                try:
+                    csv_path = drive.download_video(csv_drive_id)  # Reuse download function
+                    csv_data = load_csv_data(csv_path)
+                    if csv_data is not None:
+                        st.success(f"✅ Loaded {len(csv_data)} rows from Google Drive")
+                except Exception as e:
+                    st.error(f"Error loading from Google Drive: {e}")
         
         # Video ID (extracted from drive URL or manual entry)
         video_id = None
