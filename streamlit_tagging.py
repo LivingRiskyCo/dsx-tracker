@@ -466,12 +466,13 @@ def render_tagging_page():
     for i, player in enumerate(players):
         track_id = player['track_id']
         
-        # Create simple, unique key using just index and frame number
+        # Create simple, unique key for widgets (not for expander - expanders don't need keys)
         # Streamlit keys must be valid Python identifiers (start with letter/underscore, alphanumeric)
         # Using simple format: p{frame}_{index} to ensure uniqueness and validity
         unique_key = f"p{frame_num}_{i}"
         
-        with st.expander(f"Player Track #{track_id} - {player.get('player_name', 'Untagged')}", expanded=False, key=unique_key):
+        # Expander without key (Streamlit handles uniqueness automatically for expanders)
+        with st.expander(f"Player Track #{track_id} - {player.get('player_name', 'Untagged')}", expanded=False):
             col1, col2 = st.columns([1, 2])
             
             with col1:
