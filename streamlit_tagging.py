@@ -232,16 +232,48 @@ def render_tagging_page():
         st.warning("⚠️ Please provide CSV tracking data")
         return
     
-    # Get video URL
-    video_url = drive.get_video_url(video_id)
+    # Find frame column
+    frame_col = None
+    for col in ['frame', 'Frame', 'FRAME', 'frame_num', 'frame_number']:
+        if col in csv_data.columns:
+            frame_col = col
+            break
     
-    # Video player
-    st.subheader("Video Player")
-    st.video(video_url)
+    if frame_col is None:
+        st.error("❌ CSV file must contain a 'frame' column. Available columns: " + ", ".join(csv_data.columns[:10]))
+        with st.expander("🔍 Show all CSV columns"):
+            st.write(list(csv_data.columns))
+        return
+    
+    # Show success message
+    st.success(f"✅ Ready to tag! Video loaded with {len(csv_data)} tracking data rows")
     
     # Frame selection
-    max_frame = int(csv_data['frame'].max()) if 'frame' in csv_data.columns else 1000
-    frame_num = st.slider("Frame Number", 0, max_frame, 0, step=10)
+    max_frame = int(csv_data[frame_col].max()) if len(csv_data) > 0 else 1000
+    min_frame = int(csv_data[frame_col].min()) if len(csv_data) > 0 else 0
+    
+    st.subheader("📹 Video Player")
+    
+    # Show video info
+    col_info1, col_info2 = st.columns(2)
+    with col_info1:
+        st.caption(f"📊 CSV has {len(csv_data)} rows")
+    with col_info2:
+        st.caption(f"🎬 Frame range: {min_frame} - {max_frame}")
+    
+    # Video player - use direct download URL for better compatibility
+    try:
+        video_direct_url = drive.get_video_url(video_id, direct=True)
+        st.video(video_direct_url)
+    except Exception as e:
+        st.warning(f"⚠️ Video may not play if not publicly shared. Error: {e}")
+        # Fallback to preview URL
+        video_preview_url = drive.get_video_url(video_id, direct=False)
+        st.video(video_preview_url)
+        st.info("💡 **Tip:** Make sure your Google Drive video is shared publicly ('Anyone with the link') for best playback")
+    
+    # Frame selection slider
+    frame_num = st.slider("Frame Number", min_frame, max_frame, min_frame, step=1)
     
     # Load players at this frame
     players = get_players_at_frame(csv_data, frame_num)
